@@ -1,0 +1,10 @@
+{
+  "traits": [
+    {
+      "traitName": "坚韧表皮",
+      "description": "坚韧的外皮提升防御力",
+      "rarity": "Common",
+      "statModifiers": { "HP": 0, "ATK": 0, "DEF": 5, "SPD": 0, "MUT": 0 }
+    }
+  ]
+}
