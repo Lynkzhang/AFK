@@ -1,5 +1,8 @@
 import type { GameState, Slime, Stats } from '../types';
 import { Rarity } from '../types';
+import type { BattleResult } from '../combat/CombatTypes';
+import { runBattle } from '../combat/CombatEngine';
+import { getStage } from '../combat/StageData';
 
 /** Getter / Setter injected from main.ts */
 type GetState = () => GameState;
@@ -12,6 +15,8 @@ interface GMApi {
   triggerSplit(): void;
   getState(): GameState;
   setCurrency(n: number): void;
+  startBattle(stageId: string): BattleResult;
+  autoBattle(stageId: string): BattleResult;
 }
 
 declare global {
@@ -57,6 +62,28 @@ function createDefaultSlime(): Slime {
   };
 }
 
+function runBattleWithTeam(getState: GetState, setState: SetState, stageId: string): BattleResult {
+  const stage = getStage(stageId);
+  if (!stage) {
+    throw new Error(`Stage not found: ${stageId}`);
+  }
+
+  let s = getState();
+  let slimes = s.slimes;
+
+  // If no slimes, create a default GM slime
+  if (slimes.length === 0) {
+    const gmSlime = createDefaultSlime();
+    s = { ...s, slimes: [gmSlime] };
+    setState(s);
+    slimes = s.slimes;
+  }
+
+  // Take up to 4 slimes
+  const team = slimes.slice(0, 4);
+  return runBattle(team, stage);
+}
+
 export function initGM(getState: GetState, setState: SetState): void {
   const api: GMApi = {
     addSlime() {
@@ -100,6 +127,12 @@ export function initGM(getState: GetState, setState: SetState): void {
     setCurrency(n: number) {
       const s = getState();
       setState({ ...s, currency: n });
+    },
+    startBattle(stageId: string): BattleResult {
+      return runBattleWithTeam(getState, setState, stageId);
+    },
+    autoBattle(stageId: string): BattleResult {
+      return runBattleWithTeam(getState, setState, stageId);
     },
   };
 
