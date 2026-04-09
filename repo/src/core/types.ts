@@ -1,7 +1,9 @@
 export enum Rarity {
   Common = 'Common',
+  Uncommon = 'Uncommon',
   Rare = 'Rare',
   Epic = 'Epic',
+  Legendary = 'Legendary',
 }
 
 export interface Stats {
@@ -9,18 +11,23 @@ export interface Stats {
   attack: number;
   defense: number;
   speed: number;
+  mut: number;
 }
 
 export interface Trait {
   id: string;
   name: string;
   description: string;
+  rarity: Rarity;
+  effect: string;
 }
 
 export interface Skill {
   id: string;
   name: string;
-  power: number;
+  type: 'attack' | 'defense' | 'support' | 'heal';
+  targetType: string;
+  damage: number;
   cooldown: number;
 }
 
@@ -48,7 +55,8 @@ export interface BreedingGround {
   name: string;
   level: number;
   capacity: number;
-  assignedSlimeIds: string[];
+  slimes: Slime[];
+  facilityLevel: number;
 }
 
 export interface Facility {
@@ -56,6 +64,8 @@ export interface Facility {
   name: string;
   level: number;
   active: boolean;
+  effect: string;
+  upgradeCost: number;
 }
 
 export interface GameState {
