@@ -1,4 +1,4 @@
-import type { GameState, Slime, Stats, Facility } from '../types';
+import type { GameState, Slime, Stats, Facility, Item } from '../types';
 import { Rarity } from '../types';
 import type { BattleResult } from '../combat/CombatTypes';
 import { runBattle } from '../combat/CombatEngine';
@@ -6,6 +6,8 @@ import { getStage } from '../combat/StageData';
 import { archiveSlime as doArchive, unarchiveSlime as doUnarchive } from '../systems/ArchiveSystem';
 import { evaluatePrice as doEvaluatePrice } from '../systems/EvaluationSystem';
 import { FacilitySystem } from '../systems/FacilitySystem';
+import { ShopSystem } from '../systems/ShopSystem';
+import { ItemSystem } from '../systems/ItemSystem';
 
 /** Getter / Setter injected from main.ts */
 type GetState = () => GameState;
@@ -18,6 +20,7 @@ interface GMApi {
   triggerSplit(): void;
   getState(): GameState;
   setCurrency(n: number): void;
+  setCrystal(n: number): void;
   startBattle(stageId: string): BattleResult;
   autoBattle(stageId: string): BattleResult;
   archiveSlime(id: string): { success: boolean; reason?: string };
@@ -26,6 +29,9 @@ interface GMApi {
   evaluatePrice(id: string): number;
   upgradeFacility(id: string): boolean;
   getFacilities(): Facility[];
+  buyItem(shopItemId: string): boolean;
+  getItems(): Item[];
+  useItem(itemType: string, slimeId?: string): string;
 }
 
 declare global {
@@ -137,6 +143,10 @@ export function initGM(getState: GetState, setState: SetState): void {
       const s = getState();
       setState({ ...s, currency: n });
     },
+    setCrystal(n: number) {
+      const s = getState();
+      setState({ ...s, crystal: n });
+    },
     startBattle(stageId: string): BattleResult {
       return runBattleWithTeam(getState, setState, stageId);
     },
@@ -172,6 +182,21 @@ export function initGM(getState: GetState, setState: SetState): void {
     },
     getFacilities(): Facility[] {
       return getState().facilities;
+    },
+    buyItem(shopItemId: string): boolean {
+      const s = getState();
+      const result = ShopSystem.buyItem(s, shopItemId);
+      setState({ ...s, currency: s.currency, crystal: s.crystal, items: [...s.items] });
+      return result;
+    },
+    getItems(): Item[] {
+      return getState().items;
+    },
+    useItem(itemType: string, slimeId?: string): string {
+      const s = getState();
+      const result = ItemSystem.useItem(s, itemType as Item['type'], slimeId);
+      setState({ ...s, items: [...s.items], slimes: [...s.slimes] });
+      return result;
     },
   };
 

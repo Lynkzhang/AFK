@@ -9,6 +9,7 @@
  * 5. Split / Sell
  * 6. Archive System
  * 7. Facility System
+ * 8. Shop & Item System
  */
 import { test, expect, type Page } from '@playwright/test';
 
@@ -41,9 +42,9 @@ test.describe('Page Load', () => {
     // Slime count
     await expect(page.locator('.ui-panel').locator('text=Slimes:')).toBeVisible();
 
-    // Buttons – 新游戏, 保存, 加载, 战斗, 封存库, 设施
+    // Buttons – 新游戏, 保存, 加载, 战斗, 封存库, 设施, 商店
     const buttons = page.locator('.ui-actions button');
-    await expect(buttons).toHaveCount(6);
+    await expect(buttons).toHaveCount(7);
 
     // Slime list section
     await expect(page.locator('.slime-list')).toBeVisible();
@@ -487,5 +488,109 @@ test.describe('Facility System', () => {
     // Currency should still be 0
     const currency = await page.evaluate(() => window.__GM!.getState().currency);
     expect(currency).toBe(0);
+  });
+});
+
+// =========================================================
+// Test 8: Shop & Item System
+// =========================================================
+test.describe('Shop & Item System', () => {
+  test('buy item with gold deducts currency and adds to inventory', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(300);
+
+    // Give enough gold (mutation catalyst costs 200)
+    await page.evaluate(() => window.__GM!.setCurrency(500));
+
+    const currencyBefore = await page.evaluate(() => window.__GM!.getState().currency) as number;
+    expect(currencyBefore).toBe(500);
+
+    // Buy mutation catalyst
+    const buyResult = await page.evaluate(() => window.__GM!.buyItem('shop-mutation-catalyst'));
+    expect(buyResult).toBe(true);
+
+    // Check currency deducted
+    const afterState = await page.evaluate(() => window.__GM!.getState());
+    expect(afterState.currency).toBe(300); // 500 - 200
+
+    // Check inventory has the item
+    const items = await page.evaluate(() => window.__GM!.getItems());
+    interface ItemInfo { type: string; quantity: number }
+    const catalyst = (items as ItemInfo[]).find((i) => i.type === 'mutation-catalyst');
+    expect(catalyst).toBeDefined();
+    expect(catalyst!.quantity).toBe(1);
+
+    // Buy another one
+    await page.evaluate(() => window.__GM!.buyItem('shop-mutation-catalyst'));
+    const items2 = await page.evaluate(() => window.__GM!.getItems());
+    const catalyst2 = (items2 as ItemInfo[]).find((i) => i.type === 'mutation-catalyst');
+    expect(catalyst2!.quantity).toBe(2);
+  });
+
+  test('use stat booster increases slime stats', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(300);
+
+    // Give gold and buy stat booster
+    await page.evaluate(() => window.__GM!.setCurrency(1000));
+    await page.evaluate(() => window.__GM!.buyItem('shop-stat-booster'));
+
+    // Get first slime and record total stats
+    const slimeId = await page.evaluate(() => window.__GM!.getState().slimes[0]!.id) as string;
+    const beforeStats = await page.evaluate((id) => {
+      const s = window.__GM!.getState().slimes.find((sl: { id: string }) => sl.id === id)!;
+      return s.stats.health + s.stats.attack + s.stats.defense + s.stats.speed;
+    }, slimeId) as number;
+
+    // Use stat booster on that slime
+    const useResult = await page.evaluate((id) => window.__GM!.useItem('stat-booster', id), slimeId);
+    expect(useResult).toContain('属性强化剂已使用');
+
+    // Stats should have increased
+    const afterStats = await page.evaluate((id) => {
+      const s = window.__GM!.getState().slimes.find((sl: { id: string }) => sl.id === id)!;
+      return s.stats.health + s.stats.attack + s.stats.defense + s.stats.speed;
+    }, slimeId) as number;
+    expect(afterStats).toBeGreaterThan(beforeStats);
+
+    // Item should be consumed
+    const items = await page.evaluate(() => window.__GM!.getItems());
+    interface ItemInfo { type: string; quantity: number }
+    const booster = (items as ItemInfo[]).find((i) => i.type === 'stat-booster');
+    expect(booster!.quantity).toBe(0);
+  });
+
+  test('insufficient crystals prevents crystal-priced purchase', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(300);
+
+    // Ensure 0 crystals (default is 0)
+    const crystalBefore = await page.evaluate(() => window.__GM!.getState().crystal) as number;
+    expect(crystalBefore).toBe(0);
+
+    // Try to buy rare essence (costs 50 crystals)
+    const buyResult = await page.evaluate(() => window.__GM!.buyItem('shop-rare-essence'));
+    expect(buyResult).toBe(false);
+
+    // Inventory should be empty
+    const items = await page.evaluate(() => window.__GM!.getItems());
+    expect(items.length).toBe(0);
+
+    // Now give crystals and try again
+    await page.evaluate(() => window.__GM!.setCrystal(100));
+    const buyResult2 = await page.evaluate(() => window.__GM!.buyItem('shop-rare-essence'));
+    expect(buyResult2).toBe(true);
+
+    const afterState = await page.evaluate(() => window.__GM!.getState());
+    expect(afterState.crystal).toBe(50); // 100 - 50
   });
 });
