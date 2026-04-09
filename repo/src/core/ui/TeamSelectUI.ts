@@ -60,7 +60,7 @@ export class TeamSelectUI {
     this.updateCount();
     this.listEl.replaceChildren();
 
-    for (const slime of state.slimes) {
+    for (const slime of state.archivedSlimes) {
       const card = this.createSlimeCard(slime);
       this.listEl.appendChild(card);
     }

@@ -286,3 +286,42 @@ body,
 .result-info { font-size: 14px; color: #ccc; margin-bottom: 8px; }
 .result-rewards { font-size: 14px; color: #aab; margin-bottom: 12px; }
 .result-rewards div { margin: 2px 0; }
+
+/* ===== Archive UI Styles ===== */
+
+.archive-panel { gap: 8px; }
+.archive-header { display: flex; justify-content: space-between; align-items: center; }
+.archive-count { font-size: 14px; color: #aab; }
+
+.archive-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.archive-slime-card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.archive-slime-name { display: flex; align-items: center; gap: 8px; }
+.archive-slime-stats { font-size: 13px; color: #bbc; margin-top: 4px; }
+.archive-slime-price { font-size: 13px; color: #ffd700; margin-top: 4px; }
+
+.archive-slime-actions { display: flex; gap: 8px; margin-top: 6px; }
+
+.archive-action-btn {
+  cursor: pointer;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #ccc;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 13px;
+}
+
+.archive-action-btn.sell-btn { border-color: #ffd700; color: #ffd700; }

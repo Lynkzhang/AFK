@@ -39,9 +39,9 @@ test.describe('Page Load', () => {
     // Slime count
     await expect(page.locator('.ui-panel').locator('text=Slimes:')).toBeVisible();
 
-    // Buttons – 新游戏, 保存, 加载, 战斗
+    // Buttons – 新游戏, 保存, 加载, 战斗, 封存库
     const buttons = page.locator('.ui-actions button');
-    await expect(buttons).toHaveCount(4);
+    await expect(buttons).toHaveCount(5);
 
     // Slime list section
     await expect(page.locator('.slime-list')).toBeVisible();
@@ -127,6 +127,15 @@ test.describe('Full Battle Flow', () => {
       const state = gm.getState();
       for (const s of state.slimes) {
         gm.setStats(s.id, { health: 999, attack: 999, defense: 999, speed: 999 });
+      }
+    });
+
+    // Archive all slimes so they appear in team select (which now reads from archivedSlimes)
+    await page.evaluate(() => {
+      const gm = window.__GM!;
+      const state = gm.getState();
+      for (const s of [...state.slimes]) {
+        gm.archiveSlime(s.id);
       }
     });
 
@@ -278,7 +287,7 @@ test.describe('Split & Sell', () => {
     // DOM nodes between frames. We use page.evaluate to click the sell button
     // directly within a single JS tick, avoiding the detachment race.
     await page.evaluate(() => {
-      const btn = document.querySelector('.slime-item .slime-actions button:last-child') as HTMLButtonElement | null;
+      const btn = document.querySelector('.slime-item .slime-actions button:nth-child(2)') as HTMLButtonElement | null;
       btn?.click();
     });
 
@@ -291,5 +300,76 @@ test.describe('Split & Sell', () => {
 
     // Currency should have increased
     expect(afterState.currency).toBeGreaterThan(initialCurrency);
+  });
+});
+
+// =========================================================
+// Test 6: Archive System
+// =========================================================
+test.describe('Archive System', () => {
+  test('archive a slime from breeding grounds to archive', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(300);
+
+    const initialState = await page.evaluate(() => window.__GM!.getState());
+    const initialSlimeCount = initialState.slimes.length as number;
+    const initialArchiveCount = initialState.archivedSlimes.length as number;
+    expect(initialSlimeCount).toBeGreaterThan(0);
+
+    // Archive the first slime via GM
+    const firstId = initialState.slimes[0]!.id as string;
+    const result = await page.evaluate((id) => window.__GM!.archiveSlime(id), firstId);
+    expect(result.success).toBe(true);
+
+    const afterState = await page.evaluate(() => window.__GM!.getState());
+    expect(afterState.slimes.length).toBe(initialSlimeCount - 1);
+    expect(afterState.archivedSlimes.length).toBe(initialArchiveCount + 1);
+  });
+
+  test('unarchive a slime from archive back to breeding grounds', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(300);
+
+    // Archive first
+    const firstId = await page.evaluate(() => {
+      const id = window.__GM!.getState().slimes[0]!.id;
+      window.__GM!.archiveSlime(id);
+      return id;
+    }) as string;
+
+    const afterArchive = await page.evaluate(() => window.__GM!.getState());
+    const archivedCount = afterArchive.archivedSlimes.length as number;
+    const slimeCount = afterArchive.slimes.length as number;
+
+    // Unarchive
+    const result = await page.evaluate((id) => window.__GM!.unarchiveSlime(id), firstId);
+    expect(result.success).toBe(true);
+
+    const afterUnarchive = await page.evaluate(() => window.__GM!.getState());
+    expect(afterUnarchive.archivedSlimes.length).toBe(archivedCount - 1);
+    expect(afterUnarchive.slimes.length).toBe(slimeCount + 1);
+  });
+
+  test('evaluatePrice returns a positive price based on stats and rarity', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(300);
+
+    const firstId = await page.evaluate(() => window.__GM!.getState().slimes[0]!.id) as string;
+    const price = await page.evaluate((id) => window.__GM!.evaluatePrice(id), firstId);
+    expect(price).toBeGreaterThan(0);
+
+    // Boost stats and check price increases
+    await page.evaluate((id) => window.__GM!.setStats(id, { health: 999, attack: 999 }), firstId);
+    const boostedPrice = await page.evaluate((id) => window.__GM!.evaluatePrice(id), firstId);
+    expect(boostedPrice).toBeGreaterThan(price);
   });
 });
