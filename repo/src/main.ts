@@ -6,6 +6,7 @@ import { GameLoop } from './core/systems/GameLoop';
 import type { GameState, Slime } from './core/types';
 import { Rarity } from './core/types';
 import { UIManager } from './core/ui/UIManager';
+import { initGM } from './core/debug/GMCommands';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('App root not found');
@@ -134,4 +135,6 @@ window.addEventListener('beforeunload', () => {
 });
 
 ui.render(state, breedingSystem.getTimeUntilNextSplit(), breedingSystem.getMaxCapacity());
+initGM(() => state, (s) => { state = s; });
+
 loop.start();
