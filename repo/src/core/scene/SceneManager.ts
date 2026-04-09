@@ -47,6 +47,16 @@ export class SceneManager {
   }
 
   sync(state: GameState): void {
+    const currentIds = new Set(state.slimes.map((slime) => slime.id));
+    for (const [id, visual] of this.slimeVisuals) {
+      if (!currentIds.has(id)) {
+        this.scene.remove(visual.mesh);
+        visual.mesh.geometry.dispose();
+        (visual.mesh.material as THREE.MeshStandardMaterial).dispose();
+        this.slimeVisuals.delete(id);
+      }
+    }
+
     for (const slime of state.slimes) {
       if (!this.slimeVisuals.has(slime.id)) {
         const geometry = new THREE.SphereGeometry(0.5, 24, 24);
