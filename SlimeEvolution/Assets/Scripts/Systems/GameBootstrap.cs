@@ -84,6 +84,12 @@ namespace SlimeEvolution.Systems
                 }
             }
 
+            // Wire up battle gold reward to playerGold
+            if (battleManager != null)
+            {
+                battleManager.OnBattleEnd += HandleBattleEnd;
+            }
+
             if (battleUI == null)
             {
                 battleUI = FindObjectOfType<BattleUI>();
@@ -102,6 +108,15 @@ namespace SlimeEvolution.Systems
             {
                 Debug.LogWarning(
                     "[GameBootstrap] BreedingGroundConfig is not assigned.");
+            }
+        }
+
+        private void HandleBattleEnd(bool playerWon, int goldReward)
+        {
+            if (playerWon && goldReward > 0 && breedingGroundConfig != null)
+            {
+                breedingGroundConfig.playerGold += goldReward;
+                Debug.Log($"[GameBootstrap] Battle won! +{goldReward} gold. Total: {breedingGroundConfig.playerGold}");
             }
         }
 
