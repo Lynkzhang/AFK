@@ -1,10 +1,11 @@
-import type { GameState, Slime, Stats } from '../types';
+import type { GameState, Slime, Stats, Facility } from '../types';
 import { Rarity } from '../types';
 import type { BattleResult } from '../combat/CombatTypes';
 import { runBattle } from '../combat/CombatEngine';
 import { getStage } from '../combat/StageData';
 import { archiveSlime as doArchive, unarchiveSlime as doUnarchive } from '../systems/ArchiveSystem';
 import { evaluatePrice as doEvaluatePrice } from '../systems/EvaluationSystem';
+import { FacilitySystem } from '../systems/FacilitySystem';
 
 /** Getter / Setter injected from main.ts */
 type GetState = () => GameState;
@@ -23,6 +24,8 @@ interface GMApi {
   unarchiveSlime(id: string): { success: boolean; reason?: string };
   getArchivedSlimes(): Slime[];
   evaluatePrice(id: string): number;
+  upgradeFacility(id: string): boolean;
+  getFacilities(): Facility[];
 }
 
 declare global {
@@ -159,6 +162,16 @@ export function initGM(getState: GetState, setState: SetState): void {
       const s = getState();
       const slime = s.slimes.find((sl) => sl.id === id) ?? s.archivedSlimes.find((sl) => sl.id === id);
       return slime ? doEvaluatePrice(slime) : 0;
+    },
+    upgradeFacility(id: string): boolean {
+      const s = getState();
+      const result = FacilitySystem.upgrade(s, id);
+      // Trigger state update so UI reflects changes
+      setState({ ...s, facilities: [...s.facilities] });
+      return result;
+    },
+    getFacilities(): Facility[] {
+      return getState().facilities;
     },
   };
 
