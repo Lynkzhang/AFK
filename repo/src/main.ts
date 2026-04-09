@@ -6,6 +6,10 @@ import { GameLoop } from './core/systems/GameLoop';
 import type { GameState, Slime } from './core/types';
 import { Rarity } from './core/types';
 import { UIManager } from './core/ui/UIManager';
+import { StageSelectUI } from './core/ui/StageSelectUI';
+import { TeamSelectUI } from './core/ui/TeamSelectUI';
+import { BattleUI } from './core/ui/BattleUI';
+import type { BattleResult } from './core/combat/CombatTypes';
 import { initGM } from './core/debug/GMCommands';
 
 const app = document.querySelector<HTMLDivElement>('#app');
@@ -61,6 +65,7 @@ function createDefaultState(): GameState {
     facilities: [{ id: 'fac-1', name: 'Nursery', level: 1, active: true, effect: '加速培育', upgradeCost: 50 }],
     currency: 100,
     timestamp: Date.now(),
+    stageProgress: {},
   };
 }
 
@@ -74,6 +79,18 @@ gameRoot.appendChild(sceneRoot);
 
 const ui = new UIManager();
 gameRoot.appendChild(ui.root);
+
+const stageSelectUI = new StageSelectUI();
+stageSelectUI.hide();
+gameRoot.appendChild(stageSelectUI.root);
+
+const teamSelectUI = new TeamSelectUI();
+teamSelectUI.hide();
+gameRoot.appendChild(teamSelectUI.root);
+
+const battleUI = new BattleUI();
+battleUI.hide();
+gameRoot.appendChild(battleUI.root);
 
 const saveManager = new SaveManager();
 let state = saveManager.load() ?? createDefaultState();
@@ -110,6 +127,10 @@ ui.bind({
       ui.render(state, breedingSystem.getTimeUntilNextSplit(), breedingSystem.getMaxCapacity());
     }
   },
+  onBattle: () => {
+    stageSelectUI.render(state);
+    stageSelectUI.show();
+  },
   onCull: (id: string) => {
     state.slimes = state.slimes.filter((slime) => slime.id !== id);
   },
@@ -126,6 +147,51 @@ ui.bind({
     };
     state.currency += totalStats * (rarityMultiplier[slime.rarity] ?? 1);
     state.slimes = state.slimes.filter((item) => item.id !== id);
+  },
+});
+
+let currentStageId = '';
+
+stageSelectUI.bind({
+  onSelectStage: (stageId: string) => {
+    currentStageId = stageId;
+    stageSelectUI.hide();
+    teamSelectUI.render(state, stageId);
+    teamSelectUI.show();
+  },
+  onBack: () => {
+    stageSelectUI.hide();
+  },
+});
+
+teamSelectUI.bind({
+  onConfirm: (selectedIds: string[]) => {
+    teamSelectUI.hide();
+    const team = state.slimes.filter((s) => selectedIds.includes(s.id));
+    battleUI.show();
+    battleUI.startBattle(team, currentStageId);
+  },
+  onBack: () => {
+    teamSelectUI.hide();
+    stageSelectUI.render(state);
+    stageSelectUI.show();
+  },
+});
+
+battleUI.bind({
+  onFinish: (result: BattleResult) => {
+    battleUI.hide();
+    if (result.victory) {
+      const prev = state.stageProgress[currentStageId];
+      if (!prev || result.stars > prev.stars) {
+        state.stageProgress = {
+          ...state.stageProgress,
+          [currentStageId]: { stars: result.stars },
+        };
+      }
+      state.currency += result.rewards.gold;
+    }
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), breedingSystem.getMaxCapacity());
   },
 });
 

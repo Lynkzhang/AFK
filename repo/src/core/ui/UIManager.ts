@@ -5,6 +5,7 @@ interface UIHandlers {
   onNewGame: () => void;
   onSave: () => void;
   onLoad: () => void;
+  onBattle: () => void;
   onCull: (id: string) => void;
   onSell: (id: string) => void;
 }
@@ -55,8 +56,9 @@ export class UIManager {
     const newBtn = this.makeButton('新游戏');
     const saveBtn = this.makeButton('保存');
     const loadBtn = this.makeButton('加载');
+    const battleBtn = this.makeButton('⚔ 战斗');
 
-    actions.append(newBtn, saveBtn, loadBtn);
+    actions.append(newBtn, saveBtn, loadBtn, battleBtn);
 
     const sortActions = document.createElement('div');
     sortActions.className = 'sort-actions';
@@ -73,13 +75,14 @@ export class UIManager {
 
     this.root.append(title, currency, slimeCount, countdown, capacity, this.fullHintEl, actions, sortActions, listTitle, this.slimeListEl);
 
-    this.buttons = { newBtn, saveBtn, loadBtn, sortByRarityBtn, sortByStatsBtn };
+    this.buttons = { newBtn, saveBtn, loadBtn, battleBtn, sortByRarityBtn, sortByStatsBtn };
   }
 
   private readonly buttons: {
     newBtn: HTMLButtonElement;
     saveBtn: HTMLButtonElement;
     loadBtn: HTMLButtonElement;
+    battleBtn: HTMLButtonElement;
     sortByRarityBtn: HTMLButtonElement;
     sortByStatsBtn: HTMLButtonElement;
   };
@@ -95,6 +98,7 @@ export class UIManager {
     this.buttons.newBtn.onclick = handlers.onNewGame;
     this.buttons.saveBtn.onclick = handlers.onSave;
     this.buttons.loadBtn.onclick = handlers.onLoad;
+    this.buttons.battleBtn.onclick = handlers.onBattle;
     this.buttons.sortByRarityBtn.onclick = () => {
       this.sortMode = 'rarity';
     };
