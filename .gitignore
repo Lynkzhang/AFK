@@ -1,0 +1,8 @@
+workspace/
+skills/
+knowledge/
+c/
+spec.md
+node_modules/
+dist/
+*.log
