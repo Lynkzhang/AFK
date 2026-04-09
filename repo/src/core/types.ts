@@ -74,11 +74,31 @@ export interface StageProgress {
   stars: 0 | 1 | 2 | 3;
 }
 
+export type ItemType = 'mutation-catalyst' | 'stat-booster' | 'rare-essence';
+
+export interface Item {
+  id: string;
+  name: string;
+  description: string;
+  type: ItemType;
+  quantity: number;
+}
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  currencyType: 'gold' | 'crystal';
+  itemType: ItemType;
+}
+
 export interface GameState {
   slimes: Slime[];
   breedingGrounds: BreedingGround[];
   facilities: Facility[];
   currency: number;
+  crystal: number;
   timestamp: number;
   /** stageId → StageProgress 的映射。键如 "1-1", "1-10" */
   stageProgress: Record<string, StageProgress>;
@@ -86,4 +106,6 @@ export interface GameState {
   archivedSlimes: Slime[];
   /** 封存库容量上限，默认 10 */
   archiveCapacity: number;
+  /** 背包道具 */
+  items: Item[];
 }

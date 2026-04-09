@@ -11,11 +11,14 @@ import { TeamSelectUI } from './core/ui/TeamSelectUI';
 import { BattleUI } from './core/ui/BattleUI';
 import { ArchiveUI } from './core/ui/ArchiveUI';
 import { FacilityUI } from './core/ui/FacilityUI';
+import { ShopUI } from './core/ui/ShopUI';
 import type { BattleResult } from './core/combat/CombatTypes';
 import { initGM } from './core/debug/GMCommands';
 import { archiveSlime, unarchiveSlime, removeArchivedSlime } from './core/systems/ArchiveSystem';
 import { evaluatePrice } from './core/systems/EvaluationSystem';
 import { FacilitySystem, DEFAULT_FACILITIES } from './core/systems/FacilitySystem';
+import { ShopSystem } from './core/systems/ShopSystem';
+import { ItemSystem } from './core/systems/ItemSystem';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('App root not found');
@@ -69,11 +72,30 @@ function createDefaultState(): GameState {
     ],
     facilities: DEFAULT_FACILITIES.map((f) => ({ ...f })),
     currency: 100,
+    crystal: 0,
     timestamp: Date.now(),
     stageProgress: {},
     archivedSlimes: [],
     archiveCapacity: 10,
+    items: [],
   };
+}
+
+function migrateState(state: GameState): void {
+  const s = state as unknown as Record<string, unknown>;
+  if (!Array.isArray(s['archivedSlimes'])) s['archivedSlimes'] = [];
+  if (typeof s['archiveCapacity'] !== 'number') s['archiveCapacity'] = 10;
+  if (typeof s['crystal'] !== 'number') s['crystal'] = 0;
+  if (!Array.isArray(s['items'])) s['items'] = [];
+  if (!Array.isArray(state.facilities) || state.facilities.length === 0) {
+    state.facilities = DEFAULT_FACILITIES.map((f) => ({ ...f }));
+  } else {
+    for (const f of state.facilities) {
+      if (typeof f.maxLevel !== 'number') {
+        f.maxLevel = 10;
+      }
+    }
+  }
 }
 
 const gameRoot = document.createElement('div');
@@ -108,27 +130,13 @@ const facilityUI = new FacilityUI();
 facilityUI.hide();
 gameRoot.appendChild(facilityUI.root);
 
+const shopUI = new ShopUI();
+shopUI.hide();
+gameRoot.appendChild(shopUI.root);
+
 const saveManager = new SaveManager();
 let state = saveManager.load() ?? createDefaultState();
-// Migration for old saves missing archive fields
-{
-  const s = state as unknown as Record<string, unknown>;
-  if (!Array.isArray(s['archivedSlimes'])) s['archivedSlimes'] = [];
-  if (typeof s['archiveCapacity'] !== 'number') s['archiveCapacity'] = 10;
-}
-// Migration for old saves missing facilities
-{
-  if (!Array.isArray(state.facilities) || state.facilities.length === 0) {
-    state.facilities = DEFAULT_FACILITIES.map((f) => ({ ...f }));
-  } else {
-    // Ensure each facility has maxLevel
-    for (const f of state.facilities) {
-      if (typeof f.maxLevel !== 'number') {
-        f.maxLevel = 10;
-      }
-    }
-  }
-}
+migrateState(state);
 
 const scene = new SceneManager(sceneRoot);
 const breedingSystem = new BreedingSystem({ splitIntervalMs: 10000, maxCapacity: 12 });
@@ -163,19 +171,7 @@ ui.bind({
     const loaded = saveManager.load();
     if (loaded) {
       state = loaded;
-      const s = state as unknown as Record<string, unknown>;
-      if (!Array.isArray(s['archivedSlimes'])) s['archivedSlimes'] = [];
-      if (typeof s['archiveCapacity'] !== 'number') s['archiveCapacity'] = 10;
-      // Migration for facilities on load
-      if (!Array.isArray(state.facilities) || state.facilities.length === 0) {
-        state.facilities = DEFAULT_FACILITIES.map((f) => ({ ...f }));
-      } else {
-        for (const f of state.facilities) {
-          if (typeof f.maxLevel !== 'number') {
-            f.maxLevel = 10;
-          }
-        }
-      }
+      migrateState(state);
       ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
     }
   },
@@ -204,6 +200,10 @@ ui.bind({
     facilityUI.render(state);
     facilityUI.show();
   },
+  onOpenShop: () => {
+    shopUI.render(state);
+    shopUI.show();
+  },
 });
 
 facilityUI.bind({
@@ -214,6 +214,23 @@ facilityUI.bind({
   },
   onBack: () => {
     facilityUI.hide();
+  },
+});
+
+shopUI.bind({
+  onBuy: (shopItemId: string) => {
+    ShopSystem.buyItem(state, shopItemId);
+    shopUI.render(state);
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+  },
+  onUseItem: (itemType: string) => {
+    // For stat-booster, use first slime as target. In a real UI you'd pick.
+    const targetSlime = state.slimes[0];
+    ItemSystem.useItem(state, itemType as 'mutation-catalyst' | 'stat-booster' | 'rare-essence', targetSlime?.id);
+    shopUI.render(state);
+  },
+  onBack: () => {
+    shopUI.hide();
   },
 });
 
@@ -257,6 +274,7 @@ battleUI.bind({
         };
       }
       state.currency += result.rewards.gold;
+      state.crystal += result.rewards.crystals;
     }
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
