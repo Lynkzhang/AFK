@@ -14,10 +14,10 @@ namespace SlimeEvolution.Systems
         // ── 变异概率常量（可由 BreedingGroundConfig 覆盖） ───────────────
         private const float BASE_STAT_MUTATION_CHANCE  = 0.6f;   // 某项属性发生变化的概率
         private const float STAT_VARIANCE_RATIO        = 0.15f;  // 属性波动幅度（±15%）
-        private const float TRAIT_INHERIT_CHANCE       = 0.7f;   // 继承亲代特性的概率
-        private const float NEW_TRAIT_CHANCE           = 0.2f;   // 获得全新特性的概率
-        private const float SKILL_INHERIT_CHANCE       = 0.6f;   // 继承亲代技能的概率
-        private const float NEW_SKILL_CHANCE           = 0.15f;  // 获得全新技能的概率
+        private const float TRAIT_INHERIT_CHANCE       = 0.5f;   // 继承亲代特性的概率（策划定义 50%）
+        private const float NEW_TRAIT_CHANCE           = 0.1f;   // 获得全新特性的概率（策划定义 10%）
+        private const float SKILL_INHERIT_CHANCE       = 0.5f;   // 继承亲代技能的概率（策划定义 50%）
+        private const float NEW_SKILL_CHANCE           = 0.1f;   // 获得全新技能的概率（策划定义 10%）
         private const float RARITY_UPGRADE_CHANCE      = 0.05f;  // 稀有度升级的概率
 
         // ─────────────────────────────────────────────────────────────────

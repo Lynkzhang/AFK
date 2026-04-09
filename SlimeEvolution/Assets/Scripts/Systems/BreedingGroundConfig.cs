@@ -13,11 +13,11 @@ namespace SlimeEvolution.Systems
     {
         [Header("场地容量")]
         [Tooltip("培养场地最多可容纳的史莱姆数量")]
-        public int maxCapacity = 20;
+        public int maxCapacity = 10;
 
         [Header("分裂参数")]
         [Tooltip("史莱姆两次分裂之间的基础冷却时间（秒）")]
-        public float splitInterval = 10f;
+        public float splitInterval = 30f;
 
         [Tooltip("加速倍率（来自设施升级；1.0 = 无加速）")]
         [Range(1f, 10f)]
