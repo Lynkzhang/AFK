@@ -1,0 +1,28 @@
+{
+  "slimes": [
+    {
+      "slimeName": "基础绿色史莱姆",
+      "description": "最基础的史莱姆，性格温和，适合新手培养",
+      "rarity": "Common",
+      "baseStats": { "HP": 100, "ATK": 10, "DEF": 8, "SPD": 5, "MUT": 3 },
+      "possibleTraits": [],
+      "possibleSkills": ["粘液喷射"]
+    },
+    {
+      "slimeName": "烈焰史莱姆",
+      "description": "带有火焰特质的攻击型史莱姆，善于群体输出",
+      "rarity": "Uncommon",
+      "baseStats": { "HP": 80, "ATK": 15, "DEF": 5, "SPD": 8, "MUT": 5 },
+      "possibleTraits": ["坚韧表皮"],
+      "possibleSkills": ["粘液喷射", "火焰吐息"]
+    },
+    {
+      "slimeName": "寒冰史莱姆",
+      "description": "冰冷体质的防御型史莱姆，擅长保护队友",
+      "rarity": "Uncommon",
+      "baseStats": { "HP": 120, "ATK": 8, "DEF": 15, "SPD": 3, "MUT": 4 },
+      "possibleTraits": ["坚韧表皮"],
+      "possibleSkills": ["粘液喷射", "护盾"]
+    }
+  ]
+}
