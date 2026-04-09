@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Internal workspace files (not part of game code)
+workspace/
+skills/
+knowledge/
