@@ -9,8 +9,11 @@ import { UIManager } from './core/ui/UIManager';
 import { StageSelectUI } from './core/ui/StageSelectUI';
 import { TeamSelectUI } from './core/ui/TeamSelectUI';
 import { BattleUI } from './core/ui/BattleUI';
+import { ArchiveUI } from './core/ui/ArchiveUI';
 import type { BattleResult } from './core/combat/CombatTypes';
 import { initGM } from './core/debug/GMCommands';
+import { archiveSlime, unarchiveSlime, removeArchivedSlime } from './core/systems/ArchiveSystem';
+import { evaluatePrice } from './core/systems/EvaluationSystem';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('App root not found');
@@ -66,6 +69,8 @@ function createDefaultState(): GameState {
     currency: 100,
     timestamp: Date.now(),
     stageProgress: {},
+    archivedSlimes: [],
+    archiveCapacity: 10,
   };
 }
 
@@ -92,8 +97,19 @@ const battleUI = new BattleUI();
 battleUI.hide();
 gameRoot.appendChild(battleUI.root);
 
+const archiveUI = new ArchiveUI();
+archiveUI.hide();
+archiveUI.setPriceEvaluator(evaluatePrice);
+gameRoot.appendChild(archiveUI.root);
+
 const saveManager = new SaveManager();
 let state = saveManager.load() ?? createDefaultState();
+// Migration for old saves missing archive fields
+{
+  const s = state as unknown as Record<string, unknown>;
+  if (!Array.isArray(s['archivedSlimes'])) s['archivedSlimes'] = [];
+  if (typeof s['archiveCapacity'] !== 'number') s['archiveCapacity'] = 10;
+}
 
 const scene = new SceneManager(sceneRoot);
 const breedingSystem = new BreedingSystem({ splitIntervalMs: 10000, maxCapacity: 12 });
@@ -124,6 +140,9 @@ ui.bind({
     const loaded = saveManager.load();
     if (loaded) {
       state = loaded;
+      const s = state as unknown as Record<string, unknown>;
+      if (!Array.isArray(s['archivedSlimes'])) s['archivedSlimes'] = [];
+      if (typeof s['archiveCapacity'] !== 'number') s['archiveCapacity'] = 10;
       ui.render(state, breedingSystem.getTimeUntilNextSplit(), breedingSystem.getMaxCapacity());
     }
   },
@@ -137,16 +156,16 @@ ui.bind({
   onSell: (id: string) => {
     const slime = state.slimes.find((item) => item.id === id);
     if (!slime) return;
-    const totalStats = slime.stats.health + slime.stats.attack + slime.stats.defense + slime.stats.speed;
-    const rarityMultiplier: Record<Rarity, number> = {
-      [Rarity.Common]: 1,
-      [Rarity.Uncommon]: 2,
-      [Rarity.Rare]: 5,
-      [Rarity.Epic]: 10,
-      [Rarity.Legendary]: 25,
-    };
-    state.currency += totalStats * (rarityMultiplier[slime.rarity] ?? 1);
+    state.currency += evaluatePrice(slime);
     state.slimes = state.slimes.filter((item) => item.id !== id);
+  },
+  onArchive: (id: string) => {
+    archiveSlime(state, id);
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), breedingSystem.getMaxCapacity());
+  },
+  onOpenArchive: () => {
+    archiveUI.render(state);
+    archiveUI.show();
   },
 });
 
@@ -167,7 +186,7 @@ stageSelectUI.bind({
 teamSelectUI.bind({
   onConfirm: (selectedIds: string[]) => {
     teamSelectUI.hide();
-    const team = state.slimes.filter((s) => selectedIds.includes(s.id));
+    const team = state.archivedSlimes.filter((s) => selectedIds.includes(s.id));
     battleUI.show();
     battleUI.startBattle(team, currentStageId);
   },
@@ -192,6 +211,26 @@ battleUI.bind({
       state.currency += result.rewards.gold;
     }
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), breedingSystem.getMaxCapacity());
+  },
+});
+
+archiveUI.bind({
+  onUnarchive: (slimeId: string) => {
+    unarchiveSlime(state, slimeId);
+    archiveUI.render(state);
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), breedingSystem.getMaxCapacity());
+  },
+  onSell: (slimeId: string) => {
+    const slime = state.archivedSlimes.find((s) => s.id === slimeId);
+    if (slime) {
+      state.currency += evaluatePrice(slime);
+      removeArchivedSlime(state, slimeId);
+      archiveUI.render(state);
+      ui.render(state, breedingSystem.getTimeUntilNextSplit(), breedingSystem.getMaxCapacity());
+    }
+  },
+  onBack: () => {
+    archiveUI.hide();
   },
 });
 

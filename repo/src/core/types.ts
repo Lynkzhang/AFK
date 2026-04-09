@@ -81,4 +81,8 @@ export interface GameState {
   timestamp: number;
   /** stageId → StageProgress 的映射。键如 "1-1", "1-10" */
   stageProgress: Record<string, StageProgress>;
+  /** 封存库中的史莱姆 */
+  archivedSlimes: Slime[];
+  /** 封存库容量上限，默认 10 */
+  archiveCapacity: number;
 }

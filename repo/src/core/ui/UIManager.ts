@@ -8,6 +8,8 @@ interface UIHandlers {
   onBattle: () => void;
   onCull: (id: string) => void;
   onSell: (id: string) => void;
+  onArchive: (id: string) => void;
+  onOpenArchive: () => void;
 }
 
 type SortMode = 'rarity' | 'stats';
@@ -58,7 +60,9 @@ export class UIManager {
     const loadBtn = this.makeButton('加载');
     const battleBtn = this.makeButton('⚔ 战斗');
 
-    actions.append(newBtn, saveBtn, loadBtn, battleBtn);
+    const archiveBtn = this.makeButton('📦 封存库');
+
+    actions.append(newBtn, saveBtn, loadBtn, battleBtn, archiveBtn);
 
     const sortActions = document.createElement('div');
     sortActions.className = 'sort-actions';
@@ -75,7 +79,7 @@ export class UIManager {
 
     this.root.append(title, currency, slimeCount, countdown, capacity, this.fullHintEl, actions, sortActions, listTitle, this.slimeListEl);
 
-    this.buttons = { newBtn, saveBtn, loadBtn, battleBtn, sortByRarityBtn, sortByStatsBtn };
+    this.buttons = { newBtn, saveBtn, loadBtn, battleBtn, archiveBtn, sortByRarityBtn, sortByStatsBtn };
   }
 
   private readonly buttons: {
@@ -83,6 +87,7 @@ export class UIManager {
     saveBtn: HTMLButtonElement;
     loadBtn: HTMLButtonElement;
     battleBtn: HTMLButtonElement;
+    archiveBtn: HTMLButtonElement;
     sortByRarityBtn: HTMLButtonElement;
     sortByStatsBtn: HTMLButtonElement;
   };
@@ -99,6 +104,7 @@ export class UIManager {
     this.buttons.saveBtn.onclick = handlers.onSave;
     this.buttons.loadBtn.onclick = handlers.onLoad;
     this.buttons.battleBtn.onclick = handlers.onBattle;
+    this.buttons.archiveBtn.onclick = handlers.onOpenArchive;
     this.buttons.sortByRarityBtn.onclick = () => {
       this.sortMode = 'rarity';
     };
@@ -157,7 +163,12 @@ export class UIManager {
       this.handlers?.onSell(slime.id);
     };
 
-    actions.append(cullBtn, sellBtn);
+    const archiveBtn = this.makeButton('封存');
+    archiveBtn.onclick = () => {
+      this.handlers?.onArchive(slime.id);
+    };
+
+    actions.append(cullBtn, sellBtn, archiveBtn);
     item.append(head, info, actions);
     return item;
   }

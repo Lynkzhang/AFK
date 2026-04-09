@@ -3,6 +3,8 @@ import { Rarity } from '../types';
 import type { BattleResult } from '../combat/CombatTypes';
 import { runBattle } from '../combat/CombatEngine';
 import { getStage } from '../combat/StageData';
+import { archiveSlime as doArchive, unarchiveSlime as doUnarchive } from '../systems/ArchiveSystem';
+import { evaluatePrice as doEvaluatePrice } from '../systems/EvaluationSystem';
 
 /** Getter / Setter injected from main.ts */
 type GetState = () => GameState;
@@ -17,6 +19,10 @@ interface GMApi {
   setCurrency(n: number): void;
   startBattle(stageId: string): BattleResult;
   autoBattle(stageId: string): BattleResult;
+  archiveSlime(id: string): { success: boolean; reason?: string };
+  unarchiveSlime(id: string): { success: boolean; reason?: string };
+  getArchivedSlimes(): Slime[];
+  evaluatePrice(id: string): number;
 }
 
 declare global {
@@ -133,6 +139,26 @@ export function initGM(getState: GetState, setState: SetState): void {
     },
     autoBattle(stageId: string): BattleResult {
       return runBattleWithTeam(getState, setState, stageId);
+    },
+    archiveSlime(id: string) {
+      const s = getState();
+      const result = doArchive(s, id);
+      setState({ ...s, slimes: [...s.slimes], archivedSlimes: [...s.archivedSlimes] });
+      return result;
+    },
+    unarchiveSlime(id: string) {
+      const s = getState();
+      const result = doUnarchive(s, id);
+      setState({ ...s, slimes: [...s.slimes], archivedSlimes: [...s.archivedSlimes] });
+      return result;
+    },
+    getArchivedSlimes() {
+      return getState().archivedSlimes;
+    },
+    evaluatePrice(id: string) {
+      const s = getState();
+      const slime = s.slimes.find((sl) => sl.id === id) ?? s.archivedSlimes.find((sl) => sl.id === id);
+      return slime ? doEvaluatePrice(slime) : 0;
     },
   };
 
