@@ -14,9 +14,9 @@ function createDefaultSlimes(): Slime[] {
     {
       id: 'slime-common',
       name: 'Green Slime',
-      stats: { health: 20, attack: 5, defense: 3, speed: 4 },
-      traits: [{ id: 'fresh', name: 'Fresh', description: 'Newly born' }],
-      skills: [{ id: 'jump', name: 'Jump', power: 5, cooldown: 1 }],
+      stats: { health: 20, attack: 5, defense: 3, speed: 4, mut: 0.05 },
+      traits: [{ id: 'fresh', name: 'Fresh', description: 'Newly born', rarity: Rarity.Common, effect: '无特殊效果' }],
+      skills: [{ id: 'jump', name: 'Jump', type: 'attack', targetType: 'single', damage: 5, cooldown: 1 }],
       rarity: Rarity.Common,
       generation: 1,
       parentId: null,
@@ -26,9 +26,9 @@ function createDefaultSlimes(): Slime[] {
     {
       id: 'slime-rare',
       name: 'Blue Slime',
-      stats: { health: 28, attack: 7, defense: 4, speed: 5 },
-      traits: [{ id: 'calm', name: 'Calm', description: 'Stable and focused' }],
-      skills: [{ id: 'splash', name: 'Splash', power: 8, cooldown: 2 }],
+      stats: { health: 28, attack: 7, defense: 4, speed: 5, mut: 0.05 },
+      traits: [{ id: 'calm', name: 'Calm', description: 'Stable and focused', rarity: Rarity.Common, effect: '无特殊效果' }],
+      skills: [{ id: 'splash', name: 'Splash', type: 'attack', targetType: 'single', damage: 8, cooldown: 2 }],
       rarity: Rarity.Rare,
       generation: 1,
       parentId: null,
@@ -38,9 +38,9 @@ function createDefaultSlimes(): Slime[] {
     {
       id: 'slime-epic',
       name: 'Purple Slime',
-      stats: { health: 36, attack: 10, defense: 5, speed: 6 },
-      traits: [{ id: 'arcane', name: 'Arcane', description: 'Mystic energy' }],
-      skills: [{ id: 'pulse', name: 'Arcane Pulse', power: 12, cooldown: 3 }],
+      stats: { health: 36, attack: 10, defense: 5, speed: 6, mut: 0.05 },
+      traits: [{ id: 'arcane', name: 'Arcane', description: 'Mystic energy', rarity: Rarity.Common, effect: '无特殊效果' }],
+      skills: [{ id: 'pulse', name: 'Arcane Pulse', type: 'attack', targetType: 'single', damage: 12, cooldown: 3 }],
       rarity: Rarity.Epic,
       generation: 1,
       parentId: null,
@@ -54,9 +54,9 @@ function createDefaultState(): GameState {
   return {
     slimes: createDefaultSlimes(),
     breedingGrounds: [
-      { id: 'bg-1', name: 'Starter Pen', level: 1, capacity: 4, assignedSlimeIds: [] },
+      { id: 'bg-1', name: 'Starter Pen', level: 1, capacity: 4, slimes: [], facilityLevel: 1 },
     ],
-    facilities: [{ id: 'fac-1', name: 'Nursery', level: 1, active: true }],
+    facilities: [{ id: 'fac-1', name: 'Nursery', level: 1, active: true, effect: '加速培育', upgradeCost: 50 }],
     currency: 100,
     timestamp: Date.now(),
   };
