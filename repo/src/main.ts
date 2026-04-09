@@ -10,10 +10,12 @@ import { StageSelectUI } from './core/ui/StageSelectUI';
 import { TeamSelectUI } from './core/ui/TeamSelectUI';
 import { BattleUI } from './core/ui/BattleUI';
 import { ArchiveUI } from './core/ui/ArchiveUI';
+import { FacilityUI } from './core/ui/FacilityUI';
 import type { BattleResult } from './core/combat/CombatTypes';
 import { initGM } from './core/debug/GMCommands';
 import { archiveSlime, unarchiveSlime, removeArchivedSlime } from './core/systems/ArchiveSystem';
 import { evaluatePrice } from './core/systems/EvaluationSystem';
+import { FacilitySystem, DEFAULT_FACILITIES } from './core/systems/FacilitySystem';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('App root not found');
@@ -65,7 +67,7 @@ function createDefaultState(): GameState {
     breedingGrounds: [
       { id: 'bg-1', name: 'Starter Pen', level: 1, capacity: 4, slimes: [], facilityLevel: 1 },
     ],
-    facilities: [{ id: 'fac-1', name: 'Nursery', level: 1, active: true, effect: '加速培育', upgradeCost: 50 }],
+    facilities: DEFAULT_FACILITIES.map((f) => ({ ...f })),
     currency: 100,
     timestamp: Date.now(),
     stageProgress: {},
@@ -102,6 +104,10 @@ archiveUI.hide();
 archiveUI.setPriceEvaluator(evaluatePrice);
 gameRoot.appendChild(archiveUI.root);
 
+const facilityUI = new FacilityUI();
+facilityUI.hide();
+gameRoot.appendChild(facilityUI.root);
+
 const saveManager = new SaveManager();
 let state = saveManager.load() ?? createDefaultState();
 // Migration for old saves missing archive fields
@@ -110,15 +116,32 @@ let state = saveManager.load() ?? createDefaultState();
   if (!Array.isArray(s['archivedSlimes'])) s['archivedSlimes'] = [];
   if (typeof s['archiveCapacity'] !== 'number') s['archiveCapacity'] = 10;
 }
+// Migration for old saves missing facilities
+{
+  if (!Array.isArray(state.facilities) || state.facilities.length === 0) {
+    state.facilities = DEFAULT_FACILITIES.map((f) => ({ ...f }));
+  } else {
+    // Ensure each facility has maxLevel
+    for (const f of state.facilities) {
+      if (typeof f.maxLevel !== 'number') {
+        f.maxLevel = 10;
+      }
+    }
+  }
+}
 
 const scene = new SceneManager(sceneRoot);
 const breedingSystem = new BreedingSystem({ splitIntervalMs: 10000, maxCapacity: 12 });
 const loop = new GameLoop({
   update: (deltaTime, elapsedTime) => {
     state.timestamp = Date.now();
-    breedingSystem.update(state, deltaTime);
+    const dynamicConfig = {
+      splitIntervalMs: FacilitySystem.getSplitInterval(state),
+      maxCapacity: FacilitySystem.getMaxCapacity(state),
+    };
+    breedingSystem.update(state, deltaTime, dynamicConfig);
     scene.update(state, elapsedTime);
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), breedingSystem.getMaxCapacity());
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
   render: () => {
     scene.render();
@@ -130,7 +153,7 @@ const stopAutoSave = saveManager.startAutoSave(10000, () => state);
 ui.bind({
   onNewGame: () => {
     state = createDefaultState();
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), breedingSystem.getMaxCapacity());
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
   onSave: () => {
     state.timestamp = Date.now();
@@ -143,7 +166,17 @@ ui.bind({
       const s = state as unknown as Record<string, unknown>;
       if (!Array.isArray(s['archivedSlimes'])) s['archivedSlimes'] = [];
       if (typeof s['archiveCapacity'] !== 'number') s['archiveCapacity'] = 10;
-      ui.render(state, breedingSystem.getTimeUntilNextSplit(), breedingSystem.getMaxCapacity());
+      // Migration for facilities on load
+      if (!Array.isArray(state.facilities) || state.facilities.length === 0) {
+        state.facilities = DEFAULT_FACILITIES.map((f) => ({ ...f }));
+      } else {
+        for (const f of state.facilities) {
+          if (typeof f.maxLevel !== 'number') {
+            f.maxLevel = 10;
+          }
+        }
+      }
+      ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
     }
   },
   onBattle: () => {
@@ -161,11 +194,26 @@ ui.bind({
   },
   onArchive: (id: string) => {
     archiveSlime(state, id);
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), breedingSystem.getMaxCapacity());
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
   onOpenArchive: () => {
     archiveUI.render(state);
     archiveUI.show();
+  },
+  onOpenFacility: () => {
+    facilityUI.render(state);
+    facilityUI.show();
+  },
+});
+
+facilityUI.bind({
+  onUpgrade: (id: string) => {
+    FacilitySystem.upgrade(state, id);
+    facilityUI.render(state);
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+  },
+  onBack: () => {
+    facilityUI.hide();
   },
 });
 
@@ -210,7 +258,7 @@ battleUI.bind({
       }
       state.currency += result.rewards.gold;
     }
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), breedingSystem.getMaxCapacity());
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
 });
 
@@ -218,7 +266,7 @@ archiveUI.bind({
   onUnarchive: (slimeId: string) => {
     unarchiveSlime(state, slimeId);
     archiveUI.render(state);
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), breedingSystem.getMaxCapacity());
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
   onSell: (slimeId: string) => {
     const slime = state.archivedSlimes.find((s) => s.id === slimeId);
@@ -226,7 +274,7 @@ archiveUI.bind({
       state.currency += evaluatePrice(slime);
       removeArchivedSlime(state, slimeId);
       archiveUI.render(state);
-      ui.render(state, breedingSystem.getTimeUntilNextSplit(), breedingSystem.getMaxCapacity());
+      ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
     }
   },
   onBack: () => {
@@ -239,7 +287,7 @@ window.addEventListener('beforeunload', () => {
   saveManager.save(state);
 });
 
-ui.render(state, breedingSystem.getTimeUntilNextSplit(), breedingSystem.getMaxCapacity());
+ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
 initGM(() => state, (s) => { state = s; });
 
 loop.start();

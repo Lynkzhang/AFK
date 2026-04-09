@@ -15,11 +15,14 @@ export class BreedingSystem {
     this.config = { splitIntervalMs: 10000, maxCapacity: 12, ...config };
   }
 
-  update(state: GameState, deltaTime: number): void {
-    if (state.slimes.length >= this.config.maxCapacity) return;
+  update(state: GameState, deltaTime: number, dynamicConfig?: { splitIntervalMs?: number; maxCapacity?: number }): void {
+    const splitInterval = dynamicConfig?.splitIntervalMs ?? this.config.splitIntervalMs;
+    const maxCapacity = dynamicConfig?.maxCapacity ?? this.config.maxCapacity;
+
+    if (state.slimes.length >= maxCapacity) return;
 
     this.accumulated += deltaTime * 1000;
-    if (this.accumulated >= this.config.splitIntervalMs) {
+    if (this.accumulated >= splitInterval) {
       this.accumulated = 0;
       const parent = state.slimes[Math.floor(Math.random() * state.slimes.length)];
       if (parent) {
