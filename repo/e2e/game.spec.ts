@@ -7,6 +7,8 @@
  * 3. Full battle flow (select stage → select team → battle → result)
  * 4. Save / Load
  * 5. Split / Sell
+ * 6. Archive System
+ * 7. Facility System
  */
 import { test, expect, type Page } from '@playwright/test';
 
@@ -39,9 +41,9 @@ test.describe('Page Load', () => {
     // Slime count
     await expect(page.locator('.ui-panel').locator('text=Slimes:')).toBeVisible();
 
-    // Buttons – 新游戏, 保存, 加载, 战斗, 封存库
+    // Buttons – 新游戏, 保存, 加载, 战斗, 封存库, 设施
     const buttons = page.locator('.ui-actions button');
-    await expect(buttons).toHaveCount(5);
+    await expect(buttons).toHaveCount(6);
 
     // Slime list section
     await expect(page.locator('.slime-list')).toBeVisible();
@@ -371,5 +373,119 @@ test.describe('Archive System', () => {
     await page.evaluate((id) => window.__GM!.setStats(id, { health: 999, attack: 999 }), firstId);
     const boostedPrice = await page.evaluate((id) => window.__GM!.evaluatePrice(id), firstId);
     expect(boostedPrice).toBeGreaterThan(price);
+  });
+});
+
+// =========================================================
+// Test 7: Facility System
+// =========================================================
+test.describe('Facility System', () => {
+  test('upgrade deducts gold, increases level, and max level blocks further upgrades', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(300);
+
+    // Give enough gold
+    await page.evaluate(() => window.__GM!.setCurrency(999999));
+
+    // Get initial facility state
+    const facilities = await page.evaluate(() => window.__GM!.getFacilities());
+    expect(facilities.length).toBe(4);
+
+    const facilityId = 'breeding-accelerator';
+    const initialLevel = facilities.find((f: { id: string }) => f.id === facilityId)!.level as number;
+    expect(initialLevel).toBe(1);
+
+    // Upgrade once
+    const currencyBefore = await page.evaluate(() => window.__GM!.getState().currency) as number;
+    const upgraded = await page.evaluate((id) => window.__GM!.upgradeFacility(id), facilityId);
+    expect(upgraded).toBe(true);
+
+    const afterUpgrade = await page.evaluate(() => window.__GM!.getState());
+    const facilityAfter = afterUpgrade.facilities.find((f: { id: string }) => f.id === facilityId)!;
+    expect(facilityAfter.level).toBe(initialLevel + 1);
+    expect(afterUpgrade.currency).toBeLessThan(currencyBefore);
+
+    // Upgrade to max level
+    for (let i = facilityAfter.level; i < 10; i++) {
+      await page.evaluate((id) => window.__GM!.upgradeFacility(id), facilityId);
+    }
+
+    const maxState = await page.evaluate(() => window.__GM!.getState());
+    const maxFacility = maxState.facilities.find((f: { id: string }) => f.id === facilityId)!;
+    expect(maxFacility.level).toBe(10);
+
+    // Try to upgrade beyond max — should fail
+    const overUpgrade = await page.evaluate((id) => window.__GM!.upgradeFacility(id), facilityId);
+    expect(overUpgrade).toBe(false);
+  });
+
+  test('save and load preserves facility levels', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(300);
+
+    // Give gold and upgrade
+    await page.evaluate(() => window.__GM!.setCurrency(999999));
+    await page.evaluate(() => window.__GM!.upgradeFacility('field-expansion'));
+    await page.evaluate(() => window.__GM!.upgradeFacility('field-expansion'));
+
+    const beforeSave = await page.evaluate(() =>
+      window.__GM!.getFacilities().find((f: { id: string }) => f.id === 'field-expansion')
+    );
+    expect(beforeSave.level).toBe(3);
+
+    // Save
+    await page.locator('.ui-actions button', { hasText: '保存' }).click();
+    await page.waitForTimeout(300);
+
+    // Reset state
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(300);
+
+    // After new game, level should be 1
+    const afterReset = await page.evaluate(() =>
+      window.__GM!.getFacilities().find((f: { id: string }) => f.id === 'field-expansion')
+    );
+    expect(afterReset.level).toBe(1);
+
+    // Load
+    await page.locator('.ui-actions button', { hasText: '加载' }).click();
+    await page.waitForTimeout(300);
+
+    // Level should be restored to 3
+    const afterLoad = await page.evaluate(() =>
+      window.__GM!.getFacilities().find((f: { id: string }) => f.id === 'field-expansion')
+    );
+    expect(afterLoad.level).toBe(3);
+  });
+
+  test('insufficient gold prevents upgrade', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(300);
+
+    // Set currency to 0
+    await page.evaluate(() => window.__GM!.setCurrency(0));
+
+    const facilityId = 'breeding-accelerator';
+    const result = await page.evaluate((id) => window.__GM!.upgradeFacility(id), facilityId);
+    expect(result).toBe(false);
+
+    // Level should remain 1
+    const facility = await page.evaluate(() =>
+      window.__GM!.getFacilities().find((f: { id: string }) => f.id === 'breeding-accelerator')
+    );
+    expect(facility.level).toBe(1);
+
+    // Currency should still be 0
+    const currency = await page.evaluate(() => window.__GM!.getState().currency);
+    expect(currency).toBe(0);
   });
 });

@@ -10,6 +10,7 @@ interface UIHandlers {
   onSell: (id: string) => void;
   onArchive: (id: string) => void;
   onOpenArchive: () => void;
+  onOpenFacility: () => void;
 }
 
 type SortMode = 'rarity' | 'stats';
@@ -62,7 +63,9 @@ export class UIManager {
 
     const archiveBtn = this.makeButton('📦 封存库');
 
-    actions.append(newBtn, saveBtn, loadBtn, battleBtn, archiveBtn);
+    const facilityBtn = this.makeButton('🏗 设施');
+
+    actions.append(newBtn, saveBtn, loadBtn, battleBtn, archiveBtn, facilityBtn);
 
     const sortActions = document.createElement('div');
     sortActions.className = 'sort-actions';
@@ -79,7 +82,7 @@ export class UIManager {
 
     this.root.append(title, currency, slimeCount, countdown, capacity, this.fullHintEl, actions, sortActions, listTitle, this.slimeListEl);
 
-    this.buttons = { newBtn, saveBtn, loadBtn, battleBtn, archiveBtn, sortByRarityBtn, sortByStatsBtn };
+    this.buttons = { newBtn, saveBtn, loadBtn, battleBtn, archiveBtn, facilityBtn, sortByRarityBtn, sortByStatsBtn };
   }
 
   private readonly buttons: {
@@ -88,6 +91,7 @@ export class UIManager {
     loadBtn: HTMLButtonElement;
     battleBtn: HTMLButtonElement;
     archiveBtn: HTMLButtonElement;
+    facilityBtn: HTMLButtonElement;
     sortByRarityBtn: HTMLButtonElement;
     sortByStatsBtn: HTMLButtonElement;
   };
@@ -105,6 +109,7 @@ export class UIManager {
     this.buttons.loadBtn.onclick = handlers.onLoad;
     this.buttons.battleBtn.onclick = handlers.onBattle;
     this.buttons.archiveBtn.onclick = handlers.onOpenArchive;
+    this.buttons.facilityBtn.onclick = handlers.onOpenFacility;
     this.buttons.sortByRarityBtn.onclick = () => {
       this.sortMode = 'rarity';
     };
