@@ -96,7 +96,16 @@ function runBattleWithTeam(getState: GetState, setState: SetState, stageId: stri
 
   // Take up to 4 slimes
   const team = slimes.slice(0, 4);
-  return runBattle(team, stage);
+  const result = runBattle(team, stage);
+  if (result.victory) {
+    const updated = getState();
+    setState({
+      ...updated,
+      currency: updated.currency + result.rewards.gold,
+      crystal: updated.crystal + result.rewards.crystals,
+    });
+  }
+  return result;
 }
 
 export function initGM(getState: GetState, setState: SetState): void {
