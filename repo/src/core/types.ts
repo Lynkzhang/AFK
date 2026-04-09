@@ -68,10 +68,17 @@ export interface Facility {
   upgradeCost: number;
 }
 
+export interface StageProgress {
+  /** 最高获得星级，0 表示未通关 */
+  stars: 0 | 1 | 2 | 3;
+}
+
 export interface GameState {
   slimes: Slime[];
   breedingGrounds: BreedingGround[];
   facilities: Facility[];
   currency: number;
   timestamp: number;
+  /** stageId → StageProgress 的映射。键如 "1-1", "1-10" */
+  stageProgress: Record<string, StageProgress>;
 }

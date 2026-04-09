@@ -119,3 +119,170 @@ body,
   display: flex;
   gap: 8px;
 }
+
+/* ===== Battle UI Styles ===== */
+
+.overlay-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 14, 26, 0.95);
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.panel-title {
+  margin: 0 0 12px;
+  font-size: 22px;
+  color: #ffd700;
+}
+
+.back-btn {
+  align-self: flex-start;
+  margin-bottom: 10px;
+  cursor: pointer;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #ccc;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 14px;
+}
+
+.stage-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.stage-card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+
+.stage-card:hover { border-color: #ffd700; }
+.stage-card.cleared { border-color: #56d364; }
+
+.stage-name { font-size: 18px; font-weight: bold; margin-bottom: 4px; }
+.stage-stars { font-size: 16px; color: #ffd700; margin-bottom: 4px; }
+.stage-reward { font-size: 13px; color: #aab; }
+
+.team-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.confirm-btn {
+  cursor: pointer;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 15px;
+}
+
+.confirm-btn:disabled { background: #555; cursor: not-allowed; }
+
+.stage-label { font-size: 14px; color: #aab; margin-bottom: 4px; }
+
+.team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.team-slime-card {
+  background: rgba(255,255,255,0.06);
+  border: 2px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.team-slime-card:hover { border-color: #4f8cff; }
+.team-slime-card.selected { border-color: #4CAF50; background: rgba(76,175,80,0.15); }
+
+.team-slime-name { display: flex; align-items: center; gap: 8px; }
+.team-slime-stats, .team-slime-skills { font-size: 13px; color: #bbc; margin-top: 4px; }
+
+.battle-panel { gap: 8px; }
+.battle-turn-label { font-size: 18px; font-weight: bold; color: #ffd700; text-align: center; }
+
+.battle-units-row { display: flex; gap: 20px; justify-content: center; }
+.battle-side { flex: 1; max-width: 300px; }
+.battle-side h3 { margin: 0 0 6px; font-size: 15px; color: #ddd; }
+
+.unit-bar { margin-bottom: 6px; }
+.unit-name { font-size: 13px; margin-bottom: 2px; }
+
+.hp-bar-outer {
+  width: 100%;
+  height: 12px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.hp-bar-inner { height: 100%; border-radius: 6px; transition: width 0.3s; }
+.player-side .hp-bar-inner { background: #4CAF50; }
+.enemy-side .hp-bar-inner { background: #f44336; }
+
+.hp-text { font-size: 11px; color: #aab; margin-top: 1px; }
+
+.battle-controls { display: flex; justify-content: center; gap: 10px; }
+.battle-controls button {
+  cursor: pointer;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #ccc;
+  border-radius: 6px;
+  padding: 6px 16px;
+}
+
+.battle-log {
+  flex: 1;
+  min-height: 120px;
+  max-height: 300px;
+  overflow-y: auto;
+  background: rgba(0,0,0,0.3);
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.log-entry { padding: 2px 4px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.log-crit { color: #ff6b6b; }
+.log-heal { color: #4CAF50; }
+.log-dodge, .log-miss { color: #888; }
+.log-shield { color: #4f8cff; }
+
+.battle-result {
+  background: rgba(0,0,0,0.5);
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+}
+
+.result-victory { color: #4CAF50; font-size: 22px; }
+.result-defeat { color: #f44336; font-size: 22px; }
+.result-stars { font-size: 28px; color: #ffd700; margin: 8px 0; }
+.result-info { font-size: 14px; color: #ccc; margin-bottom: 8px; }
+.result-rewards { font-size: 14px; color: #aab; margin-bottom: 12px; }
+.result-rewards div { margin: 2px 0; }
