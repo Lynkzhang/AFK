@@ -593,4 +593,32 @@ test.describe('Shop & Item System', () => {
     const afterState = await page.evaluate(() => window.__GM!.getState());
     expect(afterState.crystal).toBe(50); // 100 - 50
   });
+
+  test('autoBattle on hard stage (1-6) awards crystals', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(300);
+
+    // Boost slimes to guarantee victory
+    await page.evaluate(() => {
+      const gm = window.__GM!;
+      for (const s of gm.getState().slimes) {
+        gm.setStats(s.id, { health: 9999, attack: 9999, defense: 9999, speed: 9999 });
+      }
+    });
+
+    // Record crystal before battle
+    const crystalBefore = await page.evaluate(() => window.__GM!.getState().crystal) as number;
+    expect(crystalBefore).toBe(0);
+
+    // Stage 1-6 awards 5 crystals on victory
+    const result = await page.evaluate(() => window.__GM!.autoBattle('1-6'));
+    expect((result as { victory: boolean }).victory).toBe(true);
+
+    // Crystal should have increased
+    const crystalAfter = await page.evaluate(() => window.__GM!.getState().crystal) as number;
+    expect(crystalAfter).toBeGreaterThan(crystalBefore);
+  });
 });
