@@ -192,6 +192,47 @@ namespace SlimeEvolution.Systems
             return true;
         }
 
+        /// <summary>
+        /// 从场地移除指定史莱姆（不出售，不剔除，仅移除引用）。
+        /// 用于封存系统将史莱姆从场地转移到封存库。
+        /// </summary>
+        public bool RemoveSlime(SlimeInstance slime)
+        {
+            if (slime == null || !slimes.Contains(slime)) return false;
+
+            slimes.Remove(slime);
+            OnSlimesChanged?.Invoke();
+            Debug.Log($"[BreedingGroundManager] Removed {slime.slimeName} from ground.");
+            return true;
+        }
+
+        /// <summary>
+        /// 向场地添加一只史莱姆（从封存库取回时使用）。
+        /// </summary>
+        public bool AddSlime(SlimeInstance slime)
+        {
+            if (slime == null) return false;
+            if (IsFull)
+            {
+                Debug.LogWarning("[BreedingGroundManager] Ground is full, cannot add slime.");
+                return false;
+            }
+
+            slime.isArchived = false;
+            slimes.Add(slime);
+            OnSlimesChanged?.Invoke();
+            Debug.Log($"[BreedingGroundManager] Added {slime.slimeName} to ground.");
+            return true;
+        }
+
+        /// <summary>
+        /// 获取场地中所有史莱姆的列表副本。
+        /// </summary>
+        public List<SlimeInstance> GetAllSlimes()
+        {
+            return new List<SlimeInstance>(slimes);
+        }
+
         #endregion
     }
 }
