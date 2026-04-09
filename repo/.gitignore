@@ -27,3 +27,7 @@ dist-ssr
 workspace/
 skills/
 knowledge/
+
+# Playwright
+test-results/
+playwright-report/
