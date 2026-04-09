@@ -66,6 +66,7 @@ export interface Facility {
   active: boolean;
   effect: string;
   upgradeCost: number;
+  maxLevel: number;
 }
 
 export interface StageProgress {
