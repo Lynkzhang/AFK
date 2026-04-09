@@ -3,25 +3,29 @@ using UnityEngine;
 namespace SlimeEvolution.Systems
 {
     using Core;
+    using Combat;
+    using UI;
 
     /// <summary>
     /// 游戏启动引导器（MonoBehaviour）。
     /// 职责：
-    ///   - 初始化场景中的核心系统（BreedingGroundManager）
-    ///   - 在编辑器没有配置时提供 fallback 提示
-    ///   - M2 阶段作为最小可运行入口点
-    ///
-    /// 使用方式：将此脚本挂载到场景中的 "GameBootstrap" GameObject。
+    ///   - 初始化场景中的核心系统
+    ///   - 集成 BreedingGroundManager、VaultManager、BattleManager
+    ///   - M3 阶段作为完整可运行入口点
     /// </summary>
     public class GameBootstrap : MonoBehaviour
     {
         // ── Inspector 引用 ────────────────────────────────────────────────
         [Header("系统引用")]
-        [Tooltip("BreedingGroundManager 组件引用（可留空，脚本会自动在场景中查找）")]
         [SerializeField] private BreedingGroundManager breedingGroundManager;
+        [SerializeField] private VaultManager vaultManager;
+        [SerializeField] private BattleManager battleManager;
+
+        [Header("UI 引用")]
+        [SerializeField] private BattleUI battleUI;
+        [SerializeField] private VaultUI vaultUI;
 
         [Header("配置")]
-        [Tooltip("培养场地配置 ScriptableObject（必须指定）")]
         [SerializeField] private BreedingGroundConfig breedingGroundConfig;
 
         // ─────────────────────────────────────────────────────────────────
@@ -35,7 +39,7 @@ namespace SlimeEvolution.Systems
 
         private void Start()
         {
-            Debug.Log("[GameBootstrap] Start — M2 BreedingSystem is running.");
+            Debug.Log("[GameBootstrap] Start — All systems running.");
             LogSystemStatus();
         }
 
@@ -44,9 +48,6 @@ namespace SlimeEvolution.Systems
         // ─────────────────────────────────────────────────────────────────
         #region Initialization
 
-        /// <summary>
-        /// 自动解析场景中的引用，若 Inspector 未指定则自动查找。
-        /// </summary>
         private void ResolveReferences()
         {
             if (breedingGroundManager == null)
@@ -55,16 +56,67 @@ namespace SlimeEvolution.Systems
                 if (breedingGroundManager == null)
                 {
                     Debug.LogError(
-                        "[GameBootstrap] BreedingGroundManager not found in scene! " +
-                        "Please add a GameObject with BreedingGroundManager component.");
+                        "[GameBootstrap] BreedingGroundManager not found in scene!");
+                }
+            }
+
+            if (vaultManager == null)
+            {
+                vaultManager = FindObjectOfType<VaultManager>();
+                if (vaultManager == null)
+                {
+                    Debug.LogWarning(
+                        "[GameBootstrap] VaultManager not found in scene. Creating one...");
+                    var go = new GameObject("VaultManager");
+                    vaultManager = go.AddComponent<VaultManager>();
+                }
+            }
+
+            if (battleManager == null)
+            {
+                battleManager = FindObjectOfType<BattleManager>();
+                if (battleManager == null)
+                {
+                    Debug.LogWarning(
+                        "[GameBootstrap] BattleManager not found in scene. Creating one...");
+                    var go = new GameObject("BattleManager");
+                    battleManager = go.AddComponent<BattleManager>();
+                }
+            }
+
+            // Wire up battle gold reward to playerGold
+            if (battleManager != null)
+            {
+                battleManager.OnBattleEnd += HandleBattleEnd;
+            }
+
+            if (battleUI == null)
+            {
+                battleUI = FindObjectOfType<BattleUI>();
+            }
+
+            if (vaultUI == null)
+            {
+                vaultUI = FindObjectOfType<VaultUI>();
+                if (vaultUI != null)
+                {
+                    vaultUI.SetManagers(vaultManager, breedingGroundManager);
                 }
             }
 
             if (breedingGroundConfig == null)
             {
                 Debug.LogWarning(
-                    "[GameBootstrap] BreedingGroundConfig is not assigned. " +
-                    "Please assign it in the Inspector or load it from Resources.");
+                    "[GameBootstrap] BreedingGroundConfig is not assigned.");
+            }
+        }
+
+        private void HandleBattleEnd(bool playerWon, int goldReward)
+        {
+            if (playerWon && goldReward > 0 && breedingGroundConfig != null)
+            {
+                breedingGroundConfig.playerGold += goldReward;
+                Debug.Log($"[GameBootstrap] Battle won! +{goldReward} gold. Total: {breedingGroundConfig.playerGold}");
             }
         }
 
@@ -72,7 +124,11 @@ namespace SlimeEvolution.Systems
         {
             Debug.Log($"[GameBootstrap] BreedingGroundManager: " +
                       $"{(breedingGroundManager != null ? "OK" : "MISSING")}");
-            Debug.Log($"[GameBootstrap] BreedingGroundConfig:  " +
+            Debug.Log($"[GameBootstrap] VaultManager: " +
+                      $"{(vaultManager != null ? "OK" : "MISSING")}");
+            Debug.Log($"[GameBootstrap] BattleManager: " +
+                      $"{(battleManager != null ? "OK" : "MISSING")}");
+            Debug.Log($"[GameBootstrap] BreedingGroundConfig: " +
                       $"{(breedingGroundConfig != null ? "OK" : "MISSING")}");
 
             if (breedingGroundManager != null)
@@ -80,7 +136,22 @@ namespace SlimeEvolution.Systems
                 Debug.Log($"[GameBootstrap] Ground capacity: {breedingGroundManager.MaxCapacity}, " +
                           $"Current count: {breedingGroundManager.CurrentCount}");
             }
+
+            if (vaultManager != null)
+            {
+                Debug.Log($"[GameBootstrap] Vault capacity: {vaultManager.Capacity}, " +
+                          $"Stored: {vaultManager.CurrentCount}");
+            }
         }
+
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────────
+        #region Public Accessors
+
+        public BreedingGroundManager BreedingGround => breedingGroundManager;
+        public VaultManager Vault => vaultManager;
+        public BattleManager Battle => battleManager;
 
         #endregion
     }

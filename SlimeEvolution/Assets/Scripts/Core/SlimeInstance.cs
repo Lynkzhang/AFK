@@ -65,13 +65,55 @@ namespace SlimeEvolution.Core
 
         // ─────────────────────────────────────────────────────────────────
         /// <summary>
-        /// 基于稀有度与属性总和估算出售价格。
+        /// 基于加权属性、稀有度指数倍率、特性/技能/代数加成估算出售价格。
+        /// 公式详见 knowledge/analysis/sell-price-formula.md §2.1
         /// </summary>
         public int CalculateSellPrice()
         {
-            int rarityMul = (int)rarity + 1;                     // Common=1 … Legendary=5
-            int statSum   = stats.HP + stats.ATK + stats.DEF + stats.SPD + stats.MUT;
-            return Mathf.Max(1, statSum * rarityMul);
+            // BaseValue: HP 权重 0.1 避免 HP 数值量级主导价格
+            float baseValue = stats.HP * 0.1f + stats.ATK * 1.0f + stats.DEF * 1.0f
+                            + stats.SPD * 1.0f + stats.MUT * 0.5f;
+
+            // RarityMultiplier: 指数增长 2^rarity (Common=1, Uncommon=2, Rare=4, Epic=8, Legendary=16)
+            float rarityMul = Mathf.Pow(2f, (int)rarity);
+
+            // TraitBonus: 特性数量 × 0.1 × 平均特性稀有度权重
+            float traitBonus = 0f;
+            if (traits != null && traits.Count > 0)
+            {
+                float totalWeight = 0f;
+                foreach (var trait in traits)
+                {
+                    totalWeight += GetTraitRarityWeight(trait.rarity);
+                }
+                float avgWeight = totalWeight / traits.Count;
+                traitBonus = traits.Count * 0.1f * avgWeight;
+            }
+
+            // SkillBonus: 技能数量 × 0.05
+            float skillBonus = (skills != null ? skills.Count : 0) * 0.05f;
+
+            // GenerationBonus: min(0.5, generation × 0.02)
+            float genBonus = Mathf.Min(0.5f, generation * 0.02f);
+
+            float total = baseValue * rarityMul * (1f + traitBonus + skillBonus + genBonus);
+            return Mathf.Max(1, Mathf.FloorToInt(total));
+        }
+
+        /// <summary>
+        /// 特性稀有度权重映射
+        /// </summary>
+        private static float GetTraitRarityWeight(Rarity r)
+        {
+            switch (r)
+            {
+                case Rarity.Common:    return 1.0f;
+                case Rarity.Uncommon:  return 1.5f;
+                case Rarity.Rare:      return 2.5f;
+                case Rarity.Epic:      return 4.0f;
+                case Rarity.Legendary: return 6.0f;
+                default:               return 1.0f;
+            }
         }
 
         public override string ToString()
