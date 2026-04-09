@@ -1,6 +1,7 @@
 import './style.css';
 import { SaveManager } from './core/save/SaveManager';
 import { SceneManager } from './core/scene/SceneManager';
+import { BreedingSystem } from './core/systems/BreedingSystem';
 import { GameLoop } from './core/systems/GameLoop';
 import type { GameState, Slime } from './core/types';
 import { Rarity } from './core/types';
@@ -77,11 +78,13 @@ const saveManager = new SaveManager();
 let state = saveManager.load() ?? createDefaultState();
 
 const scene = new SceneManager(sceneRoot);
+const breedingSystem = new BreedingSystem({ splitIntervalMs: 10000, maxCapacity: 12 });
 const loop = new GameLoop({
-  update: (_deltaTime, elapsedTime) => {
+  update: (deltaTime, elapsedTime) => {
     state.timestamp = Date.now();
+    breedingSystem.update(state, deltaTime);
     scene.update(state, elapsedTime);
-    ui.render(state);
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), breedingSystem.getMaxCapacity());
   },
   render: () => {
     scene.render();
@@ -93,7 +96,7 @@ const stopAutoSave = saveManager.startAutoSave(10000, () => state);
 ui.bind({
   onNewGame: () => {
     state = createDefaultState();
-    ui.render(state);
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), breedingSystem.getMaxCapacity());
   },
   onSave: () => {
     state.timestamp = Date.now();
@@ -103,8 +106,25 @@ ui.bind({
     const loaded = saveManager.load();
     if (loaded) {
       state = loaded;
-      ui.render(state);
+      ui.render(state, breedingSystem.getTimeUntilNextSplit(), breedingSystem.getMaxCapacity());
     }
+  },
+  onCull: (id: string) => {
+    state.slimes = state.slimes.filter((slime) => slime.id !== id);
+  },
+  onSell: (id: string) => {
+    const slime = state.slimes.find((item) => item.id === id);
+    if (!slime) return;
+    const totalStats = slime.stats.health + slime.stats.attack + slime.stats.defense + slime.stats.speed;
+    const rarityMultiplier: Record<Rarity, number> = {
+      [Rarity.Common]: 1,
+      [Rarity.Uncommon]: 2,
+      [Rarity.Rare]: 5,
+      [Rarity.Epic]: 10,
+      [Rarity.Legendary]: 25,
+    };
+    state.currency += totalStats * (rarityMultiplier[slime.rarity] ?? 1);
+    state.slimes = state.slimes.filter((item) => item.id !== id);
   },
 });
 
@@ -113,5 +133,5 @@ window.addEventListener('beforeunload', () => {
   saveManager.save(state);
 });
 
-ui.render(state);
+ui.render(state, breedingSystem.getTimeUntilNextSplit(), breedingSystem.getMaxCapacity());
 loop.start();

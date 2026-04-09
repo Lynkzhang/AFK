@@ -32,12 +32,14 @@ body,
   position: absolute;
   top: 16px;
   left: 16px;
-  min-width: 220px;
+  width: 320px;
+  max-height: calc(100% - 32px);
   padding: 14px;
   border-radius: 10px;
   background: rgba(15, 20, 35, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(4px);
+  overflow: hidden;
 }
 
 .ui-panel h1 {
@@ -45,15 +47,75 @@ body,
   font-size: 20px;
 }
 
-.ui-actions {
+.ui-actions,
+.sort-actions {
   margin-top: 10px;
   display: flex;
   gap: 8px;
 }
 
-.ui-actions button {
+.ui-actions button,
+.sort-actions button,
+.slime-actions button {
   cursor: pointer;
   border: none;
   border-radius: 6px;
   padding: 6px 10px;
+}
+
+.full-hint {
+  margin-top: 8px;
+  color: #ff8f8f;
+  font-size: 13px;
+}
+
+.hidden {
+  display: none;
+}
+
+.list-title {
+  margin: 12px 0 8px;
+  font-size: 16px;
+}
+
+.slime-list {
+  max-height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 4px;
+}
+
+.slime-item {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.slime-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rarity-tag {
+  color: #fff;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.slime-info {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #d7def8;
+}
+
+.slime-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
 }
