@@ -2,6 +2,22 @@
 
 一款 Web 放置养成 + 回合制战斗游戏。培育史莱姆、筛选精英、组队挑战关卡，循环进化你的史莱姆军团。
 
+> 🎮 **[在线体验](https://Lynkzhang.github.io/AFK/)**
+
+## 游戏截图
+
+| 主界面 | 史莱姆分裂 |
+|:---:|:---:|
+| ![主界面](screenshots/01-main-screen.png) | ![史莱姆分裂](screenshots/02-slime-split.png) |
+
+| 史莱姆管理 | 设施升级 |
+|:---:|:---:|
+| ![史莱姆管理](screenshots/03-slime-management.png) | ![设施升级](screenshots/04-facility.png) |
+
+| 关卡选择 |
+|:---:|
+| ![关卡选择](screenshots/05-stage-select.png) |
+
 ## 技术栈
 
 | 技术 | 用途 |
@@ -71,10 +87,12 @@ npx playwright show-report
 ```
 repo/
 ├── index.html              # 入口 HTML
+├── vite.config.ts          # Vite 构建配置（base=/AFK/）
 ├── package.json            # 依赖与脚本
 ├── tsconfig.json           # TypeScript 配置
 ├── playwright.config.ts    # Playwright 配置
 ├── public/                 # 静态资源（图标等）
+├── screenshots/            # 游戏截图
 ├── e2e/                    # E2E 测试用例
 │   └── game.spec.ts        # 66 个端到端测试
 └── src/
