@@ -239,7 +239,9 @@ const stopAutoSave = saveManager.startAutoSave(10000, () => state);
 
 ui.bind({
   onNewGame: () => {
-    if (!confirm('\u786e\u5b9a\u8981\u5f00\u59cb\u65b0\u6e38\u620f\u5417\uff1f\u5f53\u524d\u672a\u4fdd\u5b58\u7684\u8fdb\u5ea6\u5c06\u4e22\u5931\u3002')) return;
+    if (saveManager.hasSave()) {
+      if (!confirm('\u786e\u5b9a\u8981\u5f00\u59cb\u65b0\u6e38\u620f\u5417\uff1f\u5f53\u524d\u672a\u4fdd\u5b58\u7684\u8fdb\u5ea6\u5c06\u4e22\u5931\u3002')) return;
+    }
     state = createDefaultState();
     onboardingSystem = new OnboardingSystem(state, onboardingUI);
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
@@ -249,8 +251,12 @@ ui.bind({
     try {
       saveManager.save(state);
       showToast('\u4fdd\u5b58\u6210\u529f \u2713');
-    } catch (_e) {
-      showToast('\u4fdd\u5b58\u5931\u8d25 \u2717');
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+        showToast('\u5b58\u50a8\u7a7a\u95f4\u5df2\u6ee1\uff0c\u8bf7\u6e05\u7406\u6d4f\u89c8\u5668\u6570\u636e \u2717');
+      } else {
+        showToast('\u4fdd\u5b58\u5931\u8d25 \u2717');
+      }
     }
   },
   onLoad: () => {
@@ -335,12 +341,18 @@ ui.bind({
 
 facilityUI.bind({
   onUpgrade: (id: string) => {
-    FacilitySystem.upgrade(state, id);
+    const facility = state.facilities.find((f) => f.id === id);
+    const oldLevel = facility ? facility.level : 0;
+    const ok = FacilitySystem.upgrade(state, id);
     // Track quest counters
     QuestSystem.incrementCounter(state, 'daily_upgrades');
     onboardingSystem.notifyEvent('facility-upgrade');
     facilityUI.render(state);
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+    if (ok) {
+      const newLevel = facility ? facility.level : oldLevel;
+      showToast(`${facility?.name ?? '\u8bbe\u65bd'} \u5347\u7ea7\u5230 Lv.${newLevel} \u2713`);
+    }
   },
   onBack: () => {
     facilityUI.hide();
