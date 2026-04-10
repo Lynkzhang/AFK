@@ -622,3 +622,147 @@ test.describe('Shop & Item System', () => {
     expect(crystalAfter).toBeGreaterThan(crystalBefore);
   });
 });
+
+// =========================================================
+// Test 9: PVE Chapters
+// =========================================================
+test.describe('PVE Chapters', () => {
+  test('chapter 2 stage can be battled after unlockChapter', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    // Boost slimes to guarantee victory
+    await page.evaluate(() => {
+      const gm = window.__GM!;
+      for (const s of gm.getState().slimes) {
+        gm.setStats(s.id, { health: 9999, attack: 9999, defense: 9999, speed: 9999 });
+      }
+    });
+
+    // Unlock chapter 2 via GM
+    await page.evaluate(() => window.__GM!.unlockChapter(2));
+
+    // Battle stage 2-1
+    const result = await page.evaluate(() => window.__GM!.autoBattle('2-1'));
+    expect(result).toHaveProperty('victory');
+    expect(result).toHaveProperty('rewards');
+    expect((result as { victory: boolean }).victory).toBe(true);
+    expect((result as { rewards: { gold: number } }).rewards.gold).toBeGreaterThan(0);
+  });
+
+  test('chapter unlock logic: default 1, unlockChapter sets higher', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    // Default should be 1
+    const initial = await page.evaluate(() => window.__GM!.getUnlockedChapters()) as number;
+    expect(initial).toBe(1);
+
+    // Unlock chapter 3
+    await page.evaluate(() => window.__GM!.unlockChapter(3));
+    const afterUnlock = await page.evaluate(() => window.__GM!.getUnlockedChapters()) as number;
+    expect(afterUnlock).toBe(3);
+
+    // Trying to set lower should not decrease
+    await page.evaluate(() => window.__GM!.unlockChapter(2));
+    const afterLower = await page.evaluate(() => window.__GM!.getUnlockedChapters()) as number;
+    expect(afterLower).toBe(3);
+  });
+
+  test('beating 1-10 auto-unlocks chapter 2', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    // Verify initially locked
+    const before = await page.evaluate(() => window.__GM!.getUnlockedChapters()) as number;
+    expect(before).toBe(1);
+
+    // Boost slimes
+    await page.evaluate(() => {
+      const gm = window.__GM!;
+      for (const s of gm.getState().slimes) {
+        gm.setStats(s.id, { health: 9999, attack: 9999, defense: 9999, speed: 9999 });
+      }
+    });
+
+    // Beat 1-10
+    const result = await page.evaluate(() => window.__GM!.autoBattle('1-10'));
+    expect((result as { victory: boolean }).victory).toBe(true);
+
+    // Chapter 2 should now be unlocked
+    const after = await page.evaluate(() => window.__GM!.getUnlockedChapters()) as number;
+    expect(after).toBe(2);
+  });
+
+  test('save and load preserves unlockedChapters', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    // Unlock chapter 3
+    await page.evaluate(() => window.__GM!.unlockChapter(3));
+    expect(await page.evaluate(() => window.__GM!.getUnlockedChapters())).toBe(3);
+
+    // Save
+    await page.locator('.ui-actions button', { hasText: '\u4fdd\u5b58' }).click();
+    await page.waitForTimeout(300);
+
+    // Reset to new game
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => window.__GM!.getUnlockedChapters())).toBe(1);
+
+    // Load
+    await page.locator('.ui-actions button', { hasText: '\u52a0\u8f7d' }).click();
+    await page.waitForTimeout(300);
+
+    // Should be restored to 3
+    const restored = await page.evaluate(() => window.__GM!.getUnlockedChapters()) as number;
+    expect(restored).toBe(3);
+  });
+
+  test('chapter tabs UI shows locked/unlocked state', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    // Open stage select
+    await page.locator('.ui-actions button', { hasText: '\u6218\u6597' }).click();
+    await expect(page.locator('.stage-select-panel')).toBeVisible();
+
+    // Chapter tabs should exist
+    const tabs = page.locator('.chapter-tab');
+    await expect(tabs).toHaveCount(3);
+
+    // First tab should be active, others locked
+    await expect(tabs.nth(0)).toHaveClass(/active/);
+    await expect(tabs.nth(1)).toHaveClass(/locked/);
+    await expect(tabs.nth(2)).toHaveClass(/locked/);
+
+    // Close and unlock chapter 2
+    await page.locator('.stage-select-panel .back-btn').click();
+    await page.evaluate(() => window.__GM!.unlockChapter(2));
+
+    // Re-open stage select
+    await page.locator('.ui-actions button', { hasText: '\u6218\u6597' }).click();
+    await expect(page.locator('.stage-select-panel')).toBeVisible();
+
+    // Tab 2 should no longer be locked
+    const tabs2 = page.locator('.chapter-tab');
+    await expect(tabs2.nth(1)).not.toHaveClass(/locked/);
+    await expect(tabs2.nth(2)).toHaveClass(/locked/);
+  });
+});

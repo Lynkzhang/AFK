@@ -32,6 +32,8 @@ interface GMApi {
   buyItem(shopItemId: string): boolean;
   getItems(): Item[];
   useItem(itemType: string, slimeId?: string): string;
+  unlockChapter(n: number): void;
+  getUnlockedChapters(): number;
 }
 
 declare global {
@@ -99,10 +101,20 @@ function runBattleWithTeam(getState: GetState, setState: SetState, stageId: stri
   const result = runBattle(team, stage);
   if (result.victory) {
     const updated = getState();
+    const prevProgress = updated.stageProgress[stageId];
+    const newStars = (!prevProgress || result.stars > prevProgress.stars) ? result.stars : prevProgress.stars;
+    const newStageProgress = { ...updated.stageProgress, [stageId]: { stars: newStars } };
+
+    let unlocked = updated.unlockedChapters;
+    if (newStageProgress['1-10']?.stars > 0) unlocked = Math.max(unlocked, 2);
+    if (newStageProgress['2-10']?.stars > 0) unlocked = Math.max(unlocked, 3);
+
     setState({
       ...updated,
       currency: updated.currency + result.rewards.gold,
       crystal: updated.crystal + result.rewards.crystals,
+      stageProgress: newStageProgress,
+      unlockedChapters: unlocked,
     });
   }
   return result;
@@ -206,6 +218,13 @@ export function initGM(getState: GetState, setState: SetState): void {
       const result = ItemSystem.useItem(s, itemType as Item['type'], slimeId);
       setState({ ...s, items: [...s.items], slimes: [...s.slimes] });
       return result;
+    },
+    unlockChapter(n: number): void {
+      const s = getState();
+      setState({ ...s, unlockedChapters: Math.max(s.unlockedChapters, n) });
+    },
+    getUnlockedChapters(): number {
+      return getState().unlockedChapters;
     },
   };
 
