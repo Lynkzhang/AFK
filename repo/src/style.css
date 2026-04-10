@@ -486,3 +486,48 @@ button:disabled {
   white-space: pre-line;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
+
+/* === M28: Battle result visual enhancement === */
+.result-victory {
+  color: #4CAF50;
+  font-size: 18px;
+  background: rgba(76, 175, 80, 0.15) !important;
+  border: 2px solid #4CAF50;
+  border-radius: 8px;
+  padding: 8px 16px;
+}
+.result-defeat {
+  color: #f44336;
+  font-size: 18px;
+  background: rgba(244, 67, 54, 0.15) !important;
+  border: 2px solid #f44336;
+  border-radius: 8px;
+  padding: 8px 16px;
+}
+
+/* === M28: Mobile responsive (375px) === */
+@media (max-width: 480px) {
+  .ui-panel {
+    width: calc(100% - 20px);
+    left: 10px;
+    top: 10px;
+    max-height: calc(100% - 20px);
+    font-size: 13px;
+    padding: 10px;
+  }
+  .ui-panel h1 {
+    font-size: 15px;
+  }
+  .ui-actions button,
+  .sort-actions button,
+  .slime-actions button {
+    font-size: 11px;
+    padding: 5px 8px;
+  }
+  .overlay-panel {
+    width: calc(100% - 20px) !important;
+    left: 10px !important;
+    right: auto !important;
+    max-height: calc(100% - 20px);
+  }
+}

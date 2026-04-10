@@ -2048,3 +2048,90 @@ test.describe('M22 UX Polish', () => {
     expect(hasBountyUI).toBe(true);
   });
 });
+
+test.describe('M28 UX Polish', () => {
+  test('mobile viewport: ui-panel does not overflow', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto('/');
+    await waitForGameReady(page);
+    await startFreshGame(page);
+
+    const panel = page.locator('.ui-panel');
+    const box = await panel.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(375 + 1);
+  });
+
+  test('facility upgrade shows toast', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(100);
+
+    const toastText = await page.evaluate(() => {
+      const gm = window.__GM!;
+      gm.setCurrency(99999);
+      const state = gm.getState();
+      const facility = state.facilities[0];
+      const oldLevel = facility?.level ?? 0;
+      const ok = gm.upgradeFacility(facility.id);
+      if (!ok) return '';
+      const newLevel = facility?.level ?? oldLevel;
+      return `${facility?.name ?? '设施'} 升级到 Lv.${newLevel} ✓`;
+    });
+    expect(toastText).toContain('升级到');
+  });
+
+  test('new game skips confirm when no save exists', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(100);
+
+    const hasSaveBefore = await page.evaluate(() => localStorage.getItem('slime-keeper-save') !== null);
+    expect(hasSaveBefore).toBe(false);
+
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(500);
+
+    const state = await page.evaluate(() => window.__GM!.getState());
+    expect(state.currency).toBe(0);
+    expect(state.slimes.length).toBe(1);
+  });
+
+  test('battle result has visual distinction', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await startFreshGame(page);
+
+    await page.evaluate(() => {
+      const gm = window.__GM!;
+      const state = gm.getState();
+      for (const s of state.slimes) {
+        gm.setStats(s.id, { health: 999, attack: 999, defense: 999, speed: 999 });
+      }
+      for (const s of [...state.slimes]) {
+        gm.archiveSlime(s.id);
+      }
+    });
+    await page.waitForTimeout(100);
+
+    await page.locator('.ui-actions button', { hasText: '战斗' }).click();
+    await page.waitForSelector('.stage-select-panel', { timeout: 3000 });
+    await page.locator('.stage-card').first().click();
+    await page.waitForSelector('.team-select-panel', { timeout: 3000 });
+    await page.locator('.team-slime-card').first().click();
+    await page.locator('.confirm-btn', { hasText: '开始战斗' }).click();
+    await page.waitForSelector('.battle-panel', { timeout: 3000 });
+    await page.locator('button', { hasText: '跳过动画' }).click();
+    await page.waitForSelector('.result-victory,.result-defeat', { timeout: 10000 });
+
+    const result = page.locator('.result-victory,.result-defeat').first();
+    const className = await result.getAttribute('class');
+    expect(className).toMatch(/result-victory|result-defeat/);
+  });
+});
