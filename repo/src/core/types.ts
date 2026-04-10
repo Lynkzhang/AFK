@@ -124,6 +124,12 @@ export interface QuestProgress {
   status: QuestStatus;
 }
 
+export interface CodexData {
+  unlockedRarities: string[];
+  unlockedTraits: string[];
+  unlockedSkills: string[];
+}
+
 export interface GameState {
   slimes: Slime[];
   breedingGrounds: BreedingGround[];
@@ -139,4 +145,5 @@ export interface GameState {
   quests: QuestProgress[];
   questDailyRefreshTime: number;
   questCounters: Record<string, number>;
+  codex: CodexData;
 }

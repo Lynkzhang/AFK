@@ -42,9 +42,9 @@ test.describe('Page Load', () => {
     // Slime count
     await expect(page.locator('.ui-panel').locator('text=Slimes:')).toBeVisible();
 
-    // Buttons – 新游戏, 保存, 加载, 战斗, 封存库, 设施, 商店, 任务
+    // Buttons – 新游戏, 保存, 加载, 战斗, 封存库, 设施, 商店, 任务, 图鉴
     const buttons = page.locator('.ui-actions button');
-    await expect(buttons).toHaveCount(8);
+    await expect(buttons).toHaveCount(9);
 
     // Slime list section
     await expect(page.locator('.slime-list')).toBeVisible();
@@ -940,9 +940,9 @@ test.describe('Quest System', () => {
     await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
     await page.waitForTimeout(300);
 
-    // Verify quest button exists (8 buttons now)
+    // Verify quest button exists (9 buttons now)
     const buttons = page.locator('.ui-actions button');
-    await expect(buttons).toHaveCount(8);
+    await expect(buttons).toHaveCount(9);
 
     // Click quest button
     await page.locator('.ui-actions button', { hasText: '\u4efb\u52a1' }).click();
@@ -998,5 +998,161 @@ test.describe('Quest System', () => {
     const crystalAfterClaim = await page.evaluate(() => window.__GM!.getState().crystal) as number;
     expect(currencyAfterClaim).toBe(currencyBefore + 200);
     expect(crystalAfterClaim).toBe(crystalBefore + 10);
+  });
+});
+
+// =========================================================
+// Test 11: Codex System
+// =========================================================
+test.describe('Codex System', () => {
+  test('getCodex returns codex data with initial unlocks from default slimes', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    const codex = await page.evaluate(() => window.__GM!.getCodex());
+
+    // Should have all rarities/traits/skills arrays
+    expect(codex).toHaveProperty('codex');
+    expect(codex).toHaveProperty('allRarities');
+    expect(codex).toHaveProperty('allTraits');
+    expect(codex).toHaveProperty('allSkills');
+
+    // Total counts: 5 rarities, 10 traits, 8 skills
+    expect(codex.allRarities.length).toBe(5);
+    expect(codex.allTraits.length).toBe(10);
+    expect(codex.allSkills.length).toBe(8);
+
+    // Default slimes have Common, Rare, Epic rarities
+    expect(codex.codex.unlockedRarities).toContain('Common');
+    expect(codex.codex.unlockedRarities).toContain('Rare');
+    expect(codex.codex.unlockedRarities).toContain('Epic');
+
+    // Default slimes have custom traits (fresh, calm, arcane) not in ALL_TRAITS
+    // and custom skills (jump, splash, pulse) not in ALL_SKILLS
+    // So only rarities are auto-unlocked from default slimes
+    expect(codex.codex.unlockedRarities.length).toBeGreaterThanOrEqual(3);
+
+    // Manually unlock a known trait and skill to verify the system works
+    await page.evaluate(() => {
+      window.__GM!.unlockCodexEntry('trait', 'fast-split');
+      window.__GM!.unlockCodexEntry('skill', 'slime-spit');
+    });
+    const codex2 = await page.evaluate(() => window.__GM!.getCodex());
+    expect(codex2.codex.unlockedTraits).toContain('fast-split');
+    expect(codex2.codex.unlockedSkills).toContain('slime-spit');
+  });
+
+  test('unlockCodexEntry manually unlocks entries and getCodexCompletion tracks progress', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    // Get initial completion
+    const before = await page.evaluate(() => window.__GM!.getCodexCompletion());
+    const initialOverall = before.overall.unlocked as number;
+
+    // Unlock a trait that's not yet unlocked
+    const result = await page.evaluate(() => window.__GM!.unlockCodexEntry('trait', 'toxin-blood'));
+    expect(result).toBe(true);
+
+    // Unlock a skill
+    const result2 = await page.evaluate(() => window.__GM!.unlockCodexEntry('skill', 'acid-wave'));
+    expect(result2).toBe(true);
+
+    // Unlock a rarity
+    const result3 = await page.evaluate(() => window.__GM!.unlockCodexEntry('rarity', 'Legendary'));
+    expect(result3).toBe(true);
+
+    // Verify completion increased
+    const after = await page.evaluate(() => window.__GM!.getCodexCompletion());
+    expect(after.overall.unlocked).toBeGreaterThan(initialOverall);
+    expect(after.overall.percent).toBeGreaterThan(0);
+
+    // Duplicate unlock should return false
+    const dup = await page.evaluate(() => window.__GM!.unlockCodexEntry('rarity', 'Legendary'));
+    expect(dup).toBe(false);
+
+    // Invalid category should return false
+    const invalid = await page.evaluate(() => window.__GM!.unlockCodexEntry('invalid', 'test'));
+    expect(invalid).toBe(false);
+  });
+
+  test('codex UI button exists and opens codex panel with tabs', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    // Click codex button (📖 图鉴)
+    await page.locator('.ui-actions button', { hasText: '\u56fe\u9274' }).click();
+    await expect(page.locator('.codex-panel')).toBeVisible();
+
+    // Verify 3 tabs exist
+    const tabs = page.locator('.codex-tab');
+    await expect(tabs).toHaveCount(3);
+
+    // Verify overall completion is displayed
+    await expect(page.locator('.codex-overall')).toBeVisible();
+    const overallText = await page.locator('.codex-overall').textContent();
+    expect(overallText).toContain('%');
+
+    // Verify codex entries exist
+    const entries = page.locator('.codex-entry');
+    const entryCount = await entries.count();
+    expect(entryCount).toBeGreaterThan(0);
+
+    // Verify unlocked entries have correct class
+    const unlockedEntries = page.locator('.codex-entry.unlocked');
+    const unlockedCount = await unlockedEntries.count();
+    expect(unlockedCount).toBeGreaterThan(0);
+
+    // Click back
+    await page.locator('.codex-panel .back-btn').click();
+    await expect(page.locator('.codex-panel')).not.toBeVisible();
+  });
+
+  test('save and load preserves codex data', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    // Unlock extra entries
+    await page.evaluate(() => {
+      window.__GM!.unlockCodexEntry('rarity', 'Legendary');
+      window.__GM!.unlockCodexEntry('rarity', 'Uncommon');
+      window.__GM!.unlockCodexEntry('trait', 'origin-core');
+      window.__GM!.unlockCodexEntry('skill', 'vital-surge');
+    });
+
+    const beforeSave = await page.evaluate(() => window.__GM!.getCodexCompletion());
+    const beforeOverall = beforeSave.overall.unlocked as number;
+
+    // Save
+    await page.locator('.ui-actions button', { hasText: '\u4fdd\u5b58' }).click();
+    await page.waitForTimeout(300);
+
+    // Reset
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    // After new game, extra entries should not be there
+    const afterNew = await page.evaluate(() => window.__GM!.getCodexCompletion());
+    expect(afterNew.overall.unlocked).toBeLessThan(beforeOverall);
+
+    // Load
+    await page.locator('.ui-actions button', { hasText: '\u52a0\u8f7d' }).click();
+    await page.waitForTimeout(300);
+
+    // Codex should be restored
+    const afterLoad = await page.evaluate(() => window.__GM!.getCodexCompletion());
+    expect(afterLoad.overall.unlocked).toBe(beforeOverall);
   });
 });
