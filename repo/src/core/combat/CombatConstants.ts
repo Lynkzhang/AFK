@@ -48,6 +48,10 @@ export const SKILL_ENERGY_COST: Record<string, number> = {
   'speed-song': 60,
   'regen-drop': 45,
   'vital-surge': 70,
+  'fire-breath': 30,
+  'fire-blast': 50,
+  'ice-bolt': 35,
+  'blizzard': 55,
 };
 
 export const STATUS_PARAMS = {

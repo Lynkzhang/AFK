@@ -319,6 +319,42 @@ function applyPoison(target: BattleUnit, attackerAtk: number): void {
   }
 }
 
+function applyBurn(target: BattleUnit, attackerAtk: number): void {
+  const existing = target.statusEffects.find(e => e.type === 'burn');
+  if (existing) {
+    // Not stackable — just refresh duration and update value
+    existing.remainingTurns = STATUS_PARAMS.burn.duration;
+    existing.value = Math.max(existing.value, attackerAtk);
+  } else {
+    target.statusEffects.push({
+      id: `burn-${Date.now()}`,
+      type: 'burn',
+      remainingTurns: STATUS_PARAMS.burn.duration,
+      value: attackerAtk,
+      stackCount: 1,
+    });
+  }
+}
+
+function applyFreeze(target: BattleUnit): void {
+  // High-speed targets have a chance to resist
+  if (target.effectiveSpeed > STATUS_PARAMS.freeze.resistThreshold) {
+    if (Math.random() < STATUS_PARAMS.freeze.resistChance) {
+      return; // Resisted
+    }
+  }
+  // Don't stack — if already frozen, skip
+  const existing = target.statusEffects.find(e => e.type === 'freeze');
+  if (existing) return;
+  target.statusEffects.push({
+    id: `freeze-${Date.now()}`,
+    type: 'freeze',
+    remainingTurns: STATUS_PARAMS.freeze.duration,
+    value: 0,
+    stackCount: 1,
+  });
+}
+
 function applyBuff(target: BattleUnit, buffType: 'atk_up' | 'def_up' | 'spd_up', percent: number, duration: number): void {
   const existing = target.statusEffects.find(e => e.type === buffType);
   if (existing) {
@@ -445,6 +481,25 @@ function executeAction(
         if (Math.random() < STATUS_PARAMS.poison.triggerChance) {
           applyPoison(target, actor.baseAttack);
           log.push({ turn: turnNumber, actorName: actor.name, action: 'toxin-blood', target: target.name, value: 0, detail: 'POISON applied' });
+        }
+      }
+
+      // Fire skills → 30% burn on hit
+      if ((skill.id === 'fire-breath' || skill.id === 'fire-blast') && target.alive) {
+        if (Math.random() < 0.30) {
+          applyBurn(target, actor.baseAttack);
+          log.push({ turn: turnNumber, actorName: actor.name, action: skill.id, target: target.name, value: 0, detail: 'BURN applied' });
+        }
+      }
+
+      // Ice skills → 25% freeze on hit
+      if ((skill.id === 'ice-bolt' || skill.id === 'blizzard') && target.alive) {
+        if (Math.random() < 0.25) {
+          applyFreeze(target);
+          const froze = target.statusEffects.some(e => e.type === 'freeze');
+          if (froze) {
+            log.push({ turn: turnNumber, actorName: actor.name, action: skill.id, target: target.name, value: 0, detail: 'FREEZE applied' });
+          }
         }
       }
 
