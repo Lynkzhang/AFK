@@ -1,6 +1,6 @@
 import './style.css';
 import { SaveManager } from './core/save/SaveManager';
-import { SceneManager } from './core/scene/SceneManager';
+import { Canvas2DRenderer } from './core/scene/Canvas2DRenderer';
 import { BreedingSystem } from './core/systems/BreedingSystem';
 import { GameLoop } from './core/systems/GameLoop';
 import type { GameState } from './core/types';
@@ -208,7 +208,7 @@ migrateState(state);
 
 let onboardingSystem = new OnboardingSystem(state, onboardingUI);
 
-const scene = new SceneManager(sceneRoot);
+const scene = new Canvas2DRenderer(sceneRoot);
 const breedingSystem = new BreedingSystem({ splitIntervalMs: 10000, maxCapacity: 12 });
 const loop = new GameLoop({
   update: (deltaTime, elapsedTime) => {
