@@ -49,18 +49,18 @@ function showToast(msg: string): void {
 function createStarterSlime(): import('./core/types').Slime {
   return {
     id: 'slime-starter',
-    name: '小绿',
+    name: '\u5c0f\u7eff',
     stats: { health: 15, attack: 3, defense: 2, speed: 3, mut: 0.08 },
     traits: [{
       id: 'eager',
-      name: '活力充沛',
-      description: '分裂速度略微提升',
+      name: '\u6d3b\u529b\u5145\u6c9b',
+      description: '\u5206\u88c2\u901f\u5ea6\u7565\u5fae\u63d0\u5347',
       rarity: Rarity.Common,
       effect: 'split-speed-up-10%',
     }],
     skills: [{
       id: 'bounce',
-      name: '弹跳',
+      name: '\u5f39\u8df3',
       type: 'attack',
       targetType: 'single',
       damage: 3,
@@ -159,6 +159,7 @@ app.appendChild(gameRoot);
 gameRoot.appendChild(sceneRoot);
 
 const ui = new UIManager();
+ui.setPriceEvaluator(evaluatePrice);
 gameRoot.appendChild(ui.root);
 
 const stageSelectUI = new StageSelectUI();
@@ -238,7 +239,7 @@ const stopAutoSave = saveManager.startAutoSave(10000, () => state);
 
 ui.bind({
   onNewGame: () => {
-    if (!confirm('确定要开始新游戏吗？当前未保存的进度将丢失。')) return;
+    if (!confirm('\u786e\u5b9a\u8981\u5f00\u59cb\u65b0\u6e38\u620f\u5417\uff1f\u5f53\u524d\u672a\u4fdd\u5b58\u7684\u8fdb\u5ea6\u5c06\u4e22\u5931\u3002')) return;
     state = createDefaultState();
     onboardingSystem = new OnboardingSystem(state, onboardingUI);
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
@@ -247,9 +248,9 @@ ui.bind({
     state.timestamp = Date.now();
     try {
       saveManager.save(state);
-      showToast('保存成功 ✓');
+      showToast('\u4fdd\u5b58\u6210\u529f \u2713');
     } catch (_e) {
-      showToast('保存失败 ✗');
+      showToast('\u4fdd\u5b58\u5931\u8d25 \u2717');
     }
   },
   onLoad: () => {
@@ -259,9 +260,9 @@ ui.bind({
       migrateState(state);
       onboardingSystem = new OnboardingSystem(state, onboardingUI);
       ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
-      showToast('加载成功 ✓');
+      showToast('\u52a0\u8f7d\u6210\u529f \u2713');
     } else {
-      showToast('无存档可加载');
+      showToast('\u65e0\u5b58\u6863\u53ef\u52a0\u8f7d');
     }
   },
   onBattle: () => {
@@ -276,18 +277,25 @@ ui.bind({
   onSell: (id: string) => {
     const slime = state.slimes.find((item) => item.id === id);
     if (!slime) return;
-    state.currency += evaluatePrice(slime);
+    const price = evaluatePrice(slime);
+    state.currency += price;
     state.slimes = state.slimes.filter((item) => item.id !== id);
+    showToast(`\u51fa\u552e\u6210\u529f\uff0c\u83b7\u5f97 \ud83d\udcb0${price} \u91d1\u5e01`);
     // Track quest counters
     QuestSystem.incrementCounter(state, 'daily_sells');
     QuestSystem.incrementCounter(state, 'total_sells');
     onboardingSystem.notifyEvent('sell');
   },
   onArchive: (id: string) => {
-    archiveSlime(state, id);
-    // Track quest counters
-    QuestSystem.incrementCounter(state, 'daily_archives');
-    onboardingSystem.notifyEvent('archive');
+    const result = archiveSlime(state, id);
+    if (result.success) {
+      showToast('\u5c01\u5b58\u6210\u529f \ud83d\udce6');
+      // Track quest counters
+      QuestSystem.incrementCounter(state, 'daily_archives');
+      onboardingSystem.notifyEvent('archive');
+    } else {
+      showToast(`\u2716 ${result.reason ?? '\u5c01\u5b58\u5931\u8d25'}`);
+    }
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
   onOpenArchive: () => {
@@ -350,9 +358,9 @@ shopUI.bind({
     shopUI.render(state);
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
-  onUseItem: (itemType: string) => {
-    const targetSlime = state.slimes[0];
-    ItemSystem.useItem(state, itemType as 'mutation-catalyst' | 'stat-booster' | 'rare-essence', targetSlime?.id);
+  onUseItem: (itemType: string, slimeId?: string) => {
+    const targetId = slimeId ?? state.slimes[0]?.id;
+    ItemSystem.useItem(state, itemType as 'mutation-catalyst' | 'stat-booster' | 'rare-essence', targetId);
     shopUI.render(state);
   },
   onBack: () => {
@@ -387,7 +395,10 @@ codexUI.bind({
 
 arenaUI.bind({
   onBuy: (arenaId) => {
-    ArenaSystem.buyArena(state, arenaId);
+    const ok = ArenaSystem.buyArena(state, arenaId);
+    if (!ok) {
+      showToast('\u2716 \u8d27\u5e01\u4e0d\u8db3');
+    }
     arenaUI.render(state);
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
@@ -468,6 +479,11 @@ battleUI.bind({
 
 archiveUI.bind({
   onUnarchive: (slimeId: string) => {
+    const maxCap = FacilitySystem.getMaxCapacity(state);
+    if (state.slimes.length >= maxCap) {
+      showToast('\u2716 \u57f9\u517b\u573a\u5730\u5df2\u6ee1\uff0c\u8bf7\u5148\u5254\u9664\u6216\u51fa\u552e');
+      return;
+    }
     unarchiveSlime(state, slimeId);
     archiveUI.render(state);
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));

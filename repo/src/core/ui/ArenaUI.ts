@@ -16,13 +16,13 @@ export class ArenaUI {
     this.root.className = 'arena-panel overlay-panel';
 
     const backBtn = document.createElement('button');
-    backBtn.textContent = '← 返回';
+    backBtn.textContent = '\u2190 \u8fd4\u56de';
     backBtn.className = 'back-btn';
     backBtn.onclick = () => this.callbacks?.onBack();
 
     const title = document.createElement('h2');
     title.className = 'panel-title';
-    title.textContent = '🏔️ 培养场地';
+    title.textContent = '\ud83c\udfd4\ufe0f \u57f9\u517b\u573a\u5730';
 
     this.listEl = document.createElement('div');
     this.listEl.className = 'arena-list';
@@ -50,7 +50,7 @@ export class ArenaUI {
       const nameEl = document.createElement('div');
       nameEl.className = 'arena-name';
       nameEl.textContent = arena.name;
-      if (isActive) nameEl.textContent += ' ✅ 当前';
+      if (isActive) nameEl.textContent += ' \u2705 \u5f53\u524d';
 
       // Description
       const descEl = document.createElement('div');
@@ -67,16 +67,16 @@ export class ArenaUI {
         }
       }
       if (bonusParts.length > 0) {
-        effectEl.textContent = `属性加成: ${bonusParts.join(', ')}`;
+        effectEl.textContent = `\u5c5e\u6027\u52a0\u6210: ${bonusParts.join(', ')}`;
       }
       if (arena.mutationBias.preferTraitIds && arena.mutationBias.preferTraitIds.length > 0) {
-        effectEl.textContent += ` | 特性偏好: ${arena.mutationBias.preferTraitIds.join(', ')}`;
+        effectEl.textContent += ` | \u7279\u6027\u504f\u597d: ${arena.mutationBias.preferTraitIds.join(', ')}`;
       }
       if (arena.mutationBias.preferSkillTypes && arena.mutationBias.preferSkillTypes.length > 0) {
-        effectEl.textContent += ` | 技能偏好: ${arena.mutationBias.preferSkillTypes.join(', ')}`;
+        effectEl.textContent += ` | \u6280\u80fd\u504f\u597d: ${arena.mutationBias.preferSkillTypes.join(', ')}`;
       }
       if (arena.mutationBias.rarityWeightBonus && arena.mutationBias.rarityWeightBonus > 0) {
-        effectEl.textContent += ` | 稀有变异 +${(arena.mutationBias.rarityWeightBonus * 100).toFixed(0)}%`;
+        effectEl.textContent += ` | \u7a00\u6709\u53d8\u5f02 +${(arena.mutationBias.rarityWeightBonus * 100).toFixed(0)}%`;
       }
 
       card.append(nameEl, descEl, effectEl);
@@ -85,19 +85,26 @@ export class ArenaUI {
       if (!arena.owned) {
         const priceEl = document.createElement('div');
         priceEl.className = 'arena-price';
-        const currLabel = arena.currencyType === 'gold' ? '💰' : '💎';
+        const currLabel = arena.currencyType === 'gold' ? '\ud83d\udcb0' : '\ud83d\udc8e';
         priceEl.textContent = `${currLabel} ${arena.price}`;
 
         const buyBtn = document.createElement('button');
         buyBtn.className = 'arena-buy-btn';
-        buyBtn.textContent = '购买';
+        buyBtn.textContent = '\u8d2d\u4e70';
+
+        // Disable if can't afford
+        const canAfford = arena.currencyType === 'gold'
+          ? state.currency >= arena.price
+          : state.crystal >= arena.price;
+        buyBtn.disabled = !canAfford;
+
         buyBtn.onclick = () => this.callbacks?.onBuy(arena.id);
 
         card.append(priceEl, buyBtn);
       } else if (!isActive) {
         const switchBtn = document.createElement('button');
         switchBtn.className = 'arena-switch-btn';
-        switchBtn.textContent = '切换';
+        switchBtn.textContent = '\u5207\u6362';
         switchBtn.onclick = () => this.callbacks?.onSwitch(arena.id);
 
         card.append(switchBtn);

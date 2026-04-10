@@ -37,21 +37,21 @@ export class CodexUI {
 
     // Title + overall completion
     const title = document.createElement('h2');
-    title.textContent = 'Codex';
+    title.textContent = '\u56fe\u9274';
     this.root.appendChild(title);
 
     const overallEl = document.createElement('div');
     overallEl.className = 'codex-overall';
-    overallEl.textContent = `Overall: ${completion.overall.unlocked} / ${completion.overall.total} (${completion.overall.percent}%)`;
+    overallEl.textContent = `\u603b\u8ba1: ${completion.overall.unlocked} / ${completion.overall.total} (${completion.overall.percent}%)`;
     this.root.appendChild(overallEl);
 
     // Tab bar
     const tabBar = document.createElement('div');
     tabBar.className = 'codex-tabs';
-    const tabs: { key: CodexTab; label: string; pct: number }[] = [
-      { key: 'rarity', label: `Rarities (${completion.rarities.percent}%)`, pct: completion.rarities.percent },
-      { key: 'trait', label: `Traits (${completion.traits.percent}%)`, pct: completion.traits.percent },
-      { key: 'skill', label: `Skills (${completion.skills.percent}%)`, pct: completion.skills.percent },
+    const tabs: { key: CodexTab; label: string }[] = [
+      { key: 'rarity', label: `\u7a00\u6709\u5ea6 (${completion.rarities.percent}%)` },
+      { key: 'trait', label: `\u7279\u6027 (${completion.traits.percent}%)` },
+      { key: 'skill', label: `\u6280\u80fd (${completion.skills.percent}%)` },
     ];
 
     for (const t of tabs) {
@@ -100,7 +100,7 @@ export class CodexUI {
     // Back button
     const backBtn = document.createElement('button');
     backBtn.className = 'back-btn';
-    backBtn.textContent = 'Back';
+    backBtn.textContent = '\u8fd4\u56de';
     backBtn.onclick = () => this.handlers?.onBack();
     this.root.appendChild(backBtn);
   }
