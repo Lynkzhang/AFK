@@ -53,12 +53,14 @@ export class Canvas2DRenderer {
     const w = this.canvas.clientWidth;
     const h = this.canvas.clientHeight;
 
+    // Sky gradient — warm pastel
     const sky = ctx.createLinearGradient(0, 0, 0, h * 0.7);
     sky.addColorStop(0, '#bfe7ff');
     sky.addColorStop(1, '#f8fdff');
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, h);
 
+    // Ground
     const grassTop = h * 0.68;
     const ground = ctx.createLinearGradient(0, grassTop, 0, h);
     ground.addColorStop(0, '#8dde74');
@@ -66,32 +68,161 @@ export class Canvas2DRenderer {
     ctx.fillStyle = ground;
     ctx.fillRect(0, grassTop, w, h - grassTop);
 
+    // Grass blades (existing)
     for (let i = 0; i < 14; i++) {
-      const x = ((i * 137) % 1000) / 1000 * w;
-      const y = grassTop + ((i * 79) % 250) / 250 * (h - grassTop - 12);
+      const gx = ((i * 137) % 1000) / 1000 * w;
+      const gy = grassTop + ((i * 79) % 250) / 250 * (h - grassTop - 12);
       ctx.strokeStyle = '#3ea548';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(x, y + 10);
-      ctx.quadraticCurveTo(x - 2, y + 4, x - 1, y);
-      ctx.moveTo(x, y + 10);
-      ctx.quadraticCurveTo(x + 2, y + 4, x + 1, y + 1);
+      ctx.moveTo(gx, gy + 10);
+      ctx.quadraticCurveTo(gx - 2, gy + 4, gx - 1, gy);
+      ctx.moveTo(gx, gy + 10);
+      ctx.quadraticCurveTo(gx + 2, gy + 4, gx + 1, gy + 1);
       ctx.stroke();
     }
 
+    // Existing daisies (white petals + yellow center)
     for (let i = 0; i < 6; i++) {
-      const x = ((i * 173 + 41) % 1000) / 1000 * w;
-      const y = grassTop + ((i * 61 + 23) % 220) / 220 * (h - grassTop - 14);
+      const fx = ((i * 173 + 41) % 1000) / 1000 * w;
+      const fy = grassTop + ((i * 61 + 23) % 220) / 220 * (h - grassTop - 14);
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(x, y, 3, 0, Math.PI * 2);
-      ctx.arc(x - 4, y + 2, 3, 0, Math.PI * 2);
-      ctx.arc(x + 4, y + 2, 3, 0, Math.PI * 2);
+      ctx.arc(fx, fy, 3, 0, Math.PI * 2);
+      ctx.arc(fx - 4, fy + 2, 3, 0, Math.PI * 2);
+      ctx.arc(fx + 4, fy + 2, 3, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = '#ffd95b';
       ctx.beginPath();
-      ctx.arc(x, y + 1.5, 1.5, 0, Math.PI * 2);
+      ctx.arc(fx, fy + 1.5, 1.5, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    // --- NEW DECORATIONS ---
+
+    // Colorful flowers (red, pink, yellow, purple)
+    const flowerColors = ['#ff6b7a', '#ff9ecb', '#ffe066', '#c49bff', '#ff8f5b', '#7be69a'];
+    for (let i = 0; i < 10; i++) {
+      const fx = ((i * 211 + 67) % 1000) / 1000 * w;
+      const fy = grassTop + ((i * 97 + 43) % 200) / 200 * (h - grassTop - 18) + 6;
+      const color = flowerColors[i % flowerColors.length];
+      // Stem
+      ctx.strokeStyle = '#4aad52';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(fx, fy + 6);
+      ctx.lineTo(fx, fy + 14);
+      ctx.stroke();
+      // Petals
+      ctx.fillStyle = color;
+      const petalR = 2.8;
+      for (let p = 0; p < 5; p++) {
+        const angle = (p / 5) * Math.PI * 2 - Math.PI / 2;
+        ctx.beginPath();
+        ctx.arc(fx + Math.cos(angle) * 3.2, fy + Math.sin(angle) * 3.2, petalR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Center
+      ctx.fillStyle = '#ffeaa0';
+      ctx.beginPath();
+      ctx.arc(fx, fy, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Cute mushrooms (3 varied sizes with round caps)
+    const mushrooms = [
+      { x: 0.15, yOff: 0.4, size: 1.0 },
+      { x: 0.55, yOff: 0.6, size: 0.7 },
+      { x: 0.82, yOff: 0.25, size: 1.2 },
+      { x: 0.38, yOff: 0.8, size: 0.6 },
+    ];
+    for (const m of mushrooms) {
+      const mx = m.x * w;
+      const my = grassTop + m.yOff * (h - grassTop - 16) + 4;
+      const ms = m.size;
+      // Stem
+      ctx.fillStyle = '#f5eed5';
+      ctx.beginPath();
+      ctx.moveTo(mx - 3 * ms, my);
+      ctx.lineTo(mx - 2.5 * ms, my + 10 * ms);
+      ctx.lineTo(mx + 2.5 * ms, my + 10 * ms);
+      ctx.lineTo(mx + 3 * ms, my);
+      ctx.closePath();
+      ctx.fill();
+      // Cap
+      ctx.fillStyle = '#e85d6f';
+      ctx.beginPath();
+      ctx.ellipse(mx, my - 1 * ms, 8 * ms, 6 * ms, 0, Math.PI, 0);
+      ctx.fill();
+      // Spots
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(mx - 3 * ms, my - 4 * ms, 1.5 * ms, 0, Math.PI * 2);
+      ctx.arc(mx + 2 * ms, my - 3 * ms, 1.2 * ms, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Smooth round stones (gray, 3)
+    const stones = [
+      { x: 0.25, yOff: 0.7, rx: 8, ry: 5 },
+      { x: 0.68, yOff: 0.5, rx: 6, ry: 3.5 },
+      { x: 0.9, yOff: 0.85, rx: 10, ry: 5.5 },
+    ];
+    for (const s of stones) {
+      const sx = s.x * w;
+      const sy = grassTop + s.yOff * (h - grassTop - 12) + 4;
+      ctx.fillStyle = '#b8bfc4';
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, s.rx, s.ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Highlight
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(sx - s.rx * 0.2, sy - s.ry * 0.3, s.rx * 0.45, s.ry * 0.35, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Butterflies (2, with simple wing-flap using elapsedTime)
+    this.drawButterflies(w, h, grassTop);
+  }
+
+  /** Draw animated butterflies */
+  private drawButterflies(w: number, _h: number, grassTop: number): void {
+    const { ctx } = this;
+    const t = this.elapsedTime / 1000;
+
+    const butterflies = [
+      { baseX: 0.3, baseY: 0.55, color1: '#ffb3d9', color2: '#ff7eb3', speed: 1.4, phase: 0 },
+      { baseX: 0.72, baseY: 0.62, color1: '#b3d4ff', color2: '#7eb3ff', speed: 1.1, phase: 2.1 },
+    ];
+
+    for (const b of butterflies) {
+      const bx = b.baseX * w + Math.sin(t * 0.8 + b.phase) * 18;
+      const by = grassTop * 0.85 + b.baseY * (grassTop * 0.15) + Math.sin(t * 1.2 + b.phase) * 6;
+      const wingFlap = Math.sin(t * b.speed * 4 + b.phase) * 0.6;
+
+      ctx.save();
+      ctx.translate(bx, by);
+
+      // Left wing
+      ctx.fillStyle = b.color1;
+      ctx.beginPath();
+      ctx.ellipse(-4, -1, 5, 3.5 * Math.abs(Math.cos(wingFlap)), -0.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Right wing
+      ctx.fillStyle = b.color2;
+      ctx.beginPath();
+      ctx.ellipse(4, -1, 5, 3.5 * Math.abs(Math.cos(wingFlap)), 0.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Body
+      ctx.fillStyle = '#554433';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 1.2, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
     }
   }
 
@@ -143,6 +274,13 @@ export class Canvas2DRenderer {
     }
   }
 
+  /**
+   * Draw a mushroom/fungi-shaped slime (Fung-ji / 方吉 style):
+   * - Large round mushroom cap head (~70% of total height)
+   * - Small stubby body below the cap
+   * - Big cute eyes with large pupils + highlights
+   * - Simple ω or smile expression
+   */
   private drawSlime(slime: Slime): void {
     const { x, z } = this.mapTo2D(slime.position.x, slime.position.z);
     const t = this.elapsedTime / 1000;
@@ -162,6 +300,7 @@ export class Canvas2DRenderer {
     const rarityScale = this.getRaritySizeScale(slime.rarity);
     const baseSize = (46 + (slime.position.y ?? 0) * 4) * rarityScale;
 
+    // Rarity glow
     const rarityGlow = this.getRarityGlow(slime.rarity);
     if (rarityGlow) {
       this.ctx.save();
@@ -170,7 +309,7 @@ export class Canvas2DRenderer {
       this.ctx.shadowColor = rarityGlow;
       this.ctx.fillStyle = rarityGlow;
       this.ctx.beginPath();
-      this.ctx.ellipse(x + sway, yPos + baseSize * 0.55, baseSize * 0.45, baseSize * 0.25, 0, 0, Math.PI * 2);
+      this.ctx.ellipse(x + sway, yPos + baseSize * 0.55, baseSize * 0.5, baseSize * 0.2, 0, 0, Math.PI * 2);
       this.ctx.fill();
       this.ctx.restore();
     }
@@ -179,31 +318,82 @@ export class Canvas2DRenderer {
     this.ctx.translate(x + sway, yPos);
     this.ctx.scale(scaleX, scaleY);
 
-    this.ctx.fillStyle = slime.color;
+    const capR = baseSize * 0.52; // Mushroom cap radius
+    const capCY = -baseSize * 0.18; // Cap center Y
+    const bodyW = baseSize * 0.28; // Body half-width
+    const bodyH = baseSize * 0.32; // Body height
+    const bodyTop = capCY + capR * 0.45; // Where body starts (under cap)
+
+    // --- Small stubby body (below cap) ---
+    this.ctx.fillStyle = this.lightenColor(slime.color, 0.25);
     this.ctx.beginPath();
-    this.ctx.moveTo(0, -baseSize * 0.95);
-    this.ctx.bezierCurveTo(baseSize * 0.62, -baseSize * 0.72, baseSize * 0.72, baseSize * 0.25, baseSize * 0.45, baseSize * 0.8);
-    this.ctx.bezierCurveTo(baseSize * 0.28, baseSize * 1.0, -baseSize * 0.28, baseSize * 1.0, -baseSize * 0.45, baseSize * 0.8);
-    this.ctx.bezierCurveTo(-baseSize * 0.72, baseSize * 0.25, -baseSize * 0.62, -baseSize * 0.72, 0, -baseSize * 0.95);
+    this.ctx.moveTo(-bodyW, bodyTop);
+    this.ctx.quadraticCurveTo(-bodyW * 1.05, bodyTop + bodyH, -bodyW * 0.4, bodyTop + bodyH);
+    this.ctx.lineTo(bodyW * 0.4, bodyTop + bodyH);
+    this.ctx.quadraticCurveTo(bodyW * 1.05, bodyTop + bodyH, bodyW, bodyTop);
     this.ctx.closePath();
     this.ctx.fill();
 
-    this.ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    // --- Large round mushroom cap head ---
+    this.ctx.fillStyle = slime.color;
     this.ctx.beginPath();
-    this.ctx.ellipse(-baseSize * 0.18, -baseSize * 0.34, baseSize * 0.14, baseSize * 0.22, -0.4, 0, Math.PI * 2);
+    this.ctx.arc(0, capCY, capR, 0, Math.PI * 2);
     this.ctx.fill();
 
-    const eyeY = -baseSize * 0.08;
-    this.drawEye(-baseSize * 0.16, eyeY, baseSize * 0.09);
-    this.drawEye(baseSize * 0.16, eyeY, baseSize * 0.09);
-
-    this.ctx.strokeStyle = '#4f2a25';
-    this.ctx.lineWidth = 2;
-    this.ctx.lineCap = 'round';
+    // Cap bottom rim (slightly darker arc)
+    this.ctx.strokeStyle = this.darkenColor(slime.color, 0.15);
+    this.ctx.lineWidth = 1.5;
     this.ctx.beginPath();
-    this.ctx.arc(0, baseSize * 0.14, baseSize * 0.18, 0.2, Math.PI - 0.2);
+    this.ctx.arc(0, capCY, capR, 0.15, Math.PI - 0.15);
     this.ctx.stroke();
 
+    // Highlight on cap
+    this.ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    this.ctx.beginPath();
+    this.ctx.ellipse(-capR * 0.28, capCY - capR * 0.35, capR * 0.28, capR * 0.38, -0.35, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // Small decorative spots on cap
+    this.ctx.fillStyle = 'rgba(255,255,255,0.22)';
+    this.ctx.beginPath();
+    this.ctx.arc(capR * 0.3, capCY - capR * 0.15, capR * 0.1, 0, Math.PI * 2);
+    this.ctx.fill();
+    this.ctx.beginPath();
+    this.ctx.arc(-capR * 0.05, capCY - capR * 0.55, capR * 0.08, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // --- Big cute eyes (larger, with big pupils + highlights) ---
+    const eyeY = capCY + capR * 0.1;
+    const eyeSpacing = capR * 0.36;
+    const eyeR = capR * 0.22; // Bigger eyes for cute factor
+    this.drawMushroomEye(-eyeSpacing, eyeY, eyeR);
+    this.drawMushroomEye(eyeSpacing, eyeY, eyeR);
+
+    // --- Simple ω mouth (cute fungi expression) ---
+    this.ctx.strokeStyle = '#4f2a25';
+    this.ctx.lineWidth = 1.8;
+    this.ctx.lineCap = 'round';
+    this.ctx.lineJoin = 'round';
+    const mouthY = capCY + capR * 0.4;
+    const mouthW = capR * 0.22;
+    // ω shape: two small arcs side by side
+    this.ctx.beginPath();
+    this.ctx.arc(-mouthW * 0.5, mouthY, mouthW * 0.45, Math.PI * 0.1, Math.PI * 0.9);
+    this.ctx.stroke();
+    this.ctx.beginPath();
+    this.ctx.arc(mouthW * 0.5, mouthY, mouthW * 0.45, Math.PI * 0.1, Math.PI * 0.9);
+    this.ctx.stroke();
+
+    // Optional blush spots
+    this.ctx.fillStyle = 'rgba(255, 140, 160, 0.25)';
+    this.ctx.beginPath();
+    this.ctx.ellipse(-eyeSpacing - capR * 0.05, eyeY + eyeR * 1.2, capR * 0.12, capR * 0.07, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+    this.ctx.beginPath();
+    this.ctx.ellipse(eyeSpacing + capR * 0.05, eyeY + eyeR * 1.2, capR * 0.12, capR * 0.07, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // Legendary stars
     if (slime.rarity === Rarity.Legendary) {
       this.drawLegendaryStars(baseSize);
     }
@@ -211,15 +401,30 @@ export class Canvas2DRenderer {
     this.ctx.restore();
   }
 
-  private drawEye(x: number, y: number, r: number): void {
-    this.ctx.fillStyle = '#131313';
-    this.ctx.beginPath();
-    this.ctx.arc(x, y, r, 0, Math.PI * 2);
-    this.ctx.fill();
-
+  /** Draw a big cute eye with large pupil and two highlight spots */
+  private drawMushroomEye(ex: number, ey: number, r: number): void {
+    // White of eye
     this.ctx.fillStyle = '#ffffff';
     this.ctx.beginPath();
-    this.ctx.arc(x - r * 0.3, y - r * 0.35, r * 0.35, 0, Math.PI * 2);
+    this.ctx.ellipse(ex, ey, r, r * 1.05, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // Large pupil
+    this.ctx.fillStyle = '#1a1a2e';
+    this.ctx.beginPath();
+    this.ctx.arc(ex, ey + r * 0.05, r * 0.7, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // Main highlight (top-left)
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.beginPath();
+    this.ctx.arc(ex - r * 0.25, ey - r * 0.2, r * 0.3, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // Small secondary highlight
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.beginPath();
+    this.ctx.arc(ex + r * 0.2, ey + r * 0.25, r * 0.14, 0, Math.PI * 2);
     this.ctx.fill();
   }
 
@@ -230,16 +435,16 @@ export class Canvas2DRenderer {
       [0, -size * 1.08],
     ];
     this.ctx.fillStyle = '#ffd867';
-    for (const [x, y] of points) {
+    for (const [sx, sy] of points) {
       this.ctx.beginPath();
-      this.ctx.moveTo(x, y - 4);
-      this.ctx.lineTo(x + 1.5, y - 1.5);
-      this.ctx.lineTo(x + 4, y);
-      this.ctx.lineTo(x + 1.5, y + 1.5);
-      this.ctx.lineTo(x, y + 4);
-      this.ctx.lineTo(x - 1.5, y + 1.5);
-      this.ctx.lineTo(x - 4, y);
-      this.ctx.lineTo(x - 1.5, y - 1.5);
+      this.ctx.moveTo(sx, sy - 4);
+      this.ctx.lineTo(sx + 1.5, sy - 1.5);
+      this.ctx.lineTo(sx + 4, sy);
+      this.ctx.lineTo(sx + 1.5, sy + 1.5);
+      this.ctx.lineTo(sx, sy + 4);
+      this.ctx.lineTo(sx - 1.5, sy + 1.5);
+      this.ctx.lineTo(sx - 4, sy);
+      this.ctx.lineTo(sx - 1.5, sy - 1.5);
       this.ctx.closePath();
       this.ctx.fill();
     }
@@ -276,5 +481,43 @@ export class Canvas2DRenderer {
       hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
     }
     return (hash % 628) / 100;
+  }
+
+  /** Lighten a hex/CSS color by mixing toward white */
+  private lightenColor(color: string, amount: number): string {
+    return this.adjustColor(color, amount);
+  }
+
+  /** Darken a hex/CSS color by mixing toward black */
+  private darkenColor(color: string, amount: number): string {
+    return this.adjustColor(color, -amount);
+  }
+
+  private adjustColor(color: string, amount: number): string {
+    // Parse hex color
+    let r = 128, g = 128, b = 128;
+    if (color.startsWith('#')) {
+      const hex = color.slice(1);
+      if (hex.length === 3) {
+        r = parseInt(hex[0] + hex[0], 16);
+        g = parseInt(hex[1] + hex[1], 16);
+        b = parseInt(hex[2] + hex[2], 16);
+      } else if (hex.length >= 6) {
+        r = parseInt(hex.slice(0, 2), 16);
+        g = parseInt(hex.slice(2, 4), 16);
+        b = parseInt(hex.slice(4, 6), 16);
+      }
+    }
+    if (amount > 0) {
+      r = Math.min(255, Math.round(r + (255 - r) * amount));
+      g = Math.min(255, Math.round(g + (255 - g) * amount));
+      b = Math.min(255, Math.round(b + (255 - b) * amount));
+    } else {
+      const d = -amount;
+      r = Math.max(0, Math.round(r * (1 - d)));
+      g = Math.max(0, Math.round(g * (1 - d)));
+      b = Math.max(0, Math.round(b * (1 - d)));
+    }
+    return `rgb(${r},${g},${b})`;
   }
 }
