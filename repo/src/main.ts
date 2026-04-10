@@ -78,6 +78,7 @@ function createDefaultState(): GameState {
     archivedSlimes: [],
     archiveCapacity: 10,
     items: [],
+    unlockedChapters: 1,
   };
 }
 
@@ -87,6 +88,7 @@ function migrateState(state: GameState): void {
   if (typeof s['archiveCapacity'] !== 'number') s['archiveCapacity'] = 10;
   if (typeof s['crystal'] !== 'number') s['crystal'] = 0;
   if (!Array.isArray(s['items'])) s['items'] = [];
+  if (typeof s['unlockedChapters'] !== 'number') s['unlockedChapters'] = 1;
   if (!Array.isArray(state.facilities) || state.facilities.length === 0) {
     state.facilities = DEFAULT_FACILITIES.map((f) => ({ ...f }));
   } else {
@@ -275,6 +277,10 @@ battleUI.bind({
       }
       state.currency += result.rewards.gold;
       state.crystal += result.rewards.crystals;
+
+      // Chapter unlock logic
+      if (state.stageProgress['1-10']?.stars > 0) state.unlockedChapters = Math.max(state.unlockedChapters, 2);
+      if (state.stageProgress['2-10']?.stars > 0) state.unlockedChapters = Math.max(state.unlockedChapters, 3);
     }
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
