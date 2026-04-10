@@ -1,5 +1,5 @@
 import { Rarity } from '../types';
-import type { Stats, Trait, Skill, Slime, MutationModifiers } from '../types';
+import type { Stats, Trait, Skill, Slime, MutationModifiers, Accessory } from '../types';
 import { ALL_TRAITS } from '../data/traits';
 import { ALL_SKILLS } from '../data/skills';
 
@@ -98,12 +98,23 @@ export class MutationEngine {
     }
   }
 
-  createOffspring(parent: Slime, modifiers?: MutationModifiers): Slime {
+  createOffspring(parent: Slime, modifiers?: MutationModifiers, parentAccessory?: Accessory): Slime & { _inheritedAccessoryTemplateId?: string } {
     const stats = this.mutateStats(parent.stats, modifiers);
     const traits = this.mutateTraits(parent.traits, modifiers);
     const skills = this.mutateSkills(parent.skills, modifiers);
     const rarity = this.determineRarity(stats);
     const color = this.generateColor(rarity);
+
+    // Accessory inheritance logic
+    let inheritedTemplateId: string | undefined;
+    if (parentAccessory) {
+      if (parentAccessory.kind === 'tendency' && Math.random() < 0.3) {
+        inheritedTemplateId = parentAccessory.templateId;
+      } else if (parentAccessory.kind === 'rare' && Math.random() < 0.15) {
+        inheritedTemplateId = parentAccessory.templateId;
+      }
+      // 'stat' kind: 0% inheritance — never inherited
+    }
 
     return {
       id: `slime-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -120,6 +131,7 @@ export class MutationEngine {
         y: parent.position.y + (Math.random() * 4 - 2),
         z: parent.position.z + (Math.random() * 4 - 2),
       },
+      _inheritedAccessoryTemplateId: inheritedTemplateId,
     };
   }
 

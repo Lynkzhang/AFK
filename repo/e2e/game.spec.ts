@@ -1410,3 +1410,61 @@ test.describe('Accessory System', () => {
     expect(loadedAcc[0].name).toBe('疾风脚环');
   });
 });
+
+// =========================================================
+// Test: Accessory Inheritance
+// =========================================================
+test.describe('Accessory Inheritance', () => {
+  test('tendency accessory inherits at ~30% rate', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(300);
+
+    // Use tendency accessory (acc-flame-crystal, kind: tendency)
+    const result = await page.evaluate(() =>
+      window.__GM!.testAccessoryInheritance('acc-flame-crystal', 1000)
+    );
+    expect(result.kind).toBe('tendency');
+    expect(result.trials).toBe(1000);
+    // 30% +/- tolerance: expect between 18% and 42%
+    expect(result.rate).toBeGreaterThan(0.18);
+    expect(result.rate).toBeLessThan(0.42);
+  });
+
+  test('rare accessory inherits at ~15% rate', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(300);
+
+    // Use rare accessory (acc-origin-pendant, kind: rare)
+    const result = await page.evaluate(() =>
+      window.__GM!.testAccessoryInheritance('acc-origin-pendant', 1000)
+    );
+    expect(result.kind).toBe('rare');
+    expect(result.trials).toBe(1000);
+    // 15% +/- tolerance: expect between 8% and 22%
+    expect(result.rate).toBeGreaterThan(0.08);
+    expect(result.rate).toBeLessThan(0.22);
+  });
+
+  test('stat accessory never inherits (0% rate)', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(300);
+
+    // Use stat accessory (acc-iron-ring, kind: stat)
+    const result = await page.evaluate(() =>
+      window.__GM!.testAccessoryInheritance('acc-iron-ring', 500)
+    );
+    expect(result.kind).toBe('stat');
+    expect(result.trials).toBe(500);
+    expect(result.inherited).toBe(0);
+    expect(result.rate).toBe(0);
+  });
+});
