@@ -1691,6 +1691,7 @@ test.describe('Onboarding Full Flow', () => {
     state = await page.evaluate(() => window.__GM!.getState());
     expect(state.onboarding.currentStep).toBe('step-teach-cull');
     await page.waitForSelector('.onboarding-bubble', { timeout: 3000 });
+    await page.waitForTimeout(200);
     state = await page.evaluate(() => window.__GM!.getState());
 
     // Step 4: step-teach-cull — KEY CHECK: cull button should be VISIBLE (not deadlocked)
