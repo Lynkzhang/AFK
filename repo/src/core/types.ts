@@ -108,4 +108,6 @@ export interface GameState {
   archiveCapacity: number;
   /** 背包道具 */
   items: Item[];
+  /** 已解锁的最大章节号，默认 1 */
+  unlockedChapters: number;
 }
