@@ -1,4 +1,4 @@
-import type { GameState, Slime, Stats, Facility, Item, QuestProgress, QuestTemplate } from '../types';
+import type { GameState, Slime, Stats, Facility, Item, QuestProgress, QuestTemplate, CodexData } from '../types';
 import { Rarity } from '../types';
 import type { BattleResult } from '../combat/CombatTypes';
 import { runBattle } from '../combat/CombatEngine';
@@ -9,6 +9,7 @@ import { FacilitySystem } from '../systems/FacilitySystem';
 import { ShopSystem } from '../systems/ShopSystem';
 import { ItemSystem } from '../systems/ItemSystem';
 import { QuestSystem } from '../systems/QuestSystem';
+import { CodexSystem } from '../systems/CodexSystem';
 
 type GetState = () => GameState;
 type SetState = (s: GameState) => void;
@@ -41,6 +42,10 @@ interface GMApi {
   claimQuest(questId: string): boolean;
   submitBounty(questId: string, slimeId: string): boolean;
   incrementQuestCounter(key: string, amount?: number): void;
+  // Codex GM commands
+  getCodex(): { codex: CodexData; allRarities: string[]; allTraits: { id: string; name: string; rarity: string }[]; allSkills: { id: string; name: string; type: string }[] };
+  unlockCodexEntry(category: string, id: string): boolean;
+  getCodexCompletion(): { rarities: { unlocked: number; total: number; percent: number }; traits: { unlocked: number; total: number; percent: number }; skills: { unlocked: number; total: number; percent: number }; overall: { unlocked: number; total: number; percent: number } };
 }
 
 declare global {
@@ -261,6 +266,25 @@ export function initGM(getState: GetState, setState: SetState): void {
       const s = getState();
       QuestSystem.incrementCounter(s, key, amount);
       setState({ ...s, quests: [...s.quests], questCounters: { ...s.questCounters } });
+    },
+    // Codex GM commands
+    getCodex() {
+      const s = getState();
+      CodexSystem.recordFromState(s);
+      return CodexSystem.getCodex(s);
+    },
+    unlockCodexEntry(category: string, id: string): boolean {
+      const s = getState();
+      const result = CodexSystem.unlockEntry(s, category, id);
+      setState({ ...s, codex: { ...s.codex } });
+      return result;
+    },
+    getCodexCompletion() {
+      const s = getState();
+      if (!s.codex) {
+        s.codex = CodexSystem.createDefaultCodex();
+      }
+      return CodexSystem.getCompletion(s.codex);
     },
   };
 

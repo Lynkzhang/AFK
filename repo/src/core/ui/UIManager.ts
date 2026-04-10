@@ -13,6 +13,7 @@ interface UIHandlers {
   onOpenFacility: () => void;
   onOpenShop: () => void;
   onOpenQuest: () => void;
+  onOpenCodex: () => void;
 }
 
 type SortMode = 'rarity' | 'stats';
@@ -71,7 +72,9 @@ export class UIManager {
 
     const questBtn = this.makeButton('\ud83d\udcdc \u4efb\u52a1');
 
-    actions.append(newBtn, saveBtn, loadBtn, battleBtn, archiveBtn, facilityBtn, shopBtn, questBtn);
+    const codexBtn = this.makeButton('\ud83d\udcd6 \u56fe\u9274');
+
+    actions.append(newBtn, saveBtn, loadBtn, battleBtn, archiveBtn, facilityBtn, shopBtn, questBtn, codexBtn);
 
     const sortActions = document.createElement('div');
     sortActions.className = 'sort-actions';
@@ -88,7 +91,7 @@ export class UIManager {
 
     this.root.append(title, currency, slimeCount, countdown, capacity, this.fullHintEl, actions, sortActions, listTitle, this.slimeListEl);
 
-    this.buttons = { newBtn, saveBtn, loadBtn, battleBtn, archiveBtn, facilityBtn, shopBtn, questBtn, sortByRarityBtn, sortByStatsBtn };
+    this.buttons = { newBtn, saveBtn, loadBtn, battleBtn, archiveBtn, facilityBtn, shopBtn, questBtn, codexBtn, sortByRarityBtn, sortByStatsBtn };
   }
 
   private readonly buttons: {
@@ -100,6 +103,7 @@ export class UIManager {
     facilityBtn: HTMLButtonElement;
     shopBtn: HTMLButtonElement;
     questBtn: HTMLButtonElement;
+    codexBtn: HTMLButtonElement;
     sortByRarityBtn: HTMLButtonElement;
     sortByStatsBtn: HTMLButtonElement;
   };
@@ -120,6 +124,7 @@ export class UIManager {
     this.buttons.facilityBtn.onclick = handlers.onOpenFacility;
     this.buttons.shopBtn.onclick = handlers.onOpenShop;
     this.buttons.questBtn.onclick = handlers.onOpenQuest;
+    this.buttons.codexBtn.onclick = handlers.onOpenCodex;
     this.buttons.sortByRarityBtn.onclick = () => {
       this.sortMode = 'rarity';
     };

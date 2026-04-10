@@ -13,6 +13,7 @@ import { ArchiveUI } from './core/ui/ArchiveUI';
 import { FacilityUI } from './core/ui/FacilityUI';
 import { ShopUI } from './core/ui/ShopUI';
 import { QuestUI } from './core/ui/QuestUI';
+import { CodexUI } from './core/ui/CodexUI';
 import type { BattleResult } from './core/combat/CombatTypes';
 import { initGM } from './core/debug/GMCommands';
 import { archiveSlime, unarchiveSlime, removeArchivedSlime } from './core/systems/ArchiveSystem';
@@ -21,6 +22,7 @@ import { FacilitySystem, DEFAULT_FACILITIES } from './core/systems/FacilitySyste
 import { ShopSystem } from './core/systems/ShopSystem';
 import { ItemSystem } from './core/systems/ItemSystem';
 import { QuestSystem } from './core/systems/QuestSystem';
+import { CodexSystem } from './core/systems/CodexSystem';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('App root not found');
@@ -84,8 +86,10 @@ function createDefaultState(): GameState {
     quests: [],
     questDailyRefreshTime: 0,
     questCounters: {},
+    codex: CodexSystem.createDefaultCodex(),
   };
   QuestSystem.initQuests(s);
+  CodexSystem.recordFromState(s);
   return s;
 }
 
@@ -113,6 +117,16 @@ function migrateState(state: GameState): void {
   if (state.quests.length === 0) {
     QuestSystem.initQuests(state);
   }
+  // Codex migration
+  if (!s['codex'] || typeof s['codex'] !== 'object') {
+    s['codex'] = CodexSystem.createDefaultCodex();
+  }
+  const codexObj = s['codex'] as Record<string, unknown>;
+  if (!Array.isArray(codexObj['unlockedRarities'])) codexObj['unlockedRarities'] = [];
+  if (!Array.isArray(codexObj['unlockedTraits'])) codexObj['unlockedTraits'] = [];
+  if (!Array.isArray(codexObj['unlockedSkills'])) codexObj['unlockedSkills'] = [];
+  // Scan existing slimes to populate codex from old saves
+  CodexSystem.recordFromState(state);
 }
 
 const gameRoot = document.createElement('div');
@@ -155,6 +169,10 @@ const questUI = new QuestUI();
 questUI.hide();
 gameRoot.appendChild(questUI.root);
 
+const codexUI = new CodexUI();
+codexUI.hide();
+gameRoot.appendChild(codexUI.root);
+
 const saveManager = new SaveManager();
 let state = saveManager.load() ?? createDefaultState();
 migrateState(state);
@@ -173,6 +191,8 @@ const loop = new GameLoop({
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
     // Sync derived quest counters each frame
     QuestSystem.syncDerivedCounters(state);
+    // Auto-record codex entries from current slimes
+    CodexSystem.recordFromState(state);
   },
   render: () => {
     scene.render();
@@ -237,6 +257,11 @@ ui.bind({
     questUI.render(state);
     questUI.show();
   },
+  onOpenCodex: () => {
+    CodexSystem.recordFromState(state);
+    codexUI.render(state);
+    codexUI.show();
+  },
 });
 
 facilityUI.bind({
@@ -281,6 +306,12 @@ questUI.bind({
   },
   onBack: () => {
     questUI.hide();
+  },
+});
+
+codexUI.bind({
+  onBack: () => {
+    codexUI.hide();
   },
 });
 
