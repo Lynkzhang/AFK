@@ -1,5 +1,5 @@
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Nunito', Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   color: #f0f3ff;
   background: #141824;
 }
@@ -28,6 +28,8 @@ body,
   height: 100%;
 }
 
+/* ===== UI Panel — warm cream card style ===== */
+
 .ui-panel {
   position: absolute;
   top: 16px;
@@ -35,16 +37,19 @@ body,
   width: 320px;
   max-height: calc(100% - 32px);
   padding: 14px;
-  border-radius: 10px;
-  background: rgba(15, 20, 35, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(4px);
+  border-radius: 14px;
+  background: rgba(255, 250, 240, 0.88);
+  border: 1px solid rgba(200, 180, 150, 0.35);
+  backdrop-filter: blur(6px);
   overflow: hidden;
+  color: #333;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
 }
 
 .ui-panel h1 {
   margin: 0 0 8px;
-  font-size: 20px;
+  font-size: 18px;
+  color: #4a3728;
 }
 
 .ui-actions,
@@ -52,6 +57,7 @@ body,
   margin-top: 10px;
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .ui-actions button,
@@ -59,14 +65,26 @@ body,
 .slime-actions button {
   cursor: pointer;
   border: none;
-  border-radius: 6px;
-  padding: 6px 10px;
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 13px;
+  background: rgba(120, 100, 80, 0.12);
+  color: #4a3728;
+  transition: background 0.2s, transform 0.15s, filter 0.2s;
+}
+
+.ui-actions button:hover,
+.sort-actions button:hover,
+.slime-actions button:hover {
+  background: rgba(120, 100, 80, 0.22);
+  transform: scale(1.04);
+  filter: brightness(1.05);
 }
 
 .full-hint {
   margin-top: 8px;
-  color: #ff8f8f;
-  font-size: 13px;
+  color: #cc5555;
+  font-size: 12px;
 }
 
 .hidden {
@@ -76,6 +94,7 @@ body,
 .list-title {
   margin: 12px 0 8px;
   font-size: 16px;
+  color: #4a3728;
 }
 
 .slime-list {
@@ -88,10 +107,11 @@ body,
 }
 
 .slime-item {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(200, 180, 150, 0.3);
+  border-radius: 12px;
   padding: 8px;
+  color: #444;
 }
 
 .slime-head {
@@ -111,7 +131,7 @@ body,
 .slime-info {
   margin-top: 6px;
   font-size: 13px;
-  color: #d7def8;
+  color: #555;
 }
 
 .slime-actions {
@@ -120,7 +140,7 @@ body,
   gap: 8px;
 }
 
-/* ===== Battle UI Styles ===== */
+/* ===== Battle/Overlay UI Styles — keep dark for readability ===== */
 
 .overlay-panel {
   position: absolute;
@@ -138,7 +158,7 @@ body,
 
 .panel-title {
   margin: 0 0 12px;
-  font-size: 22px;
+  font-size: 18px;
   color: #ffd700;
 }
 
@@ -149,9 +169,15 @@ body,
   background: rgba(255,255,255,0.1);
   border: 1px solid rgba(255,255,255,0.2);
   color: #ccc;
-  border-radius: 6px;
+  border-radius: 10px;
   padding: 6px 14px;
   font-size: 14px;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.back-btn:hover {
+  background: rgba(255,255,255,0.18);
+  transform: scale(1.04);
 }
 
 .stage-list {
@@ -163,17 +189,17 @@ body,
 .stage-card {
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 10px;
+  border-radius: 14px;
   padding: 12px;
   cursor: pointer;
   text-align: center;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, transform 0.15s;
 }
 
-.stage-card:hover { border-color: #ffd700; }
+.stage-card:hover { border-color: #ffd700; transform: scale(1.03); }
 .stage-card.cleared { border-color: #56d364; }
 
-.stage-name { font-size: 18px; font-weight: bold; margin-bottom: 4px; }
+.stage-name { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
 .stage-stars { font-size: 16px; color: #ffd700; margin-bottom: 4px; }
 .stage-reward { font-size: 13px; color: #aab; }
 
@@ -189,12 +215,14 @@ body,
   background: #4CAF50;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 8px 20px;
-  font-size: 15px;
+  font-size: 14px;
+  transition: background 0.2s, transform 0.15s;
 }
 
-.confirm-btn:disabled { background: #555; cursor: not-allowed; }
+.confirm-btn:hover { background: #5cbf60; transform: scale(1.04); }
+.confirm-btn:disabled { background: #555; cursor: not-allowed; transform: none; }
 
 .stage-label { font-size: 14px; color: #aab; margin-bottom: 4px; }
 
@@ -209,24 +237,24 @@ body,
 .team-slime-card {
   background: rgba(255,255,255,0.06);
   border: 2px solid rgba(255,255,255,0.1);
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 10px;
   cursor: pointer;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, transform 0.15s;
 }
 
-.team-slime-card:hover { border-color: #4f8cff; }
+.team-slime-card:hover { border-color: #4f8cff; transform: scale(1.02); }
 .team-slime-card.selected { border-color: #4CAF50; background: rgba(76,175,80,0.15); }
 
 .team-slime-name { display: flex; align-items: center; gap: 8px; }
 .team-slime-stats, .team-slime-skills { font-size: 13px; color: #bbc; margin-top: 4px; }
 
 .battle-panel { gap: 8px; }
-.battle-turn-label { font-size: 18px; font-weight: bold; color: #ffd700; text-align: center; }
+.battle-turn-label { font-size: 16px; font-weight: bold; color: #ffd700; text-align: center; }
 
 .battle-units-row { display: flex; gap: 20px; justify-content: center; }
 .battle-side { flex: 1; max-width: 300px; }
-.battle-side h3 { margin: 0 0 6px; font-size: 15px; color: #ddd; }
+.battle-side h3 { margin: 0 0 6px; font-size: 14px; color: #ddd; }
 
 .unit-bar { margin-bottom: 6px; }
 .unit-name { font-size: 13px; margin-bottom: 2px; }
@@ -243,7 +271,7 @@ body,
 .player-side .hp-bar-inner { background: #4CAF50; }
 .enemy-side .hp-bar-inner { background: #f44336; }
 
-.hp-text { font-size: 11px; color: #aab; margin-top: 1px; }
+.hp-text { font-size: 12px; color: #aab; margin-top: 1px; }
 
 .battle-controls { display: flex; justify-content: center; gap: 10px; }
 .battle-controls button {
@@ -251,8 +279,15 @@ body,
   background: rgba(255,255,255,0.1);
   border: 1px solid rgba(255,255,255,0.2);
   color: #ccc;
-  border-radius: 6px;
+  border-radius: 10px;
   padding: 6px 16px;
+  font-size: 13px;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.battle-controls button:hover {
+  background: rgba(255,255,255,0.18);
+  transform: scale(1.04);
 }
 
 .battle-log {
@@ -261,7 +296,7 @@ body,
   max-height: 300px;
   overflow-y: auto;
   background: rgba(0,0,0,0.3);
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 8px;
   font-size: 13px;
   line-height: 1.6;
@@ -275,23 +310,23 @@ body,
 
 .battle-result {
   background: rgba(0,0,0,0.5);
-  border-radius: 10px;
+  border-radius: 14px;
   padding: 16px;
   text-align: center;
 }
 
-.result-victory { color: #4CAF50; font-size: 22px; }
-.result-defeat { color: #f44336; font-size: 22px; }
-.result-stars { font-size: 28px; color: #ffd700; margin: 8px 0; }
+.result-victory { color: #4CAF50; font-size: 18px; }
+.result-defeat { color: #f44336; font-size: 18px; }
+.result-stars { font-size: 24px; color: #ffd700; margin: 8px 0; }
 .result-info { font-size: 14px; color: #ccc; margin-bottom: 8px; }
-.result-rewards { font-size: 14px; color: #aab; margin-bottom: 12px; }
+.result-rewards { font-size: 13px; color: #aab; margin-bottom: 12px; }
 .result-rewards div { margin: 2px 0; }
 
 /* ===== Archive UI Styles ===== */
 
 .archive-panel { gap: 8px; }
 .archive-header { display: flex; justify-content: space-between; align-items: center; }
-.archive-count { font-size: 14px; color: #aab; }
+.archive-count { font-size: 13px; color: #aab; }
 
 .archive-list {
   display: flex;
@@ -304,7 +339,7 @@ body,
 .archive-slime-card {
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 10px;
 }
 
@@ -319,9 +354,15 @@ body,
   background: rgba(255,255,255,0.1);
   border: 1px solid rgba(255,255,255,0.2);
   color: #ccc;
-  border-radius: 6px;
+  border-radius: 10px;
   padding: 4px 12px;
   font-size: 13px;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.archive-action-btn:hover {
+  background: rgba(255,255,255,0.18);
+  transform: scale(1.04);
 }
 
 .archive-action-btn.sell-btn { border-color: #ffd700; color: #ffd700; }
@@ -332,16 +373,17 @@ body,
   bottom: 40px;
   left: 50%;
   transform: translateX(-50%) translateY(20px);
-  background: rgba(20, 24, 40, 0.95);
-  color: #f0f3ff;
+  background: rgba(255, 250, 240, 0.95);
+  color: #4a3728;
   padding: 10px 24px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  border: 1px solid rgba(200, 180, 150, 0.35);
   font-size: 14px;
   z-index: 9999;
   opacity: 0;
   transition: opacity 0.3s, transform 0.3s;
   pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 .toast-message.toast-show {
   opacity: 1;
@@ -360,12 +402,12 @@ body,
 }
 .onboarding-dialog {
   max-width: 420px;
-  background: #fff;
-  border-radius: 16px;
+  background: #fffaf2;
+  border-radius: 18px;
   padding: 24px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-  color: #333;
-  font-size: 15px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  color: #4a3728;
+  font-size: 14px;
   line-height: 1.6;
   text-align: center;
 }
@@ -375,20 +417,25 @@ body,
 }
 .onboarding-btn {
   display: inline-block;
-  background: #4CAF50;
+  background: #6dbe6e;
   color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 8px 24px;
   min-width: 120px;
-  font-size: 15px;
+  font-size: 14px;
   cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+.onboarding-btn:hover {
+  background: #5cad5d;
+  transform: scale(1.04);
 }
 /* Sort button active state */
 .sort-btn-active {
   background: rgba(255, 215, 0, 0.25) !important;
   border: 1px solid #ffd700 !important;
-  color: #ffd700 !important;
+  color: #b8860b !important;
 }
 
 /* Disabled buttons */
@@ -402,7 +449,7 @@ button:disabled {
   background: rgba(255,255,255,0.1);
   color: #f0f3ff;
   border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 4px;
+  border-radius: 8px;
   padding: 4px 8px;
   font-size: 12px;
   max-width: 160px;
@@ -410,7 +457,7 @@ button:disabled {
 
 .bounty-no-eligible, .item-no-target {
   font-size: 12px;
-  color: #ff8f8f;
+  color: #cc5555;
   font-style: italic;
 }
 
@@ -428,13 +475,14 @@ button:disabled {
   left: 50%;
   transform: translate(-50%, -50%);
   max-width: 300px;
-  background: #fff3cd;
-  border: 1px solid #ffc107;
-  border-radius: 12px;
+  background: #fffaf2;
+  border: 1px solid #e8c976;
+  border-radius: 14px;
   padding: 14px 18px;
-  color: #333;
+  color: #4a3728;
   font-size: 14px;
   line-height: 1.5;
   z-index: 910;
   white-space: pre-line;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
