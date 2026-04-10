@@ -1,5 +1,5 @@
 import { Rarity } from '../types';
-import type { GameState, Slime } from '../types';
+import type { GameState, Slime, FeatureUnlocks } from '../types';
 
 interface UIHandlers {
   onNewGame: () => void;
@@ -29,6 +29,7 @@ export class UIManager {
   private readonly slimeListEl: HTMLDivElement;
   private sortMode: SortMode = 'rarity';
   private handlers: UIHandlers | null = null;
+  private currentUnlocks: FeatureUnlocks | null = null;
 
   constructor() {
     this.root = document.createElement('div');
@@ -145,6 +146,27 @@ export class UIManager {
     this.capacityEl.textContent = `${state.slimes.length} / ${maxCapacity}`;
     this.fullHintEl.classList.toggle('hidden', state.slimes.length < maxCapacity);
 
+    // Progressive unlock
+    this.currentUnlocks = (state.onboarding?.currentStep !== null) ? (state.onboarding?.unlocks ?? null) : null;
+    const unlocks = state.onboarding?.unlocks;
+    if (unlocks && state.onboarding?.currentStep !== null) {
+      this.buttons.battleBtn.style.display = unlocks.battle ? '' : 'none';
+      this.buttons.archiveBtn.style.display = unlocks.archive ? '' : 'none';
+      this.buttons.facilityBtn.style.display = unlocks.facility ? '' : 'none';
+      this.buttons.shopBtn.style.display = unlocks.shop ? '' : 'none';
+      this.buttons.questBtn.style.display = unlocks.quest ? '' : 'none';
+      this.buttons.codexBtn.style.display = unlocks.codex ? '' : 'none';
+      this.buttons.arenaBtn.style.display = unlocks.arena ? '' : 'none';
+    } else {
+      this.buttons.battleBtn.style.display = '';
+      this.buttons.archiveBtn.style.display = '';
+      this.buttons.facilityBtn.style.display = '';
+      this.buttons.shopBtn.style.display = '';
+      this.buttons.questBtn.style.display = '';
+      this.buttons.codexBtn.style.display = '';
+      this.buttons.arenaBtn.style.display = '';
+    }
+
     const sortedSlimes = [...state.slimes].sort((a, b) => {
       if (this.sortMode === 'stats') {
         return this.getTotalStats(b) - this.getTotalStats(a);
@@ -194,8 +216,25 @@ export class UIManager {
     };
 
     actions.append(cullBtn, sellBtn, archiveBtn);
+
+    const u = this.currentUnlocks;
+    if (u) {
+      cullBtn.style.display = u.cull ? '' : 'none';
+      sellBtn.style.display = u.sell ? '' : 'none';
+      archiveBtn.style.display = u.archive ? '' : 'none';
+    }
+
     item.append(head, info, actions);
     return item;
+  }
+
+  setActionsDisabled(disabled: boolean): void {
+    const btns = this.root.querySelectorAll<HTMLButtonElement>('.ui-actions button');
+    btns.forEach(btn => {
+      btn.disabled = disabled;
+      btn.style.opacity = disabled ? '0.4' : '';
+      btn.style.pointerEvents = disabled ? 'none' : '';
+    });
   }
 
   private getTotalStats(slime: Slime): number {

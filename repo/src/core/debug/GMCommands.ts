@@ -1,4 +1,4 @@
-import type { GameState, Slime, Stats, Facility, Item, QuestProgress, QuestTemplate, CodexData, Arena, ArenaId, Accessory } from '../types';
+import type { GameState, Slime, Stats, Facility, Item, QuestProgress, QuestTemplate, CodexData, Arena, ArenaId, Accessory, OnboardingState } from '../types';
 import { Rarity } from '../types';
 import type { BattleResult } from '../combat/CombatTypes';
 import { runBattle } from '../combat/CombatEngine';
@@ -59,6 +59,11 @@ interface GMApi {
   unequipAccessory(slimeId: string): boolean;
   // Accessory inheritance GM command
   testAccessoryInheritance(templateId: string, trials: number): { templateId: string; kind: string; trials: number; inherited: number; rate: number };
+  // Onboarding GM commands
+  skipOnboarding(): void;
+  getOnboardingState(): OnboardingState;
+  resetOnboarding(): void;
+  goToOnboardingStep(stepId: string): boolean;
 }
 
 declare global {
@@ -155,7 +160,15 @@ function runBattleWithTeam(getState: GetState, setState: SetState, stageId: stri
   return result;
 }
 
-export function initGM(getState: GetState, setState: SetState): void {
+export function initGM(
+  getState: GetState,
+  setState: SetState,
+  onboardingApi?: {
+    skip: () => void;
+    reset: () => void;
+    goToStep: (stepId: string) => boolean;
+  }
+): void {
   const engine = new MutationEngine();
 
   const api: GMApi = {
@@ -386,6 +399,19 @@ export function initGM(getState: GetState, setState: SetState): void {
         inherited,
         rate: inherited / trials,
       };
+    },
+    // Onboarding GM commands
+    skipOnboarding(): void {
+      if (onboardingApi) onboardingApi.skip();
+    },
+    getOnboardingState() {
+      return getState().onboarding;
+    },
+    resetOnboarding(): void {
+      if (onboardingApi) onboardingApi.reset();
+    },
+    goToOnboardingStep(stepId: string): boolean {
+      return onboardingApi ? onboardingApi.goToStep(stepId) : false;
     },
   };
 
