@@ -42,9 +42,9 @@ test.describe('Page Load', () => {
     // Slime count
     await expect(page.locator('.ui-panel').locator('text=Slimes:')).toBeVisible();
 
-    // Buttons – 新游戏, 保存, 加载, 战斗, 封存库, 设施, 商店
+    // Buttons – 新游戏, 保存, 加载, 战斗, 封存库, 设施, 商店, 任务
     const buttons = page.locator('.ui-actions button');
-    await expect(buttons).toHaveCount(7);
+    await expect(buttons).toHaveCount(8);
 
     // Slime list section
     await expect(page.locator('.slime-list')).toBeVisible();
@@ -764,5 +764,239 @@ test.describe('PVE Chapters', () => {
     const tabs2 = page.locator('.chapter-tab');
     await expect(tabs2.nth(1)).not.toHaveClass(/locked/);
     await expect(tabs2.nth(2)).toHaveClass(/locked/);
+  });
+});
+
+// =========================================================
+// Test 10: Quest System
+// =========================================================
+test.describe('Quest System', () => {
+  test('getQuests returns all quests with templates', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    const quests = await page.evaluate(() => window.__GM!.getQuests());
+    expect(quests.length).toBeGreaterThanOrEqual(13); // 5 daily + 5 achievement + 3 bounty
+
+    // Verify categories exist
+    interface QuestInfo { template: { category: string; name: string } }
+    const categories = new Set((quests as QuestInfo[]).map((q) => q.template.category));
+    expect(categories.has('daily')).toBe(true);
+    expect(categories.has('achievement')).toBe(true);
+    expect(categories.has('bounty')).toBe(true);
+
+    // Verify daily quests count
+    const dailyCount = (quests as QuestInfo[]).filter((q) => q.template.category === 'daily').length;
+    expect(dailyCount).toBeGreaterThanOrEqual(5);
+
+    // Verify achievement quests count
+    const achCount = (quests as QuestInfo[]).filter((q) => q.template.category === 'achievement').length;
+    expect(achCount).toBeGreaterThanOrEqual(5);
+
+    // Verify bounty quests count
+    const bountyCount = (quests as QuestInfo[]).filter((q) => q.template.category === 'bounty').length;
+    expect(bountyCount).toBeGreaterThanOrEqual(3);
+  });
+
+  test('completeQuest + claimQuest awards rewards', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    const currencyBefore = await page.evaluate(() => window.__GM!.getState().currency) as number;
+
+    // Complete a daily quest (daily-split-3 rewards 50 gold)
+    const completed = await page.evaluate(() => window.__GM!.completeQuest('daily-split-3'));
+    expect(completed).toBe(true);
+
+    // Verify status is completed
+    interface QuestInfo { questId: string; status: string }
+    const questAfterComplete = await page.evaluate(() =>
+      window.__GM!.getQuests().find((q: { questId: string }) => q.questId === 'daily-split-3')
+    ) as QuestInfo;
+    expect(questAfterComplete.status).toBe('completed');
+
+    // Claim it
+    const claimed = await page.evaluate(() => window.__GM!.claimQuest('daily-split-3'));
+    expect(claimed).toBe(true);
+
+    // Verify gold increased
+    const currencyAfter = await page.evaluate(() => window.__GM!.getState().currency) as number;
+    expect(currencyAfter).toBe(currencyBefore + 50);
+
+    // Verify status is claimed
+    const questAfterClaim = await page.evaluate(() =>
+      window.__GM!.getQuests().find((q: { questId: string }) => q.questId === 'daily-split-3')
+    ) as QuestInfo;
+    expect(questAfterClaim.status).toBe('claimed');
+  });
+
+  test('resetDailyQuests resets daily quests to active', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    // Complete and claim a daily quest
+    await page.evaluate(() => {
+      window.__GM!.completeQuest('daily-split-3');
+      window.__GM!.claimQuest('daily-split-3');
+    });
+
+    // Verify it is claimed
+    interface QuestInfo { questId: string; status: string; currentValue: number }
+    const beforeReset = await page.evaluate(() =>
+      window.__GM!.getQuests().find((q: { questId: string }) => q.questId === 'daily-split-3')
+    ) as QuestInfo;
+    expect(beforeReset.status).toBe('claimed');
+
+    // Reset daily quests
+    await page.evaluate(() => window.__GM!.resetDailyQuests());
+
+    // Verify daily quest is now active with progress 0
+    const afterReset = await page.evaluate(() =>
+      window.__GM!.getQuests().find((q: { questId: string }) => q.questId === 'daily-split-3')
+    ) as QuestInfo;
+    expect(afterReset.status).toBe('active');
+    expect(afterReset.currentValue).toBe(0);
+
+    // Verify achievement quests are unaffected
+    const achQuest = await page.evaluate(() =>
+      window.__GM!.getQuests().find((q: { questId: string }) => q.questId === 'ach-total-splits-50')
+    ) as QuestInfo;
+    expect(achQuest.status).toBe('active');
+  });
+
+  test('incrementQuestCounter updates quest progress', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    // Increment daily_splits counter 3 times (daily-split-3 target is 3)
+    await page.evaluate(() => {
+      window.__GM!.incrementQuestCounter('daily_splits', 3);
+    });
+
+    // daily-split-3 should now be completed
+    interface QuestInfo { questId: string; status: string; currentValue: number }
+    const quest = await page.evaluate(() =>
+      window.__GM!.getQuests().find((q: { questId: string }) => q.questId === 'daily-split-3')
+    ) as QuestInfo;
+    expect(quest.status).toBe('completed');
+    expect(quest.currentValue).toBeGreaterThanOrEqual(3);
+  });
+
+  test('save and load preserves quest progress', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    // Complete and claim a quest
+    await page.evaluate(() => {
+      window.__GM!.completeQuest('daily-battle-1');
+      window.__GM!.claimQuest('daily-battle-1');
+    });
+
+    // Save
+    await page.locator('.ui-actions button', { hasText: '\u4fdd\u5b58' }).click();
+    await page.waitForTimeout(300);
+
+    // Reset
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    // Verify quest is reset after new game
+    interface QuestInfo { questId: string; status: string }
+    const afterNew = await page.evaluate(() =>
+      window.__GM!.getQuests().find((q: { questId: string }) => q.questId === 'daily-battle-1')
+    ) as QuestInfo;
+    expect(afterNew.status).toBe('active');
+
+    // Load
+    await page.locator('.ui-actions button', { hasText: '\u52a0\u8f7d' }).click();
+    await page.waitForTimeout(300);
+
+    // Verify quest progress is restored
+    const afterLoad = await page.evaluate(() =>
+      window.__GM!.getQuests().find((q: { questId: string }) => q.questId === 'daily-battle-1')
+    ) as QuestInfo;
+    expect(afterLoad.status).toBe('claimed');
+  });
+
+  test('quest UI button exists and opens quest panel', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    // Verify quest button exists (8 buttons now)
+    const buttons = page.locator('.ui-actions button');
+    await expect(buttons).toHaveCount(8);
+
+    // Click quest button
+    await page.locator('.ui-actions button', { hasText: '\u4efb\u52a1' }).click();
+    await expect(page.locator('.quest-panel')).toBeVisible();
+
+    // Verify tabs exist
+    const tabs = page.locator('.quest-tab');
+    await expect(tabs).toHaveCount(3);
+
+    // Verify quest cards exist
+    const cards = page.locator('.quest-card');
+    const cardCount = await cards.count();
+    expect(cardCount).toBeGreaterThan(0);
+
+    // Click back
+    await page.locator('.quest-panel .back-btn').click();
+    await expect(page.locator('.quest-panel')).not.toBeVisible();
+  });
+
+  test('bounty quest: submitBounty with valid slime completes quest', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    // Default state has a Rare slime (slime-rare) and an Epic slime (slime-epic)
+    const slimesBefore = await page.evaluate(() => window.__GM!.getState().slimes.length) as number;
+
+    // Submit the rare slime for the bounty-rare-submit quest
+    const result = await page.evaluate(() =>
+      window.__GM!.submitBounty('bounty-rare-submit', 'slime-rare')
+    );
+    expect(result).toBe(true);
+
+    // Slime should be consumed
+    const slimesAfter = await page.evaluate(() => window.__GM!.getState().slimes.length) as number;
+    expect(slimesAfter).toBe(slimesBefore - 1);
+
+    // Quest should be completed
+    interface QuestInfo { questId: string; status: string }
+    const quest = await page.evaluate(() =>
+      window.__GM!.getQuests().find((q: { questId: string }) => q.questId === 'bounty-rare-submit')
+    ) as QuestInfo;
+    expect(quest.status).toBe('completed');
+
+    // Claim the bounty reward (200 gold, 10 crystal)
+    const currencyBefore = await page.evaluate(() => window.__GM!.getState().currency) as number;
+    const crystalBefore = await page.evaluate(() => window.__GM!.getState().crystal) as number;
+    const claimed = await page.evaluate(() => window.__GM!.claimQuest('bounty-rare-submit'));
+    expect(claimed).toBe(true);
+    const currencyAfterClaim = await page.evaluate(() => window.__GM!.getState().currency) as number;
+    const crystalAfterClaim = await page.evaluate(() => window.__GM!.getState().crystal) as number;
+    expect(currencyAfterClaim).toBe(currencyBefore + 200);
+    expect(crystalAfterClaim).toBe(crystalBefore + 10);
   });
 });
