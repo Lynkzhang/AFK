@@ -1,6 +1,7 @@
 import type { GameState } from '../types';
 import { MutationEngine } from './MutationEngine';
 import { ArenaSystem } from './ArenaSystem';
+import { AccessorySystem } from './AccessorySystem';
 
 export interface BreedingConfig {
   splitIntervalMs: number;
@@ -30,8 +31,34 @@ export class BreedingSystem {
         // Get mutation modifiers from active arena
         const activeArena = ArenaSystem.getActiveArena(state);
         const modifiers = ArenaSystem.getMutationModifiers(activeArena);
-        const child = this.engine.createOffspring(parent, modifiers);
-        state.slimes.push(child);
+
+        // Find parent's equipped accessory for inheritance
+        const parentAccessory = parent.equippedAccessoryId
+          ? state.accessories.find((a) => a.id === parent.equippedAccessoryId)
+          : undefined;
+
+        const offspring = this.engine.createOffspring(parent, modifiers, parentAccessory);
+
+        // Handle inherited accessory
+        const inheritedTemplateId = offspring._inheritedAccessoryTemplateId;
+        let pendingAccId: string | undefined;
+        if (inheritedTemplateId) {
+          const newAcc = AccessorySystem.giveAccessory(state, inheritedTemplateId);
+          if (newAcc) {
+            pendingAccId = newAcc.id;
+          }
+        }
+
+        // Clean up temporary field before pushing to state
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        delete (offspring as any)._inheritedAccessoryTemplateId;
+
+        state.slimes.push(offspring);
+
+        // Equip the inherited accessory on the child after it's in the state
+        if (pendingAccId) {
+          AccessorySystem.equip(state, pendingAccId, offspring.id);
+        }
       }
     }
   }
