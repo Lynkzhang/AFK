@@ -47,6 +47,7 @@ interface StepDef {
   buttonText?: string;
   autoDismissMs?: number;
   checkComplete: (state: GameState, events: Set<string>) => boolean;
+  onShow?: (state: GameState) => void;
   onComplete?: (state: GameState) => void;
 }
 
@@ -70,27 +71,27 @@ const STEPS: StepDef[] = [
   },
   {
     id: 'step-teach-cull',
-    text: '⚠️ 场地已满，无法继续分裂！\n\n你需要"剔除"不需要的史莱姆来腾出空间。\n找到属性最低的那只，然后按 [剔除]。\n\n💡 提示：留下属性高、特性好的史莱姆！',
+    text: '✂️ 随着史莱姆不断分裂，场地会越来越拥挤。\n\n你需要学会"剔除"不需要的史莱姆来保持精英阵容。\n找到属性最低的那只，然后按 [剔除]。\n\n💡 提示：留下属性高、特性好的史莱姆！',
     checkComplete: (_s, events) => events.has('cull'),
-    onComplete: (s) => { s.onboarding.unlocks.cull = true; },
+    onShow: (s) => { s.onboarding.unlocks.cull = true; },
   },
   {
     id: 'step-teach-sell',
     text: '💰 剔除可以清理空间，但出售更划算！\n\n出售史莱姆可以获得金币。\n稀有度越高、属性越强，卖价越高。\n\n试着出售一只不需要的史莱姆吧。',
     checkComplete: (_s, events) => events.has('sell'),
-    onComplete: (s) => { s.onboarding.unlocks.sell = true; },
+    onShow: (s) => { s.onboarding.unlocks.sell = true; },
   },
   {
     id: 'step-teach-archive',
     text: '📦 发现了不错的史莱姆？把它封存起来！\n\n封存的史莱姆不会被剔除，也不再分裂。\n但它们可以参加战斗！\n\n选一只你最满意的，点击 [封存]。',
     checkComplete: (_s, events) => events.has('archive'),
-    onComplete: (s) => { s.onboarding.unlocks.archive = true; },
+    onShow: (s) => { s.onboarding.unlocks.archive = true; },
   },
   {
     id: 'step-teach-battle',
     text: '⚔️ 是时候让你的史莱姆上战场了！\n\n点击 [战斗] 进入关卡选择。\n先挑战第一关试试水吧！',
     checkComplete: (_s, events) => events.has('battle-complete'),
-    onComplete: (s) => { s.onboarding.unlocks.battle = true; },
+    onShow: (s) => { s.onboarding.unlocks.battle = true; },
   },
   {
     id: 'step-first-victory',
@@ -171,6 +172,9 @@ export class OnboardingSystem {
 
     if (!this.currentStepShown) {
       this.state.onboarding.currentStep = step.id;
+      if (step.onShow) {
+        step.onShow(this.state);
+      }
       if (step.buttonText) {
         this.ui.showDialog(step.text, step.buttonText);
       } else if (step.autoDismissMs) {

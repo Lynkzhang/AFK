@@ -1647,3 +1647,117 @@ test.describe('Onboarding System', () => {
     expect(state.onboarding.currentStep).toBe('step-teach-sell');
   });
 });
+
+// =========================================================
+// Onboarding Full Flow (deadlock regression test)
+// =========================================================
+test.describe('Onboarding Full Flow', () => {
+  test('complete onboarding from welcome through teach steps without deadlock', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    acceptDialogs(page);
+
+    // Skip initial onboarding so we can click new game
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+
+    // Start new game → onboarding begins
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(500);
+
+    // Step 1: step-welcome — overlay visible
+    await expect(page.locator('.onboarding-overlay')).toBeVisible();
+    const welcomeText = await page.locator('.onboarding-text').textContent();
+    expect(welcomeText).toContain('欢迎来到史莱姆世界');
+    let state = await page.evaluate(() => window.__GM!.getState());
+    expect(state.onboarding.currentStep).toBe('step-welcome');
+
+    // Click OK → advance to step-wait-split
+    await page.locator('.onboarding-btn').click();
+    await page.waitForTimeout(300);
+    state = await page.evaluate(() => window.__GM!.getState());
+    expect(state.onboarding.currentStep).toBe('step-wait-split');
+
+    // Step 2: step-wait-split — trigger split via GM to advance quickly
+    await page.evaluate(() => window.__GM!.triggerSplit());
+    await page.waitForTimeout(500);
+    state = await page.evaluate(() => window.__GM!.getState());
+    expect(state.onboarding.currentStep).toBe('step-first-split');
+
+    // Step 3: step-first-split — click OK
+    await page.locator('.onboarding-btn').click();
+    await page.waitForTimeout(300);
+    state = await page.evaluate(() => window.__GM!.getState());
+    expect(state.onboarding.currentStep).toBe('step-teach-cull');
+    await page.waitForSelector('.onboarding-bubble', { timeout: 3000 });
+    state = await page.evaluate(() => window.__GM!.getState());
+
+    // Step 4: step-teach-cull — KEY CHECK: cull button should be VISIBLE (not deadlocked)
+    expect(state.onboarding.unlocks.cull).toBe(true);
+
+    // Verify cull text does NOT contain '场地已满'
+    const bubbleText = await page.locator('.onboarding-bubble').textContent();
+    expect(bubbleText).not.toContain('场地已满');
+    expect(bubbleText).toContain('剔除');
+
+    // Verify cull button is visible in slime actions
+    const cullBtnVisible = await page.evaluate(() => {
+      const btn = document.querySelector('.slime-item .slime-actions button:nth-child(1)') as HTMLElement | null;
+      return btn ? btn.style.display !== 'none' : false;
+    });
+    expect(cullBtnVisible).toBe(true);
+
+    // Perform cull via evaluate (to avoid DOM detachment race)
+    await page.evaluate(() => {
+      const btn = document.querySelector('.slime-item .slime-actions button:nth-child(1)') as HTMLButtonElement | null;
+      btn?.click();
+    });
+    await page.waitForTimeout(500);
+
+    // Step 5: step-teach-sell — sell button should be visible
+    state = await page.evaluate(() => window.__GM!.getState());
+    expect(state.onboarding.currentStep).toBe('step-teach-sell');
+    expect(state.onboarding.unlocks.sell).toBe(true);
+
+    // Need at least 1 slime to sell — add one if needed
+    if (state.slimes.length < 2) {
+      await page.evaluate(() => window.__GM!.triggerSplit());
+      await page.waitForTimeout(300);
+    }
+
+    // Perform sell
+    await page.evaluate(() => {
+      const btn = document.querySelector('.slime-item .slime-actions button:nth-child(2)') as HTMLButtonElement | null;
+      btn?.click();
+    });
+    await page.waitForTimeout(500);
+
+    // Step 6: step-teach-archive — archive button should be visible
+    state = await page.evaluate(() => window.__GM!.getState());
+    expect(state.onboarding.currentStep).toBe('step-teach-archive');
+    expect(state.onboarding.unlocks.archive).toBe(true);
+
+    // Need a slime to archive
+    if (state.slimes.length < 1) {
+      await page.evaluate(() => window.__GM!.addSlime());
+      await page.waitForTimeout(200);
+    }
+
+    // Perform archive
+    await page.evaluate(() => {
+      const btn = document.querySelector('.slime-item .slime-actions button:nth-child(3)') as HTMLButtonElement | null;
+      btn?.click();
+    });
+    await page.waitForTimeout(500);
+
+    // Step 7: step-teach-battle — battle button should be visible
+    state = await page.evaluate(() => window.__GM!.getState());
+    expect(state.onboarding.currentStep).toBe('step-teach-battle');
+    expect(state.onboarding.unlocks.battle).toBe(true);
+
+    // Verify battle button is visible in the UI
+    const battleBtnVisible = await page.locator('.ui-actions button', { hasText: '战斗' }).isVisible();
+    expect(battleBtnVisible).toBe(true);
+  });
+});
