@@ -14,6 +14,7 @@ import { FacilityUI } from './core/ui/FacilityUI';
 import { ShopUI } from './core/ui/ShopUI';
 import { QuestUI } from './core/ui/QuestUI';
 import { CodexUI } from './core/ui/CodexUI';
+import { ArenaUI } from './core/ui/ArenaUI';
 import type { BattleResult } from './core/combat/CombatTypes';
 import { initGM } from './core/debug/GMCommands';
 import { archiveSlime, unarchiveSlime, removeArchivedSlime } from './core/systems/ArchiveSystem';
@@ -23,6 +24,8 @@ import { ShopSystem } from './core/systems/ShopSystem';
 import { ItemSystem } from './core/systems/ItemSystem';
 import { QuestSystem } from './core/systems/QuestSystem';
 import { CodexSystem } from './core/systems/CodexSystem';
+import { ArenaSystem } from './core/systems/ArenaSystem';
+import { DEFAULT_ARENAS } from './core/data/arenas';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('App root not found');
@@ -87,6 +90,8 @@ function createDefaultState(): GameState {
     questDailyRefreshTime: 0,
     questCounters: {},
     codex: CodexSystem.createDefaultCodex(),
+    arenas: DEFAULT_ARENAS.map((a) => ({ ...a, mutationBias: { ...a.mutationBias } })),
+    activeArenaId: 'grassland',
   };
   QuestSystem.initQuests(s);
   CodexSystem.recordFromState(s);
@@ -127,6 +132,13 @@ function migrateState(state: GameState): void {
   if (!Array.isArray(codexObj['unlockedSkills'])) codexObj['unlockedSkills'] = [];
   // Scan existing slimes to populate codex from old saves
   CodexSystem.recordFromState(state);
+  // Arena migration
+  if (!Array.isArray(s['arenas'])) {
+    s['arenas'] = DEFAULT_ARENAS.map((a) => ({ ...a, mutationBias: { ...a.mutationBias } }));
+  }
+  if (typeof s['activeArenaId'] !== 'string') {
+    s['activeArenaId'] = 'grassland';
+  }
 }
 
 const gameRoot = document.createElement('div');
@@ -172,6 +184,10 @@ gameRoot.appendChild(questUI.root);
 const codexUI = new CodexUI();
 codexUI.hide();
 gameRoot.appendChild(codexUI.root);
+
+const arenaUI = new ArenaUI();
+arenaUI.hide();
+gameRoot.appendChild(arenaUI.root);
 
 const saveManager = new SaveManager();
 let state = saveManager.load() ?? createDefaultState();
@@ -262,6 +278,10 @@ ui.bind({
     codexUI.render(state);
     codexUI.show();
   },
+  onOpenArena: () => {
+    arenaUI.render(state);
+    arenaUI.show();
+  },
 });
 
 facilityUI.bind({
@@ -312,6 +332,21 @@ questUI.bind({
 codexUI.bind({
   onBack: () => {
     codexUI.hide();
+  },
+});
+
+arenaUI.bind({
+  onBuy: (arenaId) => {
+    ArenaSystem.buyArena(state, arenaId);
+    arenaUI.render(state);
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+  },
+  onSwitch: (arenaId) => {
+    ArenaSystem.switchArena(state, arenaId);
+    arenaUI.render(state);
+  },
+  onBack: () => {
+    arenaUI.hide();
   },
 });
 

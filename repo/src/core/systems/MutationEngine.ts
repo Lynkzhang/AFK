@@ -1,30 +1,43 @@
 import { Rarity } from '../types';
-import type { Stats, Trait, Skill, Slime } from '../types';
+import type { Stats, Trait, Skill, Slime, MutationModifiers } from '../types';
 import { ALL_TRAITS } from '../data/traits';
 import { ALL_SKILLS } from '../data/skills';
 
 export class MutationEngine {
-  mutateStats(parentStats: Stats): Stats {
-    const mutateValue = (base: number): number => {
-      const ratio = 0.8 + Math.random() * 0.4;
+  mutateStats(parentStats: Stats, modifiers?: MutationModifiers): Stats {
+    const mutateValue = (base: number, statKey: keyof Stats): number => {
+      const bonus = modifiers?.statBonuses[statKey] ?? 0;
+      const ratio = 0.8 + Math.random() * 0.4 + bonus;
       return Math.max(1, Math.round(base * ratio));
     };
 
     return {
-      health: mutateValue(parentStats.health),
-      attack: mutateValue(parentStats.attack),
-      defense: mutateValue(parentStats.defense),
-      speed: mutateValue(parentStats.speed),
-      mut: mutateValue(parentStats.mut),
+      health: mutateValue(parentStats.health, 'health'),
+      attack: mutateValue(parentStats.attack, 'attack'),
+      defense: mutateValue(parentStats.defense, 'defense'),
+      speed: mutateValue(parentStats.speed, 'speed'),
+      mut: mutateValue(parentStats.mut, 'mut'),
     };
   }
 
-  mutateTraits(parentTraits: Trait[]): Trait[] {
+  mutateTraits(parentTraits: Trait[], modifiers?: MutationModifiers): Trait[] {
     const inherited = parentTraits.filter(() => Math.random() < 0.5);
     const result = [...inherited];
 
     if (Math.random() < 0.2) {
-      const newTrait = this.pickWeightedTrait();
+      const preferIds = modifiers?.preferTraitIds ?? [];
+      let newTrait: Trait;
+      if (preferIds.length > 0 && Math.random() < 0.5) {
+        // 50% chance to pick from preferred traits
+        const preferred = ALL_TRAITS.filter((t) => preferIds.includes(t.id));
+        if (preferred.length > 0) {
+          newTrait = preferred[Math.floor(Math.random() * preferred.length)];
+        } else {
+          newTrait = this.pickWeightedTrait(modifiers);
+        }
+      } else {
+        newTrait = this.pickWeightedTrait(modifiers);
+      }
       if (!result.some((trait) => trait.id === newTrait.id)) {
         result.push(newTrait);
       }
@@ -33,13 +46,24 @@ export class MutationEngine {
     return result;
   }
 
-  mutateSkills(parentSkills: Skill[]): Skill[] {
+  mutateSkills(parentSkills: Skill[], modifiers?: MutationModifiers): Skill[] {
     const inherited = parentSkills.filter(() => Math.random() < 0.5);
     const result = [...inherited];
 
     if (Math.random() < 0.15) {
-      const newSkill = ALL_SKILLS[Math.floor(Math.random() * ALL_SKILLS.length)];
-      if (newSkill && !result.some((skill) => skill.id === newSkill.id)) {
+      const preferTypes = modifiers?.preferSkillTypes ?? [];
+      let newSkill: Skill | undefined;
+      if (preferTypes.length > 0 && Math.random() < 0.5) {
+        // 50% chance to pick from preferred skill types
+        const preferred = ALL_SKILLS.filter((s) => preferTypes.includes(s.type));
+        if (preferred.length > 0) {
+          newSkill = preferred[Math.floor(Math.random() * preferred.length)];
+        }
+      }
+      if (!newSkill) {
+        newSkill = ALL_SKILLS[Math.floor(Math.random() * ALL_SKILLS.length)];
+      }
+      if (newSkill && !result.some((skill) => skill.id === newSkill!.id)) {
         result.push(newSkill);
       }
     }
@@ -74,10 +98,10 @@ export class MutationEngine {
     }
   }
 
-  createOffspring(parent: Slime): Slime {
-    const stats = this.mutateStats(parent.stats);
-    const traits = this.mutateTraits(parent.traits);
-    const skills = this.mutateSkills(parent.skills);
+  createOffspring(parent: Slime, modifiers?: MutationModifiers): Slime {
+    const stats = this.mutateStats(parent.stats, modifiers);
+    const traits = this.mutateTraits(parent.traits, modifiers);
+    const skills = this.mutateSkills(parent.skills, modifiers);
     const rarity = this.determineRarity(stats);
     const color = this.generateColor(rarity);
 
@@ -99,7 +123,9 @@ export class MutationEngine {
     };
   }
 
-  private pickWeightedTrait(): Trait {
+  private pickWeightedTrait(modifiers?: MutationModifiers): Trait {
+    const rarityBonus = modifiers?.rarityWeightBonus ?? 0;
+
     const weights: Record<Rarity, number> = {
       [Rarity.Common]: 50,
       [Rarity.Uncommon]: 25,
@@ -108,10 +134,14 @@ export class MutationEngine {
       [Rarity.Legendary]: 2,
     };
 
-    const weightedPool = ALL_TRAITS.map((trait) => ({
-      trait,
-      weight: weights[trait.rarity],
-    }));
+    const weightedPool = ALL_TRAITS.map((trait) => {
+      let weight = weights[trait.rarity];
+      // Apply rarity weight bonus for Rare/Epic/Legendary
+      if (rarityBonus > 0 && (trait.rarity === Rarity.Rare || trait.rarity === Rarity.Epic || trait.rarity === Rarity.Legendary)) {
+        weight *= (1 + rarityBonus);
+      }
+      return { trait, weight };
+    });
 
     const totalWeight = weightedPool.reduce((sum, item) => sum + item.weight, 0);
     let roll = Math.random() * totalWeight;
