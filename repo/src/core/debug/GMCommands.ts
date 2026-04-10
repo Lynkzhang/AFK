@@ -12,6 +12,7 @@ import { QuestSystem } from '../systems/QuestSystem';
 import { CodexSystem } from '../systems/CodexSystem';
 import { ArenaSystem } from '../systems/ArenaSystem';
 import { AccessorySystem } from '../systems/AccessorySystem';
+import { MutationEngine } from '../systems/MutationEngine';
 
 type GetState = () => GameState;
 type SetState = (s: GameState) => void;
@@ -56,6 +57,8 @@ interface GMApi {
   giveAccessory(templateId: string): Accessory | null;
   equipAccessory(accessoryId: string, slimeId: string): boolean;
   unequipAccessory(slimeId: string): boolean;
+  // Accessory inheritance GM command
+  testAccessoryInheritance(templateId: string, trials: number): { templateId: string; kind: string; trials: number; inherited: number; rate: number };
 }
 
 declare global {
@@ -153,6 +156,8 @@ function runBattleWithTeam(getState: GetState, setState: SetState, stageId: stri
 }
 
 export function initGM(getState: GetState, setState: SetState): void {
+  const engine = new MutationEngine();
+
   const api: GMApi = {
     addSlime() {
       const s = getState();
@@ -353,6 +358,34 @@ export function initGM(getState: GetState, setState: SetState): void {
         archivedSlimes: [...s.archivedSlimes],
       });
       return result;
+    },
+    // Accessory inheritance test command
+    testAccessoryInheritance(templateId: string, trials: number): { templateId: string; kind: string; trials: number; inherited: number; rate: number } {
+      const parent = createDefaultSlime();
+      // Create a fake accessory from the template
+      const s = getState();
+      const fakeAcc = AccessorySystem.giveAccessory(s, templateId);
+      if (!fakeAcc) {
+        return { templateId, kind: 'unknown', trials, inherited: 0, rate: 0 };
+      }
+      // Remove the fake accessory we just created (cleanup)
+      s.accessories = s.accessories.filter((a) => a.id !== fakeAcc.id);
+      setState({ ...s, accessories: [...s.accessories] });
+
+      let inherited = 0;
+      for (let i = 0; i < trials; i++) {
+        const offspring = engine.createOffspring(parent, undefined, fakeAcc);
+        if (offspring._inheritedAccessoryTemplateId === templateId) {
+          inherited++;
+        }
+      }
+      return {
+        templateId,
+        kind: fakeAcc.kind,
+        trials,
+        inherited,
+        rate: inherited / trials,
+      };
     },
   };
 
