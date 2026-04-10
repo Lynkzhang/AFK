@@ -67,7 +67,8 @@ export class FacilitySystem {
 
   static getMaxCapacity(state: GameState): number {
     const level = FacilitySystem.getLevel(state, 'field-expansion');
-    return 12 + 2 * (level - 1);
+    const baseCapacity = (state.onboarding && state.onboarding.currentStep !== null) ? 6 : 12;
+    return baseCapacity + 2 * (level - 1);
   }
 
   static getArchiveCapacity(state: GameState): number {

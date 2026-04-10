@@ -3,7 +3,7 @@ import { SaveManager } from './core/save/SaveManager';
 import { SceneManager } from './core/scene/SceneManager';
 import { BreedingSystem } from './core/systems/BreedingSystem';
 import { GameLoop } from './core/systems/GameLoop';
-import type { GameState, Slime } from './core/types';
+import type { GameState } from './core/types';
 import { Rarity } from './core/types';
 import { UIManager } from './core/ui/UIManager';
 import { StageSelectUI } from './core/ui/StageSelectUI';
@@ -15,6 +15,7 @@ import { ShopUI } from './core/ui/ShopUI';
 import { QuestUI } from './core/ui/QuestUI';
 import { CodexUI } from './core/ui/CodexUI';
 import { ArenaUI } from './core/ui/ArenaUI';
+import { OnboardingUI } from './core/ui/OnboardingUI';
 import type { BattleResult } from './core/combat/CombatTypes';
 import { initGM } from './core/debug/GMCommands';
 import { archiveSlime, unarchiveSlime, removeArchivedSlime } from './core/systems/ArchiveSystem';
@@ -26,61 +27,61 @@ import { QuestSystem } from './core/systems/QuestSystem';
 import { CodexSystem } from './core/systems/CodexSystem';
 import { ArenaSystem } from './core/systems/ArenaSystem';
 import { AccessorySystem } from './core/systems/AccessorySystem';
+import { OnboardingSystem, createDefaultOnboarding, createAllUnlockedOnboarding } from './core/systems/OnboardingSystem';
 import { DEFAULT_ARENAS } from './core/data/arenas';
 import { getStage } from './core/combat/StageData';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('App root not found');
 
-function createDefaultSlimes(): Slime[] {
-  return [
-    {
-      id: 'slime-common',
-      name: 'Green Slime',
-      stats: { health: 20, attack: 5, defense: 3, speed: 4, mut: 0.05 },
-      traits: [{ id: 'fresh', name: 'Fresh', description: 'Newly born', rarity: Rarity.Common, effect: 'none' }],
-      skills: [{ id: 'jump', name: 'Jump', type: 'attack', targetType: 'single', damage: 5, cooldown: 1 }],
+function showToast(msg: string): void {
+  const el = document.createElement('div');
+  el.className = 'toast-message';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.classList.add('toast-show'), 10);
+  setTimeout(() => {
+    el.classList.remove('toast-show');
+    setTimeout(() => el.remove(), 300);
+  }, 2000);
+}
+
+function createStarterSlime(): import('./core/types').Slime {
+  return {
+    id: 'slime-starter',
+    name: '小绿',
+    stats: { health: 15, attack: 3, defense: 2, speed: 3, mut: 0.08 },
+    traits: [{
+      id: 'eager',
+      name: '活力充沛',
+      description: '分裂速度略微提升',
       rarity: Rarity.Common,
-      generation: 1,
-      parentId: null,
-      color: '#56d364',
-      position: { x: -2, y: 0.5, z: 0 },
-    },
-    {
-      id: 'slime-rare',
-      name: 'Blue Slime',
-      stats: { health: 28, attack: 7, defense: 4, speed: 5, mut: 0.05 },
-      traits: [{ id: 'calm', name: 'Calm', description: 'Stable and focused', rarity: Rarity.Common, effect: 'none' }],
-      skills: [{ id: 'splash', name: 'Splash', type: 'attack', targetType: 'single', damage: 8, cooldown: 2 }],
-      rarity: Rarity.Rare,
-      generation: 1,
-      parentId: null,
-      color: '#4f8cff',
-      position: { x: 0, y: 0.5, z: 0 },
-    },
-    {
-      id: 'slime-epic',
-      name: 'Purple Slime',
-      stats: { health: 36, attack: 10, defense: 5, speed: 6, mut: 0.05 },
-      traits: [{ id: 'arcane', name: 'Arcane', description: 'Mystic energy', rarity: Rarity.Common, effect: 'none' }],
-      skills: [{ id: 'pulse', name: 'Arcane Pulse', type: 'attack', targetType: 'single', damage: 12, cooldown: 3 }],
-      rarity: Rarity.Epic,
-      generation: 1,
-      parentId: null,
-      color: '#9b59ff',
-      position: { x: 2, y: 0.5, z: 0 },
-    },
-  ];
+      effect: 'split-speed-up-10%',
+    }],
+    skills: [{
+      id: 'bounce',
+      name: '弹跳',
+      type: 'attack',
+      targetType: 'single',
+      damage: 3,
+      cooldown: 0,
+    }],
+    rarity: Rarity.Common,
+    generation: 1,
+    parentId: null,
+    color: '#7ecf6a',
+    position: { x: 0, y: 0.5, z: 0 },
+  };
 }
 
 function createDefaultState(): GameState {
   const s: GameState = {
-    slimes: createDefaultSlimes(),
+    slimes: [createStarterSlime()],
     breedingGrounds: [
       { id: 'bg-1', name: 'Starter Pen', level: 1, capacity: 4, slimes: [], facilityLevel: 1 },
     ],
     facilities: DEFAULT_FACILITIES.map((f) => ({ ...f })),
-    currency: 100,
+    currency: 0,
     crystal: 0,
     timestamp: Date.now(),
     stageProgress: {},
@@ -95,6 +96,7 @@ function createDefaultState(): GameState {
     arenas: DEFAULT_ARENAS.map((a) => ({ ...a, mutationBias: { ...a.mutationBias } })),
     activeArenaId: 'grassland',
     accessories: [],
+    onboarding: createDefaultOnboarding(),
   };
   QuestSystem.initQuests(s);
   CodexSystem.recordFromState(s);
@@ -143,6 +145,9 @@ function migrateState(state: GameState): void {
     s['activeArenaId'] = 'grassland';
   }
   if (!Array.isArray(s['accessories'])) s['accessories'] = [];
+  if (!s['onboarding'] || typeof s['onboarding'] !== 'object') {
+    s['onboarding'] = createAllUnlockedOnboarding();
+  }
 }
 
 const gameRoot = document.createElement('div');
@@ -193,17 +198,26 @@ const arenaUI = new ArenaUI();
 arenaUI.hide();
 gameRoot.appendChild(arenaUI.root);
 
+const onboardingUI = new OnboardingUI();
+gameRoot.appendChild(onboardingUI.root);
+
 const saveManager = new SaveManager();
 let state = saveManager.load() ?? createDefaultState();
 migrateState(state);
+
+let onboardingSystem = new OnboardingSystem(state, onboardingUI);
 
 const scene = new SceneManager(sceneRoot);
 const breedingSystem = new BreedingSystem({ splitIntervalMs: 10000, maxCapacity: 12 });
 const loop = new GameLoop({
   update: (deltaTime, elapsedTime) => {
     state.timestamp = Date.now();
+    const baseSplitInterval = FacilitySystem.getSplitInterval(state);
+    const effectiveSplitInterval = (state.onboarding?.currentStep === 'step-wait-split')
+      ? Math.min(baseSplitInterval, 5000)
+      : baseSplitInterval;
     const dynamicConfig = {
-      splitIntervalMs: FacilitySystem.getSplitInterval(state),
+      splitIntervalMs: effectiveSplitInterval,
       maxCapacity: FacilitySystem.getMaxCapacity(state),
     };
     breedingSystem.update(state, deltaTime, dynamicConfig);
@@ -213,6 +227,7 @@ const loop = new GameLoop({
     QuestSystem.syncDerivedCounters(state);
     // Auto-record codex entries from current slimes
     CodexSystem.recordFromState(state);
+    onboardingSystem.tick();
   },
   render: () => {
     scene.render();
@@ -223,27 +238,40 @@ const stopAutoSave = saveManager.startAutoSave(10000, () => state);
 
 ui.bind({
   onNewGame: () => {
+    if (!confirm('确定要开始新游戏吗？当前未保存的进度将丢失。')) return;
     state = createDefaultState();
+    onboardingSystem = new OnboardingSystem(state, onboardingUI);
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
   onSave: () => {
     state.timestamp = Date.now();
-    saveManager.save(state);
+    try {
+      saveManager.save(state);
+      showToast('保存成功 ✓');
+    } catch (_e) {
+      showToast('保存失败 ✗');
+    }
   },
   onLoad: () => {
     const loaded = saveManager.load();
     if (loaded) {
       state = loaded;
       migrateState(state);
+      onboardingSystem = new OnboardingSystem(state, onboardingUI);
       ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+      showToast('加载成功 ✓');
+    } else {
+      showToast('无存档可加载');
     }
   },
   onBattle: () => {
+    ui.setActionsDisabled(true);
     stageSelectUI.render(state);
     stageSelectUI.show();
   },
   onCull: (id: string) => {
     state.slimes = state.slimes.filter((slime) => slime.id !== id);
+    onboardingSystem.notifyEvent('cull');
   },
   onSell: (id: string) => {
     const slime = state.slimes.find((item) => item.id === id);
@@ -253,36 +281,45 @@ ui.bind({
     // Track quest counters
     QuestSystem.incrementCounter(state, 'daily_sells');
     QuestSystem.incrementCounter(state, 'total_sells');
+    onboardingSystem.notifyEvent('sell');
   },
   onArchive: (id: string) => {
     archiveSlime(state, id);
     // Track quest counters
     QuestSystem.incrementCounter(state, 'daily_archives');
+    onboardingSystem.notifyEvent('archive');
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
   onOpenArchive: () => {
+    ui.setActionsDisabled(true);
     archiveUI.render(state);
     archiveUI.show();
   },
   onOpenFacility: () => {
+    ui.setActionsDisabled(true);
     facilityUI.render(state);
     facilityUI.show();
   },
   onOpenShop: () => {
+    ui.setActionsDisabled(true);
     shopUI.render(state);
     shopUI.show();
   },
   onOpenQuest: () => {
+    ui.setActionsDisabled(true);
     QuestSystem.syncDerivedCounters(state);
     questUI.render(state);
     questUI.show();
+    onboardingSystem.notifyEvent('quest-opened');
   },
   onOpenCodex: () => {
+    ui.setActionsDisabled(true);
     CodexSystem.recordFromState(state);
     codexUI.render(state);
     codexUI.show();
   },
   onOpenArena: () => {
+    ui.setActionsDisabled(true);
     arenaUI.render(state);
     arenaUI.show();
   },
@@ -293,11 +330,13 @@ facilityUI.bind({
     FacilitySystem.upgrade(state, id);
     // Track quest counters
     QuestSystem.incrementCounter(state, 'daily_upgrades');
+    onboardingSystem.notifyEvent('facility-upgrade');
     facilityUI.render(state);
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
   onBack: () => {
     facilityUI.hide();
+    ui.setActionsDisabled(false);
   },
 });
 
@@ -318,6 +357,7 @@ shopUI.bind({
   },
   onBack: () => {
     shopUI.hide();
+    ui.setActionsDisabled(false);
   },
 });
 
@@ -334,12 +374,14 @@ questUI.bind({
   },
   onBack: () => {
     questUI.hide();
+    ui.setActionsDisabled(false);
   },
 });
 
 codexUI.bind({
   onBack: () => {
     codexUI.hide();
+    ui.setActionsDisabled(false);
   },
 });
 
@@ -355,6 +397,7 @@ arenaUI.bind({
   },
   onBack: () => {
     arenaUI.hide();
+    ui.setActionsDisabled(false);
   },
 });
 
@@ -369,6 +412,7 @@ stageSelectUI.bind({
   },
   onBack: () => {
     stageSelectUI.hide();
+    ui.setActionsDisabled(false);
   },
 });
 
@@ -389,6 +433,7 @@ teamSelectUI.bind({
 battleUI.bind({
   onFinish: (result: BattleResult) => {
     battleUI.hide();
+    ui.setActionsDisabled(false);
     if (result.victory) {
       const prev = state.stageProgress[currentStageId];
       if (!prev || result.stars > prev.stars) {
@@ -414,7 +459,9 @@ battleUI.bind({
       // Track quest counters
       QuestSystem.incrementCounter(state, 'daily_battles_won');
       QuestSystem.incrementCounter(state, 'total_battles_won');
+      onboardingSystem.notifyEvent('battle-victory');
     }
+    onboardingSystem.notifyEvent('battle-complete');
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
 });
@@ -447,6 +494,7 @@ archiveUI.bind({
   },
   onBack: () => {
     archiveUI.hide();
+    ui.setActionsDisabled(false);
   },
 });
 
@@ -456,6 +504,10 @@ window.addEventListener('beforeunload', () => {
 });
 
 ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
-initGM(() => state, (s) => { state = s; });
+initGM(() => state, (s) => { state = s; onboardingSystem.setState(s); }, {
+  skip: () => onboardingSystem.skip(),
+  reset: () => onboardingSystem.reset(),
+  goToStep: (stepId: string) => onboardingSystem.goToStep(stepId),
+});
 
 loop.start();

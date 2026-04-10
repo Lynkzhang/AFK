@@ -25,6 +25,60 @@ async function clearSave(page: Page) {
   await page.evaluate(() => localStorage.removeItem('slime-keeper-save'));
 }
 
+function acceptDialogs(page: Page) {
+  page.on('dialog', dialog => dialog.accept());
+}
+
+/** Skip onboarding + give 100 gold + add 2 extra slimes to mimic old default state */
+async function setupClassicState(page: Page) {
+  await page.evaluate(() => {
+    const gm = window.__GM!;
+    gm.skipOnboarding();
+    gm.setCurrency(100);
+    // Restore old 3-slime default: add a Rare and an Epic slime
+    const state = gm.getState();
+    const rareSlime = {
+      id: 'slime-rare',
+      name: 'Blue Slime',
+      stats: { health: 28, attack: 7, defense: 4, speed: 5, mut: 0.05 },
+      traits: [{ id: 'calm', name: 'Calm', description: 'Stable and focused', rarity: 'Common', effect: 'none' }],
+      skills: [{ id: 'splash', name: 'Splash', type: 'attack', targetType: 'single', damage: 8, cooldown: 2 }],
+      rarity: 'Rare',
+      generation: 1,
+      parentId: null,
+      color: '#4f8cff',
+      position: { x: 0, y: 0.5, z: 0 },
+    };
+    const epicSlime = {
+      id: 'slime-epic',
+      name: 'Purple Slime',
+      stats: { health: 36, attack: 10, defense: 5, speed: 6, mut: 0.05 },
+      traits: [{ id: 'arcane', name: 'Arcane', description: 'Mystic energy', rarity: 'Common', effect: 'none' }],
+      skills: [{ id: 'pulse', name: 'Arcane Pulse', type: 'attack', targetType: 'single', damage: 12, cooldown: 3 }],
+      rarity: 'Epic',
+      generation: 1,
+      parentId: null,
+      color: '#9b59ff',
+      position: { x: 2, y: 0.5, z: 0 },
+    };
+    state.slimes.push(rareSlime as any, epicSlime as any);
+  });
+  await page.waitForTimeout(100);
+}
+
+/** Start a fresh game: skip initial onboarding, accept confirm dialog, click new game, restore classic state */
+async function startFreshGame(page: Page) {
+  acceptDialogs(page);
+  // Skip the initial onboarding overlay so we can click buttons
+  await page.evaluate(() => window.__GM!.skipOnboarding());
+  await page.waitForTimeout(200);
+  // Click new game (confirm dialog auto-accepted)
+  await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+  await page.waitForTimeout(300);
+  // New game creates fresh state with onboarding, so skip it again and restore classic state
+  await setupClassicState(page);
+}
+
 // =========================================================
 // Test 1: Page Load & UI Elements
 // =========================================================
@@ -32,6 +86,8 @@ test.describe('Page Load', () => {
   test('should display core UI elements after load', async ({ page }) => {
     await page.goto('/');
     await waitForGameReady(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
 
     // Title
     await expect(page.locator('.ui-panel h1')).toHaveText('Slime Keeper');
@@ -58,6 +114,8 @@ test.describe('GM API', () => {
   test('window.__GM should be available and functional', async ({ page }) => {
     await page.goto('/');
     await waitForGameReady(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
 
     // GM object exists
     const hasGM = await page.evaluate(() => typeof window.__GM !== 'undefined');
@@ -100,6 +158,8 @@ test.describe('GM API', () => {
   test('startBattle should return a BattleResult', async ({ page }) => {
     await page.goto('/');
     await waitForGameReady(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
 
     const result = await page.evaluate(() => window.__GM!.startBattle('1-1'));
     expect(result).toHaveProperty('victory');
@@ -119,10 +179,7 @@ test.describe('Full Battle Flow', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-
-    // Click "新游戏" to ensure fresh state
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Boost slime stats via GM to guarantee victory
     await page.evaluate(() => {
@@ -198,10 +255,7 @@ test.describe('Save & Load', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-
-    // Start fresh
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Set a recognizable currency value
     await page.evaluate(() => window.__GM!.setCurrency(7777));
@@ -230,17 +284,25 @@ test.describe('Save & Load', () => {
   test('new game resets state', async ({ page }) => {
     await page.goto('/');
     await waitForGameReady(page);
+    acceptDialogs(page);
+    // Skip onboarding to access buttons
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
 
     // Modify state
     await page.evaluate(() => window.__GM!.setCurrency(5555));
 
-    // Click "新游戏"
+    // Click "新游戏" — confirm auto-accepted, resets to 1 slime + 0 gold + onboarding
     await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
     await page.waitForTimeout(300);
 
-    // Currency should be reset to default (100)
+    // Currency should be reset to default (0, not 100 — new initial state)
     const currency = await page.evaluate(() => window.__GM!.getState().currency);
-    expect(currency).toBe(100);
+    expect(currency).toBe(0);
+
+    // Should have 1 slime (new default)
+    const slimeCount = await page.evaluate(() => window.__GM!.getState().slimes.length);
+    expect(slimeCount).toBe(1);
   });
 });
 
@@ -251,10 +313,7 @@ test.describe('Split & Sell', () => {
   test('triggerSplit adds a child slime', async ({ page }) => {
     await page.goto('/');
     await waitForGameReady(page);
-
-    // Start fresh
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     const beforeCount = await page.evaluate(() => window.__GM!.getState().slimes.length) as number;
 
@@ -276,10 +335,7 @@ test.describe('Split & Sell', () => {
   test('selling a slime increases currency and removes it', async ({ page }) => {
     await page.goto('/');
     await waitForGameReady(page);
-
-    // Start fresh
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(500);
+    await startFreshGame(page);
 
     const initialState = await page.evaluate(() => window.__GM!.getState());
     const initialCurrency = initialState.currency as number;
@@ -314,8 +370,7 @@ test.describe('Archive System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     const initialState = await page.evaluate(() => window.__GM!.getState());
     const initialSlimeCount = initialState.slimes.length as number;
@@ -336,8 +391,7 @@ test.describe('Archive System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Archive first
     const firstId = await page.evaluate(() => {
@@ -363,8 +417,7 @@ test.describe('Archive System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     const firstId = await page.evaluate(() => window.__GM!.getState().slimes[0]!.id) as string;
     const price = await page.evaluate((id) => window.__GM!.evaluatePrice(id), firstId);
@@ -385,8 +438,7 @@ test.describe('Facility System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Give enough gold
     await page.evaluate(() => window.__GM!.setCurrency(999999));
@@ -427,8 +479,7 @@ test.describe('Facility System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Give gold and upgrade
     await page.evaluate(() => window.__GM!.setCurrency(999999));
@@ -447,6 +498,9 @@ test.describe('Facility System', () => {
     // Reset state
     await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
     await page.waitForTimeout(300);
+    // Skip onboarding created by new game
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
 
     // After new game, level should be 1
     const afterReset = await page.evaluate(() =>
@@ -469,8 +523,7 @@ test.describe('Facility System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Set currency to 0
     await page.evaluate(() => window.__GM!.setCurrency(0));
@@ -499,8 +552,7 @@ test.describe('Shop & Item System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Give enough gold (mutation catalyst costs 200)
     await page.evaluate(() => window.__GM!.setCurrency(500));
@@ -534,8 +586,7 @@ test.describe('Shop & Item System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Give gold and buy stat booster
     await page.evaluate(() => window.__GM!.setCurrency(1000));
@@ -570,8 +621,7 @@ test.describe('Shop & Item System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Ensure 0 crystals (default is 0)
     const crystalBefore = await page.evaluate(() => window.__GM!.getState().crystal) as number;
@@ -598,8 +648,7 @@ test.describe('Shop & Item System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Boost slimes to guarantee victory
     await page.evaluate(() => {
@@ -631,8 +680,7 @@ test.describe('PVE Chapters', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Boost slimes to guarantee victory
     await page.evaluate(() => {
@@ -657,8 +705,7 @@ test.describe('PVE Chapters', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Default should be 1
     const initial = await page.evaluate(() => window.__GM!.getUnlockedChapters()) as number;
@@ -679,8 +726,7 @@ test.describe('PVE Chapters', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Verify initially locked
     const before = await page.evaluate(() => window.__GM!.getUnlockedChapters()) as number;
@@ -707,8 +753,7 @@ test.describe('PVE Chapters', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Unlock chapter 3
     await page.evaluate(() => window.__GM!.unlockChapter(3));
@@ -718,9 +763,12 @@ test.describe('PVE Chapters', () => {
     await page.locator('.ui-actions button', { hasText: '\u4fdd\u5b58' }).click();
     await page.waitForTimeout(300);
 
-    // Reset to new game
+    // Reset to new game (acceptDialogs already registered by startFreshGame)
     await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
     await page.waitForTimeout(300);
+    // Skip onboarding created by new game
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
     expect(await page.evaluate(() => window.__GM!.getUnlockedChapters())).toBe(1);
 
     // Load
@@ -736,8 +784,7 @@ test.describe('PVE Chapters', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Open stage select
     await page.locator('.ui-actions button', { hasText: '\u6218\u6597' }).click();
@@ -775,8 +822,7 @@ test.describe('Quest System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     const quests = await page.evaluate(() => window.__GM!.getQuests());
     expect(quests.length).toBeGreaterThanOrEqual(13); // 5 daily + 5 achievement + 3 bounty
@@ -805,8 +851,7 @@ test.describe('Quest System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     const currencyBefore = await page.evaluate(() => window.__GM!.getState().currency) as number;
 
@@ -840,8 +885,7 @@ test.describe('Quest System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Complete and claim a daily quest
     await page.evaluate(() => {
@@ -877,8 +921,7 @@ test.describe('Quest System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Increment daily_splits counter 3 times (daily-split-3 target is 3)
     await page.evaluate(() => {
@@ -898,8 +941,7 @@ test.describe('Quest System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Complete and claim a quest
     await page.evaluate(() => {
@@ -914,6 +956,9 @@ test.describe('Quest System', () => {
     // Reset
     await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
     await page.waitForTimeout(300);
+    // Skip onboarding created by new game
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
 
     // Verify quest is reset after new game
     interface QuestInfo { questId: string; status: string }
@@ -937,8 +982,7 @@ test.describe('Quest System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Verify quest button exists (10 buttons now)
     const buttons = page.locator('.ui-actions button');
@@ -966,8 +1010,7 @@ test.describe('Quest System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Default state has a Rare slime (slime-rare) and an Epic slime (slime-epic)
     const slimesBefore = await page.evaluate(() => window.__GM!.getState().slimes.length) as number;
@@ -1009,8 +1052,7 @@ test.describe('Codex System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     const codex = await page.evaluate(() => window.__GM!.getCodex());
 
@@ -1049,8 +1091,7 @@ test.describe('Codex System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Get initial completion
     const before = await page.evaluate(() => window.__GM!.getCodexCompletion());
@@ -1086,8 +1127,7 @@ test.describe('Codex System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Click codex button (📖 图鉴)
     await page.locator('.ui-actions button', { hasText: '\u56fe\u9274' }).click();
@@ -1121,8 +1161,7 @@ test.describe('Codex System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Unlock extra entries
     await page.evaluate(() => {
@@ -1142,6 +1181,9 @@ test.describe('Codex System', () => {
     // Reset
     await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
     await page.waitForTimeout(300);
+    // Skip onboarding created by new game
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
 
     // After new game, extra entries should not be there
     const afterNew = await page.evaluate(() => window.__GM!.getCodexCompletion());
@@ -1165,8 +1207,7 @@ test.describe('Arena System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     const arenas = await page.evaluate(() => window.__GM!.getArenas());
     expect(arenas.length).toBe(4);
@@ -1197,8 +1238,7 @@ test.describe('Arena System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Give enough gold to buy fire-land (500 gold)
     await page.evaluate(() => window.__GM!.setCurrency(1000));
@@ -1234,8 +1274,7 @@ test.describe('Arena System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Buy fire-land first
     await page.evaluate(() => window.__GM!.setCurrency(1000));
@@ -1264,8 +1303,7 @@ test.describe('Arena System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Total button count should be 10
     const buttons = page.locator('.ui-actions button');
@@ -1296,8 +1334,7 @@ test.describe('Accessory System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     const before = await page.evaluate(() => window.__GM!.getAccessories());
     expect(before.length).toBe(0);
@@ -1314,8 +1351,7 @@ test.describe('Accessory System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     const slimeId = await page.evaluate(() => {
       const gm = window.__GM!;
@@ -1354,8 +1390,7 @@ test.describe('Accessory System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     const acc = await page.evaluate(() => window.__GM!.giveAccessory('acc-kings-crown'));
     const accId = (acc as { id: string }).id;
@@ -1385,8 +1420,7 @@ test.describe('Accessory System', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     const acc = await page.evaluate(() => window.__GM!.giveAccessory('acc-swift-anklet'));
     const accId = (acc as { id: string }).id;
@@ -1400,6 +1434,9 @@ test.describe('Accessory System', () => {
 
     await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
     await page.waitForTimeout(300);
+    // Skip onboarding created by new game
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
     const resetAcc = await page.evaluate(() => window.__GM!.getAccessories());
     expect(resetAcc.length).toBe(0);
 
@@ -1419,8 +1456,7 @@ test.describe('Accessory Inheritance', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Use tendency accessory (acc-flame-crystal, kind: tendency)
     const result = await page.evaluate(() =>
@@ -1437,8 +1473,7 @@ test.describe('Accessory Inheritance', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Use rare accessory (acc-origin-pendant, kind: rare)
     const result = await page.evaluate(() =>
@@ -1455,8 +1490,7 @@ test.describe('Accessory Inheritance', () => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
-    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
-    await page.waitForTimeout(300);
+    await startFreshGame(page);
 
     // Use stat accessory (acc-iron-ring, kind: stat)
     const result = await page.evaluate(() =>
@@ -1466,5 +1500,150 @@ test.describe('Accessory Inheritance', () => {
     expect(result.trials).toBe(500);
     expect(result.inherited).toBe(0);
     expect(result.rate).toBe(0);
+  });
+});
+
+// =========================================================
+// Onboarding System Tests
+// =========================================================
+test.describe('Onboarding System', () => {
+  test('new game starts with 1 slime, 0 gold, and onboarding active', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    acceptDialogs(page);
+    // Skip initial onboarding so we can click buttons
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(200);
+    const state = await page.evaluate(() => window.__GM!.getState());
+    expect(state.slimes.length).toBe(1);
+    expect(state.slimes[0].name).toBe('小绿');
+    expect(state.currency).toBe(0);
+    expect(state.onboarding.currentStep).toBe('step-welcome');
+    expect(state.onboarding.unlocks.battle).toBe(false);
+    expect(state.onboarding.unlocks.shop).toBe(false);
+  });
+
+  test('skipOnboarding unlocks all features and shows all buttons', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    acceptDialogs(page);
+    // Skip initial onboarding so we can click buttons
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(200);
+    const before = await page.locator('.ui-actions button', { hasText: '⚔ 战斗' }).isVisible();
+    expect(before).toBe(false);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(300);
+    const state = await page.evaluate(() => window.__GM!.getState());
+    expect(state.onboarding.currentStep).toBeNull();
+    expect(state.onboarding.unlocks.battle).toBe(true);
+    expect(state.onboarding.unlocks.shop).toBe(true);
+    const after = await page.locator('.ui-actions button', { hasText: '⚔ 战斗' }).isVisible();
+    expect(after).toBe(true);
+  });
+
+  test('old save without onboarding field gets full unlock', async ({ page }) => {
+    // Use addInitScript to set fake save BEFORE game code runs on page load
+    await page.addInitScript(() => {
+      const fakeSave = {
+        slimes: [{ id: 'old-1', name: 'Old Slime', stats: { health: 20, attack: 5, defense: 3, speed: 4, mut: 0.05 }, traits: [], skills: [], rarity: 'Common', generation: 1, parentId: null, color: '#56d364', position: { x: 0, y: 0.5, z: 0 } }],
+        breedingGrounds: [],
+        facilities: [],
+        currency: 500,
+        crystal: 10,
+        timestamp: Date.now(),
+        stageProgress: {},
+        archivedSlimes: [],
+        archiveCapacity: 10,
+        items: [],
+        unlockedChapters: 1,
+      };
+      localStorage.setItem('slime-keeper-save', JSON.stringify(fakeSave));
+    });
+    await page.goto('/');
+    await waitForGameReady(page);
+    const state = await page.evaluate(() => window.__GM!.getState());
+    expect(state.onboarding).toBeDefined();
+    expect(state.onboarding.currentStep).toBeNull();
+    expect(state.onboarding.unlocks.battle).toBe(true);
+    expect(state.onboarding.unlocks.codex).toBe(true);
+    const visibleCount = await page.locator('.ui-actions button').evaluateAll(
+      btns => btns.filter(b => (b as HTMLElement).style.display !== 'none').length
+    );
+    expect(visibleCount).toBe(10);
+  });
+
+  test('new game confirm dialog prevents accidental reset', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.evaluate(() => window.__GM!.setCurrency(999));
+    await page.waitForTimeout(100);
+    page.once('dialog', dialog => dialog.dismiss());
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(200);
+    const state = await page.evaluate(() => window.__GM!.getState());
+    expect(state.currency).toBe(999);
+  });
+
+  test('save shows success toast', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(100);
+    await page.locator('.ui-actions button', { hasText: '保存' }).click();
+    await page.waitForSelector('.toast-message', { timeout: 3000 });
+    const text = await page.locator('.toast-message').first().textContent();
+    expect(text).toContain('保存成功');
+  });
+
+  test('load with no save shows feedback toast', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(100);
+    await page.locator('.ui-actions button', { hasText: '加载' }).click();
+    await page.waitForSelector('.toast-message', { timeout: 3000 });
+    const text = await page.locator('.toast-message').first().textContent();
+    expect(text).toContain('无存档');
+  });
+
+  test('onboarding welcome dialog shown on new game', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    acceptDialogs(page);
+    // Skip initial onboarding so we can click buttons
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(500);
+    const visible = await page.locator('.onboarding-overlay').isVisible();
+    expect(visible).toBe(true);
+    const text = await page.locator('.onboarding-text').textContent();
+    expect(text).toContain('欢迎来到史莱姆世界');
+  });
+
+  test('goToOnboardingStep GM command works', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    acceptDialogs(page);
+    // Skip initial onboarding so we can click buttons
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(200);
+    const result = await page.evaluate(() => window.__GM!.goToOnboardingStep('step-teach-sell'));
+    expect(result).toBe(true);
+    const state = await page.evaluate(() => window.__GM!.getState());
+    expect(state.onboarding.currentStep).toBe('step-teach-sell');
   });
 });
