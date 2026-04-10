@@ -8,7 +8,7 @@
 |------|------|
 | **Vite** | 构建与开发服务器 |
 | **TypeScript** | 全项目类型安全 |
-| **Three.js** | 3D 场景渲染（史莱姆可视化） |
+| **Canvas 2D** | 2D 场景渲染（史莱姆可视化） |
 | **Playwright** | E2E 端到端测试 |
 
 ## 快速开始
@@ -50,7 +50,7 @@ npm run preview
 
 ## 测试
 
-项目使用 Playwright 进行 E2E 测试（共 23 个用例）。
+项目使用 Playwright 进行 E2E 测试（共 66 个用例）。
 
 ```bash
 # 安装浏览器（首次需要）
@@ -76,7 +76,7 @@ repo/
 ├── playwright.config.ts    # Playwright 配置
 ├── public/                 # 静态资源（图标等）
 ├── e2e/                    # E2E 测试用例
-│   └── game.spec.ts        # 23 个端到端测试
+│   └── game.spec.ts        # 66 个端到端测试
 └── src/
     ├── main.ts             # 应用入口，初始化各系统
     ├── style.css           # 全局样式
@@ -95,8 +95,9 @@ repo/
         │   └── GMCommands.ts       # GM 命令（开发者控制台）
         ├── save/           # 存档系统
         │   └── SaveManager.ts      # localStorage 存读档
-        ├── scene/          # 3D 场景
-        │   └── SceneManager.ts     # Three.js 场景管理
+        ├── scene/          # 2D 场景
+        │   ├── Canvas2DRenderer.ts # Canvas 2D 场景渲染
+        │   └── SceneManager.ts     # 场景管理（已弃用）
         ├── systems/        # 核心游戏系统
         │   ├── BreedingSystem.ts   # 繁殖/分裂系统
         │   ├── MutationEngine.ts   # 变异引擎
