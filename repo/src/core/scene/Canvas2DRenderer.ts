@@ -31,6 +31,7 @@ export class Canvas2DRenderer {
     const { ctx, canvas } = this;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     this.drawBackground();
+    this.drawClouds();
     if (!this.state) return;
 
     const sortedSlimes = [...this.state.slimes].sort((a, b) => a.position.z - b.position.z);
@@ -94,6 +95,54 @@ export class Canvas2DRenderer {
     }
   }
 
+  /** Draw drifting clouds across the sky */
+  private drawClouds(): void {
+    const { ctx } = this;
+    const w = this.canvas.clientWidth;
+    const h = this.canvas.clientHeight;
+    const t = this.elapsedTime / 1000;
+
+    const clouds: Array<{ baseX: number; y: number; size: number; speed: number }> = [
+      { baseX: 0.12, y: 0.08, size: 38, speed: 8 },
+      { baseX: 0.42, y: 0.14, size: 50, speed: 5 },
+      { baseX: 0.72, y: 0.06, size: 42, speed: 7 },
+      { baseX: 0.90, y: 0.18, size: 34, speed: 10 },
+      { baseX: 0.28, y: 0.22, size: 30, speed: 6 },
+    ];
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    for (const cloud of clouds) {
+      const cx = ((cloud.baseX * w + t * cloud.speed) % (w + cloud.size * 4)) - cloud.size * 2;
+      const cy = cloud.y * h;
+      const s = cloud.size;
+      ctx.beginPath();
+      ctx.arc(cx, cy, s * 0.42, 0, Math.PI * 2);
+      ctx.arc(cx - s * 0.38, cy + s * 0.12, s * 0.32, 0, Math.PI * 2);
+      ctx.arc(cx + s * 0.4, cy + s * 0.1, s * 0.35, 0, Math.PI * 2);
+      ctx.arc(cx + s * 0.12, cy - s * 0.18, s * 0.28, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /** Returns a size multiplier based on rarity (Legendary is larger, Common smaller) */
+  private getRaritySizeScale(rarity: Rarity): number {
+    switch (rarity) {
+      case Rarity.Legendary:
+        return 1.25;
+      case Rarity.Epic:
+        return 1.12;
+      case Rarity.Rare:
+        return 1.05;
+      case Rarity.Uncommon:
+        return 1.0;
+      case Rarity.Common:
+      default:
+        return 0.92;
+    }
+  }
+
   private drawSlime(slime: Slime): void {
     const { x, z } = this.mapTo2D(slime.position.x, slime.position.z);
     const t = this.elapsedTime / 1000;
@@ -103,9 +152,15 @@ export class Canvas2DRenderer {
     const stretch = bounce * 0.08;
     const scaleX = 1 - stretch + breath;
     const scaleY = 1 + stretch + breath;
-    const y = z - 6 - bounce * 8;
 
-    const baseSize = 46 + (slime.position.y ?? 0) * 4;
+    // Idle sway: gentle left-right wobble
+    const sway = Math.sin(t * 1.2 + phase * 1.3) * 3.5;
+
+    const yPos = z - 6 - bounce * 8;
+
+    // Rarity-based size difference
+    const rarityScale = this.getRaritySizeScale(slime.rarity);
+    const baseSize = (46 + (slime.position.y ?? 0) * 4) * rarityScale;
 
     const rarityGlow = this.getRarityGlow(slime.rarity);
     if (rarityGlow) {
@@ -115,13 +170,13 @@ export class Canvas2DRenderer {
       this.ctx.shadowColor = rarityGlow;
       this.ctx.fillStyle = rarityGlow;
       this.ctx.beginPath();
-      this.ctx.ellipse(x, y + baseSize * 0.55, baseSize * 0.45, baseSize * 0.25, 0, 0, Math.PI * 2);
+      this.ctx.ellipse(x + sway, yPos + baseSize * 0.55, baseSize * 0.45, baseSize * 0.25, 0, 0, Math.PI * 2);
       this.ctx.fill();
       this.ctx.restore();
     }
 
     this.ctx.save();
-    this.ctx.translate(x, y);
+    this.ctx.translate(x + sway, yPos);
     this.ctx.scale(scaleX, scaleY);
 
     this.ctx.fillStyle = slime.color;
