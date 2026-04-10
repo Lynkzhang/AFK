@@ -183,6 +183,26 @@ export interface MutationModifiers {
   rarityWeightBonus: number;
 }
 
+export interface FeatureUnlocks {
+  breeding: boolean;
+  cull: boolean;
+  sell: boolean;
+  archive: boolean;
+  battle: boolean;
+  facility: boolean;
+  shop: boolean;
+  quest: boolean;
+  codex: boolean;
+  arena: boolean;
+  accessories: boolean;
+}
+
+export interface OnboardingState {
+  currentStep: string | null;
+  completedSteps: string[];
+  unlocks: FeatureUnlocks;
+}
+
 export interface GameState {
   slimes: Slime[];
   breedingGrounds: BreedingGround[];
@@ -202,4 +222,5 @@ export interface GameState {
   arenas: Arena[];
   activeArenaId: ArenaId;
   accessories: Accessory[];
+  onboarding: OnboardingState;
 }
