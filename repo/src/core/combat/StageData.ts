@@ -191,6 +191,7 @@ const CHAPTER_1_STAGES: StageConfig[] = [
     reward: { gold: 50, crystals: 0, items: [] },
     isBoss: false,
     isElite: true,
+    accessoryDropIds: ['acc-iron-ring', 'acc-guardian-amulet'],
   },
   {
     id: '1-6',
@@ -254,6 +255,7 @@ const CHAPTER_1_STAGES: StageConfig[] = [
     reward: { gold: 100, crystals: 25, items: [] },
     isBoss: true,
     isElite: false,
+    accessoryDropIds: ['acc-swift-anklet', 'acc-vitality-charm'],
   },
 ];
 
@@ -319,6 +321,7 @@ const CHAPTER_2_STAGES: StageConfig[] = [
     reward: { gold: 90, crystals: 12, items: [] },
     isBoss: false,
     isElite: true,
+    accessoryDropIds: ['acc-flame-crystal'],
   },
   {
     id: '2-6',
@@ -382,6 +385,7 @@ const CHAPTER_2_STAGES: StageConfig[] = [
     reward: { gold: 150, crystals: 30, items: [] },
     isBoss: true,
     isElite: false,
+    accessoryDropIds: ['acc-origin-pendant'],
   },
 ];
 
@@ -447,6 +451,7 @@ const CHAPTER_3_STAGES: StageConfig[] = [
     reward: { gold: 110, crystals: 20, items: [] },
     isBoss: false,
     isElite: true,
+    accessoryDropIds: ['acc-frost-crystal'],
   },
   {
     id: '3-6',
@@ -510,6 +515,7 @@ const CHAPTER_3_STAGES: StageConfig[] = [
     reward: { gold: 200, crystals: 50, items: [] },
     isBoss: true,
     isElite: false,
+    accessoryDropIds: ['acc-kings-crown'],
   },
 ];
 

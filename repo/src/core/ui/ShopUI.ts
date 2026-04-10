@@ -1,5 +1,6 @@
 import type { GameState, ShopItem, Item } from '../types';
 import { SHOP_ITEMS, ShopSystem } from '../systems/ShopSystem';
+import { ACCESSORY_TEMPLATES } from '../data/accessories';
 
 interface ShopUIHandlers {
   onBuy: (shopItemId: string) => void;
@@ -54,6 +55,40 @@ export class ShopUI {
       shopList.appendChild(card);
     }
     this.root.appendChild(shopList);
+
+    // Accessory shop section
+    const accTitle = document.createElement('h3');
+    accTitle.textContent = '🎀 饰品';
+    this.root.appendChild(accTitle);
+
+    const accList = document.createElement('div');
+    accList.className = 'shop-item-list';
+    for (const template of ACCESSORY_TEMPLATES) {
+      if (!template.shopPrice || !template.shopCurrency) continue;
+      const card = document.createElement('div');
+      card.className = 'shop-card';
+      const nameEl = document.createElement('div');
+      nameEl.className = 'shop-card-name';
+      nameEl.textContent = `${template.name} [${template.rarity}]`;
+      const descEl = document.createElement('div');
+      descEl.className = 'shop-card-desc';
+      descEl.textContent = template.effect.description;
+      const priceEl = document.createElement('div');
+      priceEl.className = 'shop-card-price';
+      const icon = template.shopCurrency === 'gold' ? '💰' : '💎';
+      priceEl.textContent = `${icon} ${template.shopPrice}`;
+      const buyBtn = document.createElement('button');
+      buyBtn.className = 'shop-buy-btn';
+      buyBtn.textContent = '购买';
+      const canAfford = template.shopCurrency === 'gold'
+        ? state.currency >= template.shopPrice
+        : state.crystal >= template.shopPrice;
+      buyBtn.disabled = !canAfford;
+      buyBtn.onclick = () => this.handlers?.onBuy(template.id);
+      card.append(nameEl, descEl, priceEl, buyBtn);
+      accList.appendChild(card);
+    }
+    this.root.appendChild(accList);
 
     // Inventory section
     const invTitle = document.createElement('h3');

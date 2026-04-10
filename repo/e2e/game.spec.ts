@@ -1287,3 +1287,126 @@ test.describe('Arena System', () => {
     await expect(page.locator('.arena-panel')).not.toBeVisible();
   });
 });
+
+// =========================================================
+// Test: Accessory System
+// =========================================================
+test.describe('Accessory System', () => {
+  test('giveAccessory adds accessory to inventory and getAccessories returns it', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(300);
+
+    const before = await page.evaluate(() => window.__GM!.getAccessories());
+    expect(before.length).toBe(0);
+
+    const acc = await page.evaluate(() => window.__GM!.giveAccessory('acc-iron-ring'));
+    expect(acc).not.toBeNull();
+    expect((acc as { name: string }).name).toBe('铁之指环');
+
+    const after = await page.evaluate(() => window.__GM!.getAccessories());
+    expect(after.length).toBe(1);
+  });
+
+  test('equipAccessory and unequipAccessory work correctly', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(300);
+
+    const slimeId = await page.evaluate(() => {
+      const gm = window.__GM!;
+      const slime = gm.getState().slimes[0]!;
+      gm.archiveSlime(slime.id);
+      return slime.id;
+    });
+
+    const acc = await page.evaluate(() => window.__GM!.giveAccessory('acc-guardian-amulet'));
+    const accId = (acc as { id: string }).id;
+
+    const equipped = await page.evaluate(({ accId, slimeId }) => {
+      return window.__GM!.equipAccessory(accId, slimeId);
+    }, { accId, slimeId });
+    expect(equipped).toBe(true);
+
+    const hasAcc = await page.evaluate((slimeId) => {
+      const slime = window.__GM!.getState().archivedSlimes.find(s => s.id === slimeId);
+      return slime?.equippedAccessoryId;
+    }, slimeId);
+    expect(hasAcc).toBe(accId);
+
+    const unequipped = await page.evaluate((slimeId) => {
+      return window.__GM!.unequipAccessory(slimeId);
+    }, slimeId);
+    expect(unequipped).toBe(true);
+
+    const cleared = await page.evaluate((slimeId) => {
+      const slime = window.__GM!.getState().archivedSlimes.find(s => s.id === slimeId);
+      return slime?.equippedAccessoryId;
+    }, slimeId);
+    expect(cleared).toBeUndefined();
+  });
+
+  test('stat accessory boosts combat stats via autoBattle', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(300);
+
+    const acc = await page.evaluate(() => window.__GM!.giveAccessory('acc-kings-crown'));
+    const accId = (acc as { id: string }).id;
+    const slimeId = await page.evaluate(() => window.__GM!.getState().slimes[0]!.id);
+
+    await page.evaluate(({ accId, slimeId }) => {
+      window.__GM!.equipAccessory(accId, slimeId);
+    }, { accId, slimeId });
+
+    await page.evaluate(() => {
+      const gm = window.__GM!;
+      for (const s of gm.getState().slimes) {
+        gm.setStats(s.id, { health: 9999, attack: 9999, defense: 9999, speed: 9999 });
+      }
+    });
+
+    const result = await page.evaluate(() => window.__GM!.autoBattle('1-1'));
+    expect((result as { victory: boolean }).victory).toBe(true);
+
+    const stillEquipped = await page.evaluate((slimeId) => {
+      return window.__GM!.getState().slimes.find(s => s.id === slimeId)?.equippedAccessoryId;
+    }, slimeId);
+    expect(stillEquipped).toBe(accId);
+  });
+
+  test('save and load preserves accessories and equipped state', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(300);
+
+    const acc = await page.evaluate(() => window.__GM!.giveAccessory('acc-swift-anklet'));
+    const accId = (acc as { id: string }).id;
+    const slimeId = await page.evaluate(() => window.__GM!.getState().slimes[0]!.id);
+    await page.evaluate(({ accId, slimeId }) => {
+      window.__GM!.equipAccessory(accId, slimeId);
+    }, { accId, slimeId });
+
+    await page.locator('.ui-actions button', { hasText: '保存' }).click();
+    await page.waitForTimeout(300);
+
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(300);
+    const resetAcc = await page.evaluate(() => window.__GM!.getAccessories());
+    expect(resetAcc.length).toBe(0);
+
+    await page.locator('.ui-actions button', { hasText: '加载' }).click();
+    await page.waitForTimeout(300);
+    const loadedAcc = await page.evaluate(() => window.__GM!.getAccessories());
+    expect(loadedAcc.length).toBe(1);
+    expect(loadedAcc[0].name).toBe('疾风脚环');
+  });
+});

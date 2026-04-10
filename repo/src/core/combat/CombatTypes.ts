@@ -112,6 +112,7 @@ export interface StageConfig {
   reward: BattleReward;
   isBoss: boolean;
   isElite: boolean;
+  accessoryDropIds?: string[];
 }
 
 export interface DamageContext {

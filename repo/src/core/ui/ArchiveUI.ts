@@ -1,9 +1,12 @@
 import { Rarity } from '../types';
 import type { GameState, Slime } from '../types';
+import { AccessorySystem } from '../systems/AccessorySystem';
 
 export interface ArchiveUICallbacks {
   onUnarchive: (slimeId: string) => void;
   onSell: (slimeId: string) => void;
+  onEquipAccessory: (slimeId: string, accessoryId: string) => void;
+  onUnequipAccessory: (slimeId: string) => void;
   onBack: () => void;
 }
 
@@ -13,6 +16,7 @@ export class ArchiveUI {
   private countEl: HTMLSpanElement;
   private callbacks: ArchiveUICallbacks | null = null;
   private priceEvaluator: ((slime: Slime) => number) | null = null;
+  private currentState: GameState | null = null;
 
   constructor() {
     this.root = document.createElement('div');
@@ -49,6 +53,7 @@ export class ArchiveUI {
   }
 
   render(state: GameState): void {
+    this.currentState = state;
     this.countEl.textContent = `${state.archivedSlimes.length} / ${state.archiveCapacity}`;
     this.listEl.replaceChildren();
     for (const slime of state.archivedSlimes) {
@@ -88,7 +93,52 @@ export class ArchiveUI {
     sellBtn.onclick = () => this.callbacks?.onSell(slime.id);
 
     actions.append(unarchiveBtn, sellBtn);
-    card.append(nameRow, statsRow, priceRow, actions);
+
+    // Accessory section
+    const accSection = document.createElement('div');
+    accSection.className = 'archive-accessory-section';
+    if (this.currentState) {
+      const equipped = AccessorySystem.getEquipped(this.currentState, slime.id);
+      if (equipped) {
+        const accLabel = document.createElement('span');
+        accLabel.className = 'equipped-accessory';
+        accLabel.textContent = `🎀 ${equipped.name} (${equipped.effect.description})`;
+        const unequipBtn = document.createElement('button');
+        unequipBtn.textContent = '卸下';
+        unequipBtn.className = 'archive-action-btn';
+        unequipBtn.onclick = () => this.callbacks?.onUnequipAccessory(slime.id);
+        accSection.append(accLabel, unequipBtn);
+      } else {
+        const available = AccessorySystem.getUnequipped(this.currentState);
+        if (available.length > 0) {
+          const select = document.createElement('select');
+          select.className = 'accessory-select';
+          const defaultOpt = document.createElement('option');
+          defaultOpt.value = '';
+          defaultOpt.textContent = '选择饰品...';
+          select.appendChild(defaultOpt);
+          for (const acc of available) {
+            const opt = document.createElement('option');
+            opt.value = acc.id;
+            opt.textContent = `${acc.name} (${acc.effect.description})`;
+            select.appendChild(opt);
+          }
+          const equipBtn = document.createElement('button');
+          equipBtn.textContent = '装备';
+          equipBtn.className = 'archive-action-btn';
+          equipBtn.onclick = () => {
+            if (select.value) this.callbacks?.onEquipAccessory(slime.id, select.value);
+          };
+          accSection.append(select, equipBtn);
+        } else {
+          const noAcc = document.createElement('span');
+          noAcc.textContent = '无可用饰品';
+          accSection.appendChild(noAcc);
+        }
+      }
+    }
+
+    card.append(nameRow, statsRow, priceRow, actions, accSection);
     return card;
   }
 

@@ -25,7 +25,9 @@ import { ItemSystem } from './core/systems/ItemSystem';
 import { QuestSystem } from './core/systems/QuestSystem';
 import { CodexSystem } from './core/systems/CodexSystem';
 import { ArenaSystem } from './core/systems/ArenaSystem';
+import { AccessorySystem } from './core/systems/AccessorySystem';
 import { DEFAULT_ARENAS } from './core/data/arenas';
+import { getStage } from './core/combat/StageData';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('App root not found');
@@ -92,6 +94,7 @@ function createDefaultState(): GameState {
     codex: CodexSystem.createDefaultCodex(),
     arenas: DEFAULT_ARENAS.map((a) => ({ ...a, mutationBias: { ...a.mutationBias } })),
     activeArenaId: 'grassland',
+    accessories: [],
   };
   QuestSystem.initQuests(s);
   CodexSystem.recordFromState(s);
@@ -139,6 +142,7 @@ function migrateState(state: GameState): void {
   if (typeof s['activeArenaId'] !== 'string') {
     s['activeArenaId'] = 'grassland';
   }
+  if (!Array.isArray(s['accessories'])) s['accessories'] = [];
 }
 
 const gameRoot = document.createElement('div');
@@ -299,7 +303,11 @@ facilityUI.bind({
 
 shopUI.bind({
   onBuy: (shopItemId: string) => {
-    ShopSystem.buyItem(state, shopItemId);
+    if (shopItemId.startsWith('acc-')) {
+      ShopSystem.buyAccessory(state, shopItemId);
+    } else {
+      ShopSystem.buyItem(state, shopItemId);
+    }
     shopUI.render(state);
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
@@ -396,6 +404,13 @@ battleUI.bind({
       if (state.stageProgress['1-10']?.stars > 0) state.unlockedChapters = Math.max(state.unlockedChapters, 2);
       if (state.stageProgress['2-10']?.stars > 0) state.unlockedChapters = Math.max(state.unlockedChapters, 3);
 
+      // Accessory drops from boss/elite stages
+      const stageConfig = getStage(currentStageId);
+      if (stageConfig?.accessoryDropIds && stageConfig.accessoryDropIds.length > 0) {
+        const dropId = stageConfig.accessoryDropIds[Math.floor(Math.random() * stageConfig.accessoryDropIds.length)]!;
+        AccessorySystem.giveAccessory(state, dropId);
+      }
+
       // Track quest counters
       QuestSystem.incrementCounter(state, 'daily_battles_won');
       QuestSystem.incrementCounter(state, 'total_battles_won');
@@ -421,6 +436,14 @@ archiveUI.bind({
       archiveUI.render(state);
       ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
     }
+  },
+  onEquipAccessory: (slimeId: string, accessoryId: string) => {
+    AccessorySystem.equip(state, accessoryId, slimeId);
+    archiveUI.render(state);
+  },
+  onUnequipAccessory: (slimeId: string) => {
+    AccessorySystem.unequip(state, slimeId);
+    archiveUI.render(state);
   },
   onBack: () => {
     archiveUI.hide();

@@ -1,5 +1,7 @@
 import type { GameState, ShopItem } from '../types';
 import { ItemSystem } from './ItemSystem';
+import { ACCESSORY_TEMPLATES } from '../data/accessories';
+import { AccessorySystem } from './AccessorySystem';
 
 export const SHOP_ITEMS: ShopItem[] = [
   {
@@ -34,6 +36,20 @@ export class ShopSystem {
       return state.currency >= shopItem.price;
     }
     return state.crystal >= shopItem.price;
+  }
+
+  static buyAccessory(state: GameState, templateId: string): boolean {
+    const template = ACCESSORY_TEMPLATES.find((t) => t.id === templateId);
+    if (!template || !template.shopPrice || !template.shopCurrency) return false;
+    if (template.shopCurrency === 'gold') {
+      if (state.currency < template.shopPrice) return false;
+      state.currency -= template.shopPrice;
+    } else {
+      if (state.crystal < template.shopPrice) return false;
+      state.crystal -= template.shopPrice;
+    }
+    AccessorySystem.giveAccessory(state, templateId);
+    return true;
   }
 
   static buyItem(state: GameState, shopItemId: string): boolean {
