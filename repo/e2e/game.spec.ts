@@ -1585,6 +1585,9 @@ test.describe('Onboarding System', () => {
     await page.evaluate(() => window.__GM!.skipOnboarding());
     await page.evaluate(() => window.__GM!.setCurrency(999));
     await page.waitForTimeout(100);
+    // M28: confirm dialog only shown when save exists; save first
+    await page.locator('.ui-actions button', { hasText: '保存' }).click();
+    await page.waitForTimeout(200);
     page.once('dialog', dialog => dialog.dismiss());
     await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
     await page.waitForTimeout(200);
