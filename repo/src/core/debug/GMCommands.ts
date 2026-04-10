@@ -1,4 +1,4 @@
-import type { GameState, Slime, Stats, Facility, Item, QuestProgress, QuestTemplate, CodexData } from '../types';
+import type { GameState, Slime, Stats, Facility, Item, QuestProgress, QuestTemplate, CodexData, Arena, ArenaId } from '../types';
 import { Rarity } from '../types';
 import type { BattleResult } from '../combat/CombatTypes';
 import { runBattle } from '../combat/CombatEngine';
@@ -10,6 +10,7 @@ import { ShopSystem } from '../systems/ShopSystem';
 import { ItemSystem } from '../systems/ItemSystem';
 import { QuestSystem } from '../systems/QuestSystem';
 import { CodexSystem } from '../systems/CodexSystem';
+import { ArenaSystem } from '../systems/ArenaSystem';
 
 type GetState = () => GameState;
 type SetState = (s: GameState) => void;
@@ -46,6 +47,10 @@ interface GMApi {
   getCodex(): { codex: CodexData; allRarities: string[]; allTraits: { id: string; name: string; rarity: string }[]; allSkills: { id: string; name: string; type: string }[] };
   unlockCodexEntry(category: string, id: string): boolean;
   getCodexCompletion(): { rarities: { unlocked: number; total: number; percent: number }; traits: { unlocked: number; total: number; percent: number }; skills: { unlocked: number; total: number; percent: number }; overall: { unlocked: number; total: number; percent: number } };
+  // Arena GM commands
+  getArenas(): Arena[];
+  buyArena(arenaId: string): boolean;
+  switchArena(arenaId: string): boolean;
 }
 
 declare global {
@@ -285,6 +290,22 @@ export function initGM(getState: GetState, setState: SetState): void {
         s.codex = CodexSystem.createDefaultCodex();
       }
       return CodexSystem.getCompletion(s.codex);
+    },
+    // Arena GM commands
+    getArenas(): Arena[] {
+      return getState().arenas;
+    },
+    buyArena(arenaId: string): boolean {
+      const s = getState();
+      const result = ArenaSystem.buyArena(s, arenaId as ArenaId);
+      setState({ ...s, arenas: [...s.arenas], currency: s.currency, crystal: s.crystal });
+      return result;
+    },
+    switchArena(arenaId: string): boolean {
+      const s = getState();
+      const result = ArenaSystem.switchArena(s, arenaId as ArenaId);
+      setState({ ...s, activeArenaId: s.activeArenaId });
+      return result;
     },
   };
 

@@ -1,5 +1,6 @@
 import type { GameState } from '../types';
 import { MutationEngine } from './MutationEngine';
+import { ArenaSystem } from './ArenaSystem';
 
 export interface BreedingConfig {
   splitIntervalMs: number;
@@ -26,7 +27,10 @@ export class BreedingSystem {
       this.accumulated = 0;
       const parent = state.slimes[Math.floor(Math.random() * state.slimes.length)];
       if (parent) {
-        const child = this.engine.createOffspring(parent);
+        // Get mutation modifiers from active arena
+        const activeArena = ArenaSystem.getActiveArena(state);
+        const modifiers = ArenaSystem.getMutationModifiers(activeArena);
+        const child = this.engine.createOffspring(parent, modifiers);
         state.slimes.push(child);
       }
     }

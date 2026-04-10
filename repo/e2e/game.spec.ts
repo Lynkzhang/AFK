@@ -42,9 +42,9 @@ test.describe('Page Load', () => {
     // Slime count
     await expect(page.locator('.ui-panel').locator('text=Slimes:')).toBeVisible();
 
-    // Buttons – 新游戏, 保存, 加载, 战斗, 封存库, 设施, 商店, 任务, 图鉴
+    // Buttons – 新游戏, 保存, 加载, 战斗, 封存库, 设施, 商店, 任务, 图鉴, 场地
     const buttons = page.locator('.ui-actions button');
-    await expect(buttons).toHaveCount(9);
+    await expect(buttons).toHaveCount(10);
 
     // Slime list section
     await expect(page.locator('.slime-list')).toBeVisible();
@@ -940,9 +940,9 @@ test.describe('Quest System', () => {
     await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
     await page.waitForTimeout(300);
 
-    // Verify quest button exists (9 buttons now)
+    // Verify quest button exists (10 buttons now)
     const buttons = page.locator('.ui-actions button');
-    await expect(buttons).toHaveCount(9);
+    await expect(buttons).toHaveCount(10);
 
     // Click quest button
     await page.locator('.ui-actions button', { hasText: '\u4efb\u52a1' }).click();
@@ -1154,5 +1154,136 @@ test.describe('Codex System', () => {
     // Codex should be restored
     const afterLoad = await page.evaluate(() => window.__GM!.getCodexCompletion());
     expect(afterLoad.overall.unlocked).toBe(beforeOverall);
+  });
+});
+
+// =========================================================
+// Test 12: Arena System
+// =========================================================
+test.describe('Arena System', () => {
+  test('getArenas returns 4 arenas with only grassland owned initially', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    const arenas = await page.evaluate(() => window.__GM!.getArenas());
+    expect(arenas.length).toBe(4);
+
+    interface ArenaInfo { id: string; owned: boolean }
+    const grassland = (arenas as ArenaInfo[]).find((a) => a.id === 'grassland');
+    expect(grassland).toBeDefined();
+    expect(grassland!.owned).toBe(true);
+
+    const fireLand = (arenas as ArenaInfo[]).find((a) => a.id === 'fire-land');
+    expect(fireLand).toBeDefined();
+    expect(fireLand!.owned).toBe(false);
+
+    const iceCave = (arenas as ArenaInfo[]).find((a) => a.id === 'ice-cave');
+    expect(iceCave).toBeDefined();
+    expect(iceCave!.owned).toBe(false);
+
+    const mysticForest = (arenas as ArenaInfo[]).find((a) => a.id === 'mystic-forest');
+    expect(mysticForest).toBeDefined();
+    expect(mysticForest!.owned).toBe(false);
+
+    // Active arena should be grassland
+    const state = await page.evaluate(() => window.__GM!.getState());
+    expect(state.activeArenaId).toBe('grassland');
+  });
+
+  test('buyArena successfully purchases and deducts currency', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    // Give enough gold to buy fire-land (500 gold)
+    await page.evaluate(() => window.__GM!.setCurrency(1000));
+
+    const currencyBefore = await page.evaluate(() => window.__GM!.getState().currency) as number;
+    expect(currencyBefore).toBe(1000);
+
+    // Buy fire-land
+    const buyResult = await page.evaluate(() => window.__GM!.buyArena('fire-land'));
+    expect(buyResult).toBe(true);
+
+    // Check currency deducted
+    const currencyAfter = await page.evaluate(() => window.__GM!.getState().currency) as number;
+    expect(currencyAfter).toBe(500); // 1000 - 500
+
+    // Check fire-land is now owned
+    interface ArenaInfo { id: string; owned: boolean }
+    const arenas = await page.evaluate(() => window.__GM!.getArenas()) as ArenaInfo[];
+    const fireLand = arenas.find((a) => a.id === 'fire-land');
+    expect(fireLand!.owned).toBe(true);
+
+    // Buying again should fail
+    const buyAgain = await page.evaluate(() => window.__GM!.buyArena('fire-land'));
+    expect(buyAgain).toBe(false);
+
+    // Buying with insufficient gold should fail
+    await page.evaluate(() => window.__GM!.setCurrency(0));
+    const buyIceCave = await page.evaluate(() => window.__GM!.buyArena('ice-cave'));
+    expect(buyIceCave).toBe(false);
+  });
+
+  test('switchArena changes activeArenaId', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    // Buy fire-land first
+    await page.evaluate(() => window.__GM!.setCurrency(1000));
+    await page.evaluate(() => window.__GM!.buyArena('fire-land'));
+
+    // Switch to fire-land
+    const switchResult = await page.evaluate(() => window.__GM!.switchArena('fire-land'));
+    expect(switchResult).toBe(true);
+
+    const state = await page.evaluate(() => window.__GM!.getState());
+    expect(state.activeArenaId).toBe('fire-land');
+
+    // Switch back to grassland
+    const switchBack = await page.evaluate(() => window.__GM!.switchArena('grassland'));
+    expect(switchBack).toBe(true);
+
+    const state2 = await page.evaluate(() => window.__GM!.getState());
+    expect(state2.activeArenaId).toBe('grassland');
+
+    // Can't switch to unowned arena
+    const switchUnowned = await page.evaluate(() => window.__GM!.switchArena('ice-cave'));
+    expect(switchUnowned).toBe(false);
+  });
+
+  test('arena button exists (total 10 buttons) and opens arena panel', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.locator('.ui-actions button', { hasText: '\u65b0\u6e38\u620f' }).click();
+    await page.waitForTimeout(300);
+
+    // Total button count should be 10
+    const buttons = page.locator('.ui-actions button');
+    await expect(buttons).toHaveCount(10);
+
+    // Click arena button (🏔 场地)
+    await page.locator('.ui-actions button', { hasText: '\u573a\u5730' }).click();
+    await expect(page.locator('.arena-panel')).toBeVisible();
+
+    // Verify 4 arena cards
+    const cards = page.locator('.arena-card');
+    await expect(cards).toHaveCount(4);
+
+    // First card should be active (grassland)
+    await expect(cards.first()).toHaveClass(/active/);
+
+    // Click back
+    await page.locator('.arena-panel .back-btn').click();
+    await expect(page.locator('.arena-panel')).not.toBeVisible();
   });
 });

@@ -130,6 +130,30 @@ export interface CodexData {
   unlockedSkills: string[];
 }
 
+export type ArenaId = 'grassland' | 'fire-land' | 'ice-cave' | 'mystic-forest';
+
+export interface Arena {
+  id: ArenaId;
+  name: string;
+  description: string;
+  price: number;
+  currencyType: 'gold' | 'crystal';
+  owned: boolean;
+  statBonus: Partial<Record<keyof Stats, number>>;
+  mutationBias: {
+    preferTraitIds?: string[];
+    preferSkillTypes?: string[];
+    rarityWeightBonus?: number;
+  };
+}
+
+export interface MutationModifiers {
+  statBonuses: Partial<Record<keyof Stats, number>>;
+  preferTraitIds: string[];
+  preferSkillTypes: string[];
+  rarityWeightBonus: number;
+}
+
 export interface GameState {
   slimes: Slime[];
   breedingGrounds: BreedingGround[];
@@ -146,4 +170,6 @@ export interface GameState {
   questDailyRefreshTime: number;
   questCounters: Record<string, number>;
   codex: CodexData;
+  arenas: Arena[];
+  activeArenaId: ArenaId;
 }
