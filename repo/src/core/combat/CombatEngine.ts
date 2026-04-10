@@ -1,7 +1,7 @@
 // ===== Combat Engine =====
 // Turn-based PVE combat engine. Pure logic, no UI.
 
-import type { Slime, Skill } from '../types';
+import type { Slime, Skill, Accessory } from '../types';
 import type {
   BattleUnit,
   BattleSkill,
@@ -55,7 +55,7 @@ function toBattleSkill(s: Skill): BattleSkill {
 
 // ---------- Init ----------
 
-export function initBattleUnit(slime: Slime, side: 0 | 1, slotIndex: number): BattleUnit {
+export function initBattleUnit(slime: Slime, side: 0 | 1, slotIndex: number, accessory?: Accessory): BattleUnit {
   let maxHp = slime.stats.health;
   let baseAtk = slime.stats.attack;
   let baseDef = slime.stats.defense;
@@ -67,6 +67,14 @@ export function initBattleUnit(slime: Slime, side: 0 | 1, slotIndex: number): Ba
   if (traitIds.includes('thick-gel'))  maxHp += 5;
   if (traitIds.includes('hard-shell')) baseDef += 3;
   if (traitIds.includes('feral-rush')) baseAtk += 6;
+
+  // Accessory stat bonuses
+  if (accessory?.effect.statBonuses) {
+    maxHp += accessory.effect.statBonuses.health ?? 0;
+    baseAtk += accessory.effect.statBonuses.attack ?? 0;
+    baseDef += accessory.effect.statBonuses.defense ?? 0;
+    baseSpd += accessory.effect.statBonuses.speed ?? 0;
+  }
 
   // Multiplicative traits (origin-core)
   if (traitIds.includes('origin-core')) {
@@ -590,12 +598,12 @@ function chooseTargets(
 
 // ---------- Main Battle Runner ----------
 
-export function runBattle(playerSlimes: Slime[], stage: StageConfig): BattleResult {
+export function runBattle(playerSlimes: Slime[], stage: StageConfig, accessoryMap?: Map<string, Accessory>): BattleResult {
   const log: BattleLogEntry[] = [];
 
   // Init player units
   const playerUnits = playerSlimes.slice(0, COMBAT_CONFIG.maxTeamSize).map((s, i) =>
-    initBattleUnit(s, 0, i),
+    initBattleUnit(s, 0, i, accessoryMap?.get(s.id)),
   );
 
   // Init enemy units

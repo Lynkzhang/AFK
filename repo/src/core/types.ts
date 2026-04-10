@@ -47,6 +47,7 @@ export interface Slime {
   generation: number;
   parentId: string | null;
   color: string;
+  equippedAccessoryId?: string;
   position: Position;
 }
 
@@ -130,6 +131,34 @@ export interface CodexData {
   unlockedSkills: string[];
 }
 
+// Accessory Types
+export type AccessoryKind = 'stat' | 'tendency' | 'rare';
+
+export interface AccessoryEffect {
+  statBonuses?: Partial<Record<keyof Stats, number>>;
+  tendencyBias?: string;
+  description: string;
+}
+
+export interface Accessory {
+  id: string;
+  templateId: string;
+  name: string;
+  kind: AccessoryKind;
+  rarity: Rarity;
+  effect: AccessoryEffect;
+}
+
+export interface AccessoryTemplate {
+  id: string;
+  name: string;
+  kind: AccessoryKind;
+  rarity: Rarity;
+  effect: AccessoryEffect;
+  shopPrice?: number;
+  shopCurrency?: 'gold' | 'crystal';
+}
+
 export type ArenaId = 'grassland' | 'fire-land' | 'ice-cave' | 'mystic-forest';
 
 export interface Arena {
@@ -172,4 +201,5 @@ export interface GameState {
   codex: CodexData;
   arenas: Arena[];
   activeArenaId: ArenaId;
+  accessories: Accessory[];
 }

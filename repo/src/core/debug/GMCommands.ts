@@ -1,4 +1,4 @@
-import type { GameState, Slime, Stats, Facility, Item, QuestProgress, QuestTemplate, CodexData, Arena, ArenaId } from '../types';
+import type { GameState, Slime, Stats, Facility, Item, QuestProgress, QuestTemplate, CodexData, Arena, ArenaId, Accessory } from '../types';
 import { Rarity } from '../types';
 import type { BattleResult } from '../combat/CombatTypes';
 import { runBattle } from '../combat/CombatEngine';
@@ -11,6 +11,7 @@ import { ItemSystem } from '../systems/ItemSystem';
 import { QuestSystem } from '../systems/QuestSystem';
 import { CodexSystem } from '../systems/CodexSystem';
 import { ArenaSystem } from '../systems/ArenaSystem';
+import { AccessorySystem } from '../systems/AccessorySystem';
 
 type GetState = () => GameState;
 type SetState = (s: GameState) => void;
@@ -51,6 +52,10 @@ interface GMApi {
   getArenas(): Arena[];
   buyArena(arenaId: string): boolean;
   switchArena(arenaId: string): boolean;
+  getAccessories(): Accessory[];
+  giveAccessory(templateId: string): Accessory | null;
+  equipAccessory(accessoryId: string, slimeId: string): boolean;
+  unequipAccessory(slimeId: string): boolean;
 }
 
 declare global {
@@ -113,7 +118,14 @@ function runBattleWithTeam(getState: GetState, setState: SetState, stageId: stri
   }
 
   const team = slimes.slice(0, 4);
-  const result = runBattle(team, stage);
+  const accMap = new Map<string, import('../types').Accessory>();
+  for (const sl of team) {
+    if (sl.equippedAccessoryId) {
+      const acc = getState().accessories.find((a) => a.id === sl.equippedAccessoryId);
+      if (acc) accMap.set(sl.id, acc);
+    }
+  }
+  const result = runBattle(team, stage, accMap);
   if (result.victory) {
     const updated = getState();
     const prevProgress = updated.stageProgress[stageId];
@@ -124,12 +136,17 @@ function runBattleWithTeam(getState: GetState, setState: SetState, stageId: stri
     if (newStageProgress['1-10']?.stars > 0) unlocked = Math.max(unlocked, 2);
     if (newStageProgress['2-10']?.stars > 0) unlocked = Math.max(unlocked, 3);
 
+    if (stage.accessoryDropIds && stage.accessoryDropIds.length > 0) {
+      const dropId = stage.accessoryDropIds[Math.floor(Math.random() * stage.accessoryDropIds.length)]!;
+      AccessorySystem.giveAccessory(updated, dropId);
+    }
     setState({
       ...updated,
       currency: updated.currency + result.rewards.gold,
       crystal: updated.crystal + result.rewards.crystals,
       stageProgress: newStageProgress,
       unlockedChapters: unlocked,
+      accessories: [...updated.accessories],
     });
   }
   return result;
@@ -305,6 +322,36 @@ export function initGM(getState: GetState, setState: SetState): void {
       const s = getState();
       const result = ArenaSystem.switchArena(s, arenaId as ArenaId);
       setState({ ...s, activeArenaId: s.activeArenaId });
+      return result;
+    },
+    getAccessories(): Accessory[] {
+      return AccessorySystem.getAccessories(getState());
+    },
+    giveAccessory(templateId: string): Accessory | null {
+      const s = getState();
+      const acc = AccessorySystem.giveAccessory(s, templateId);
+      setState({ ...s, accessories: [...s.accessories] });
+      return acc;
+    },
+    equipAccessory(accessoryId: string, slimeId: string): boolean {
+      const s = getState();
+      const result = AccessorySystem.equip(s, accessoryId, slimeId);
+      setState({
+        ...s,
+        accessories: [...s.accessories],
+        slimes: [...s.slimes],
+        archivedSlimes: [...s.archivedSlimes],
+      });
+      return result;
+    },
+    unequipAccessory(slimeId: string): boolean {
+      const s = getState();
+      const result = AccessorySystem.unequip(s, slimeId);
+      setState({
+        ...s,
+        slimes: [...s.slimes],
+        archivedSlimes: [...s.archivedSlimes],
+      });
       return result;
     },
   };
