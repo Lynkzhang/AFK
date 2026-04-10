@@ -12,6 +12,7 @@ interface UIHandlers {
   onOpenArchive: () => void;
   onOpenFacility: () => void;
   onOpenShop: () => void;
+  onOpenQuest: () => void;
 }
 
 type SortMode = 'rarity' | 'stats';
@@ -43,49 +44,51 @@ export class UIManager {
     this.slimeCountEl = slimeCount.querySelector('span') as HTMLSpanElement;
 
     const countdown = document.createElement('div');
-    countdown.innerHTML = '下次分裂: <span>0.0s</span>';
+    countdown.innerHTML = '\u4e0b\u6b21\u5206\u88c2: <span>0.0s</span>';
     this.countdownEl = countdown.querySelector('span') as HTMLSpanElement;
 
     const capacity = document.createElement('div');
-    capacity.innerHTML = '容量: <span>0 / 12</span>';
+    capacity.innerHTML = '\u5bb9\u91cf: <span>0 / 12</span>';
     this.capacityEl = capacity.querySelector('span') as HTMLSpanElement;
 
     this.fullHintEl = document.createElement('div');
     this.fullHintEl.className = 'full-hint hidden';
-    this.fullHintEl.textContent = '场地已满，无法继续分裂';
+    this.fullHintEl.textContent = '\u573a\u5730\u5df2\u6ee1\uff0c\u65e0\u6cd5\u7ee7\u7eed\u5206\u88c2';
 
     const actions = document.createElement('div');
     actions.className = 'ui-actions';
 
-    const newBtn = this.makeButton('新游戏');
-    const saveBtn = this.makeButton('保存');
-    const loadBtn = this.makeButton('加载');
-    const battleBtn = this.makeButton('⚔ 战斗');
+    const newBtn = this.makeButton('\u65b0\u6e38\u620f');
+    const saveBtn = this.makeButton('\u4fdd\u5b58');
+    const loadBtn = this.makeButton('\u52a0\u8f7d');
+    const battleBtn = this.makeButton('\u2694 \u6218\u6597');
 
-    const archiveBtn = this.makeButton('📦 封存库');
+    const archiveBtn = this.makeButton('\ud83d\udce6 \u5c01\u5b58\u5e93');
 
-    const facilityBtn = this.makeButton('🏗 设施');
+    const facilityBtn = this.makeButton('\ud83c\udfd7 \u8bbe\u65bd');
 
-    const shopBtn = this.makeButton('🛒 商店');
+    const shopBtn = this.makeButton('\ud83d\uded2 \u5546\u5e97');
 
-    actions.append(newBtn, saveBtn, loadBtn, battleBtn, archiveBtn, facilityBtn, shopBtn);
+    const questBtn = this.makeButton('\ud83d\udcdc \u4efb\u52a1');
+
+    actions.append(newBtn, saveBtn, loadBtn, battleBtn, archiveBtn, facilityBtn, shopBtn, questBtn);
 
     const sortActions = document.createElement('div');
     sortActions.className = 'sort-actions';
-    const sortByRarityBtn = this.makeButton('按稀有度');
-    const sortByStatsBtn = this.makeButton('按属性总和');
+    const sortByRarityBtn = this.makeButton('\u6309\u7a00\u6709\u5ea6');
+    const sortByStatsBtn = this.makeButton('\u6309\u5c5e\u6027\u603b\u548c');
     sortActions.append(sortByRarityBtn, sortByStatsBtn);
 
     const listTitle = document.createElement('h2');
     listTitle.className = 'list-title';
-    listTitle.textContent = '史莱姆列表';
+    listTitle.textContent = '\u53f2\u83b1\u59c6\u5217\u8868';
 
     this.slimeListEl = document.createElement('div');
     this.slimeListEl.className = 'slime-list';
 
     this.root.append(title, currency, slimeCount, countdown, capacity, this.fullHintEl, actions, sortActions, listTitle, this.slimeListEl);
 
-    this.buttons = { newBtn, saveBtn, loadBtn, battleBtn, archiveBtn, facilityBtn, shopBtn, sortByRarityBtn, sortByStatsBtn };
+    this.buttons = { newBtn, saveBtn, loadBtn, battleBtn, archiveBtn, facilityBtn, shopBtn, questBtn, sortByRarityBtn, sortByStatsBtn };
   }
 
   private readonly buttons: {
@@ -96,6 +99,7 @@ export class UIManager {
     archiveBtn: HTMLButtonElement;
     facilityBtn: HTMLButtonElement;
     shopBtn: HTMLButtonElement;
+    questBtn: HTMLButtonElement;
     sortByRarityBtn: HTMLButtonElement;
     sortByStatsBtn: HTMLButtonElement;
   };
@@ -115,6 +119,7 @@ export class UIManager {
     this.buttons.archiveBtn.onclick = handlers.onOpenArchive;
     this.buttons.facilityBtn.onclick = handlers.onOpenFacility;
     this.buttons.shopBtn.onclick = handlers.onOpenShop;
+    this.buttons.questBtn.onclick = handlers.onOpenQuest;
     this.buttons.sortByRarityBtn.onclick = () => {
       this.sortMode = 'rarity';
     };
@@ -159,12 +164,12 @@ export class UIManager {
 
     const info = document.createElement('div');
     info.className = 'slime-info';
-    info.textContent = `属性总和: ${this.getTotalStats(slime)} | Generation: ${slime.generation}`;
+    info.textContent = `\u5c5e\u6027\u603b\u548c: ${this.getTotalStats(slime)} | Generation: ${slime.generation}`;
 
     const actions = document.createElement('div');
     actions.className = 'slime-actions';
-    const cullBtn = this.makeButton('剔除');
-    const sellBtn = this.makeButton('出售');
+    const cullBtn = this.makeButton('\u5254\u9664');
+    const sellBtn = this.makeButton('\u51fa\u552e');
 
     cullBtn.onclick = () => {
       this.handlers?.onCull(slime.id);
@@ -173,7 +178,7 @@ export class UIManager {
       this.handlers?.onSell(slime.id);
     };
 
-    const archiveBtn = this.makeButton('封存');
+    const archiveBtn = this.makeButton('\u5c01\u5b58');
     archiveBtn.onclick = () => {
       this.handlers?.onArchive(slime.id);
     };

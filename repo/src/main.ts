@@ -12,6 +12,7 @@ import { BattleUI } from './core/ui/BattleUI';
 import { ArchiveUI } from './core/ui/ArchiveUI';
 import { FacilityUI } from './core/ui/FacilityUI';
 import { ShopUI } from './core/ui/ShopUI';
+import { QuestUI } from './core/ui/QuestUI';
 import type { BattleResult } from './core/combat/CombatTypes';
 import { initGM } from './core/debug/GMCommands';
 import { archiveSlime, unarchiveSlime, removeArchivedSlime } from './core/systems/ArchiveSystem';
@@ -19,6 +20,7 @@ import { evaluatePrice } from './core/systems/EvaluationSystem';
 import { FacilitySystem, DEFAULT_FACILITIES } from './core/systems/FacilitySystem';
 import { ShopSystem } from './core/systems/ShopSystem';
 import { ItemSystem } from './core/systems/ItemSystem';
+import { QuestSystem } from './core/systems/QuestSystem';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('App root not found');
@@ -29,7 +31,7 @@ function createDefaultSlimes(): Slime[] {
       id: 'slime-common',
       name: 'Green Slime',
       stats: { health: 20, attack: 5, defense: 3, speed: 4, mut: 0.05 },
-      traits: [{ id: 'fresh', name: 'Fresh', description: 'Newly born', rarity: Rarity.Common, effect: '无特殊效果' }],
+      traits: [{ id: 'fresh', name: 'Fresh', description: 'Newly born', rarity: Rarity.Common, effect: 'none' }],
       skills: [{ id: 'jump', name: 'Jump', type: 'attack', targetType: 'single', damage: 5, cooldown: 1 }],
       rarity: Rarity.Common,
       generation: 1,
@@ -41,7 +43,7 @@ function createDefaultSlimes(): Slime[] {
       id: 'slime-rare',
       name: 'Blue Slime',
       stats: { health: 28, attack: 7, defense: 4, speed: 5, mut: 0.05 },
-      traits: [{ id: 'calm', name: 'Calm', description: 'Stable and focused', rarity: Rarity.Common, effect: '无特殊效果' }],
+      traits: [{ id: 'calm', name: 'Calm', description: 'Stable and focused', rarity: Rarity.Common, effect: 'none' }],
       skills: [{ id: 'splash', name: 'Splash', type: 'attack', targetType: 'single', damage: 8, cooldown: 2 }],
       rarity: Rarity.Rare,
       generation: 1,
@@ -53,7 +55,7 @@ function createDefaultSlimes(): Slime[] {
       id: 'slime-epic',
       name: 'Purple Slime',
       stats: { health: 36, attack: 10, defense: 5, speed: 6, mut: 0.05 },
-      traits: [{ id: 'arcane', name: 'Arcane', description: 'Mystic energy', rarity: Rarity.Common, effect: '无特殊效果' }],
+      traits: [{ id: 'arcane', name: 'Arcane', description: 'Mystic energy', rarity: Rarity.Common, effect: 'none' }],
       skills: [{ id: 'pulse', name: 'Arcane Pulse', type: 'attack', targetType: 'single', damage: 12, cooldown: 3 }],
       rarity: Rarity.Epic,
       generation: 1,
@@ -65,7 +67,7 @@ function createDefaultSlimes(): Slime[] {
 }
 
 function createDefaultState(): GameState {
-  return {
+  const s: GameState = {
     slimes: createDefaultSlimes(),
     breedingGrounds: [
       { id: 'bg-1', name: 'Starter Pen', level: 1, capacity: 4, slimes: [], facilityLevel: 1 },
@@ -79,7 +81,12 @@ function createDefaultState(): GameState {
     archiveCapacity: 10,
     items: [],
     unlockedChapters: 1,
+    quests: [],
+    questDailyRefreshTime: 0,
+    questCounters: {},
   };
+  QuestSystem.initQuests(s);
+  return s;
 }
 
 function migrateState(state: GameState): void {
@@ -97,6 +104,14 @@ function migrateState(state: GameState): void {
         f.maxLevel = 10;
       }
     }
+  }
+  // Quest migration
+  if (!Array.isArray(s['quests'])) s['quests'] = [];
+  if (typeof s['questDailyRefreshTime'] !== 'number') s['questDailyRefreshTime'] = 0;
+  if (!s['questCounters'] || typeof s['questCounters'] !== 'object') s['questCounters'] = {};
+  // If no quests exist, initialize them
+  if (state.quests.length === 0) {
+    QuestSystem.initQuests(state);
   }
 }
 
@@ -136,6 +151,10 @@ const shopUI = new ShopUI();
 shopUI.hide();
 gameRoot.appendChild(shopUI.root);
 
+const questUI = new QuestUI();
+questUI.hide();
+gameRoot.appendChild(questUI.root);
+
 const saveManager = new SaveManager();
 let state = saveManager.load() ?? createDefaultState();
 migrateState(state);
@@ -152,6 +171,8 @@ const loop = new GameLoop({
     breedingSystem.update(state, deltaTime, dynamicConfig);
     scene.update(state, elapsedTime);
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+    // Sync derived quest counters each frame
+    QuestSystem.syncDerivedCounters(state);
   },
   render: () => {
     scene.render();
@@ -189,9 +210,14 @@ ui.bind({
     if (!slime) return;
     state.currency += evaluatePrice(slime);
     state.slimes = state.slimes.filter((item) => item.id !== id);
+    // Track quest counters
+    QuestSystem.incrementCounter(state, 'daily_sells');
+    QuestSystem.incrementCounter(state, 'total_sells');
   },
   onArchive: (id: string) => {
     archiveSlime(state, id);
+    // Track quest counters
+    QuestSystem.incrementCounter(state, 'daily_archives');
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
   onOpenArchive: () => {
@@ -206,11 +232,18 @@ ui.bind({
     shopUI.render(state);
     shopUI.show();
   },
+  onOpenQuest: () => {
+    QuestSystem.syncDerivedCounters(state);
+    questUI.render(state);
+    questUI.show();
+  },
 });
 
 facilityUI.bind({
   onUpgrade: (id: string) => {
     FacilitySystem.upgrade(state, id);
+    // Track quest counters
+    QuestSystem.incrementCounter(state, 'daily_upgrades');
     facilityUI.render(state);
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
@@ -226,13 +259,28 @@ shopUI.bind({
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
   onUseItem: (itemType: string) => {
-    // For stat-booster, use first slime as target. In a real UI you'd pick.
     const targetSlime = state.slimes[0];
     ItemSystem.useItem(state, itemType as 'mutation-catalyst' | 'stat-booster' | 'rare-essence', targetSlime?.id);
     shopUI.render(state);
   },
   onBack: () => {
     shopUI.hide();
+  },
+});
+
+questUI.bind({
+  onClaim: (questId: string) => {
+    QuestSystem.claimQuest(state, questId);
+    questUI.render(state);
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+  },
+  onSubmitBounty: (questId: string, slimeId: string) => {
+    QuestSystem.submitBounty(state, questId, slimeId);
+    questUI.render(state);
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+  },
+  onBack: () => {
+    questUI.hide();
   },
 });
 
@@ -281,6 +329,10 @@ battleUI.bind({
       // Chapter unlock logic
       if (state.stageProgress['1-10']?.stars > 0) state.unlockedChapters = Math.max(state.unlockedChapters, 2);
       if (state.stageProgress['2-10']?.stars > 0) state.unlockedChapters = Math.max(state.unlockedChapters, 3);
+
+      // Track quest counters
+      QuestSystem.incrementCounter(state, 'daily_battles_won');
+      QuestSystem.incrementCounter(state, 'total_battles_won');
     }
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
@@ -297,6 +349,9 @@ archiveUI.bind({
     if (slime) {
       state.currency += evaluatePrice(slime);
       removeArchivedSlime(state, slimeId);
+      // Track quest counters
+      QuestSystem.incrementCounter(state, 'daily_sells');
+      QuestSystem.incrementCounter(state, 'total_sells');
       archiveUI.render(state);
       ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
     }

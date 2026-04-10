@@ -1,4 +1,4 @@
-import type { GameState, Slime, Stats, Facility, Item } from '../types';
+import type { GameState, Slime, Stats, Facility, Item, QuestProgress, QuestTemplate } from '../types';
 import { Rarity } from '../types';
 import type { BattleResult } from '../combat/CombatTypes';
 import { runBattle } from '../combat/CombatEngine';
@@ -8,8 +8,8 @@ import { evaluatePrice as doEvaluatePrice } from '../systems/EvaluationSystem';
 import { FacilitySystem } from '../systems/FacilitySystem';
 import { ShopSystem } from '../systems/ShopSystem';
 import { ItemSystem } from '../systems/ItemSystem';
+import { QuestSystem } from '../systems/QuestSystem';
 
-/** Getter / Setter injected from main.ts */
 type GetState = () => GameState;
 type SetState = (s: GameState) => void;
 
@@ -34,6 +34,13 @@ interface GMApi {
   useItem(itemType: string, slimeId?: string): string;
   unlockChapter(n: number): void;
   getUnlockedChapters(): number;
+  // Quest GM commands
+  completeQuest(questId: string): boolean;
+  resetDailyQuests(): void;
+  getQuests(): Array<QuestProgress & { template: QuestTemplate }>;
+  claimQuest(questId: string): boolean;
+  submitBounty(questId: string, slimeId: string): boolean;
+  incrementQuestCounter(key: string, amount?: number): void;
 }
 
 declare global {
@@ -88,7 +95,6 @@ function runBattleWithTeam(getState: GetState, setState: SetState, stageId: stri
   let s = getState();
   let slimes = s.slimes;
 
-  // If no slimes, create a default GM slime
   if (slimes.length === 0) {
     const gmSlime = createDefaultSlime();
     s = { ...s, slimes: [gmSlime] };
@@ -96,7 +102,6 @@ function runBattleWithTeam(getState: GetState, setState: SetState, stageId: stri
     slimes = s.slimes;
   }
 
-  // Take up to 4 slimes
   const team = slimes.slice(0, 4);
   const result = runBattle(team, stage);
   if (result.victory) {
@@ -197,7 +202,6 @@ export function initGM(getState: GetState, setState: SetState): void {
     upgradeFacility(id: string): boolean {
       const s = getState();
       const result = FacilitySystem.upgrade(s, id);
-      // Trigger state update so UI reflects changes
       setState({ ...s, facilities: [...s.facilities] });
       return result;
     },
@@ -225,6 +229,38 @@ export function initGM(getState: GetState, setState: SetState): void {
     },
     getUnlockedChapters(): number {
       return getState().unlockedChapters;
+    },
+    // Quest GM commands
+    completeQuest(questId: string): boolean {
+      const s = getState();
+      const result = QuestSystem.completeQuest(s, questId);
+      setState({ ...s, quests: [...s.quests] });
+      return result;
+    },
+    resetDailyQuests(): void {
+      const s = getState();
+      QuestSystem.resetDailyQuests(s);
+      setState({ ...s, quests: [...s.quests], questCounters: { ...s.questCounters } });
+    },
+    getQuests(): Array<QuestProgress & { template: QuestTemplate }> {
+      return QuestSystem.getQuests(getState());
+    },
+    claimQuest(questId: string): boolean {
+      const s = getState();
+      const result = QuestSystem.claimQuest(s, questId);
+      setState({ ...s, quests: [...s.quests], currency: s.currency, crystal: s.crystal, items: [...s.items] });
+      return result;
+    },
+    submitBounty(questId: string, slimeId: string): boolean {
+      const s = getState();
+      const result = QuestSystem.submitBounty(s, questId, slimeId);
+      setState({ ...s, quests: [...s.quests], slimes: [...s.slimes], archivedSlimes: [...s.archivedSlimes] });
+      return result;
+    },
+    incrementQuestCounter(key: string, amount?: number): void {
+      const s = getState();
+      QuestSystem.incrementCounter(s, key, amount);
+      setState({ ...s, quests: [...s.quests], questCounters: { ...s.questCounters } });
     },
   };
 

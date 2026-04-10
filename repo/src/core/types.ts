@@ -70,7 +70,6 @@ export interface Facility {
 }
 
 export interface StageProgress {
-  /** 最高获得星级，0 表示未通关 */
   stars: 0 | 1 | 2 | 3;
 }
 
@@ -93,6 +92,38 @@ export interface ShopItem {
   itemType: ItemType;
 }
 
+// Quest Types
+
+export type QuestCategory = 'daily' | 'achievement' | 'bounty';
+export type QuestStatus = 'active' | 'completed' | 'claimed';
+
+export interface QuestReward {
+  gold?: number;
+  crystal?: number;
+  items?: { type: ItemType; quantity: number }[];
+}
+
+export interface QuestTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: QuestCategory;
+  conditionKey: string;
+  targetValue: number;
+  reward: QuestReward;
+  bountyCriteria?: {
+    minRarity?: Rarity;
+    minTotalStats?: number;
+    requiredTraitId?: string;
+  };
+}
+
+export interface QuestProgress {
+  questId: string;
+  currentValue: number;
+  status: QuestStatus;
+}
+
 export interface GameState {
   slimes: Slime[];
   breedingGrounds: BreedingGround[];
@@ -100,14 +131,12 @@ export interface GameState {
   currency: number;
   crystal: number;
   timestamp: number;
-  /** stageId → StageProgress 的映射。键如 "1-1", "1-10" */
   stageProgress: Record<string, StageProgress>;
-  /** 封存库中的史莱姆 */
   archivedSlimes: Slime[];
-  /** 封存库容量上限，默认 10 */
   archiveCapacity: number;
-  /** 背包道具 */
   items: Item[];
-  /** 已解锁的最大章节号，默认 1 */
   unlockedChapters: number;
+  quests: QuestProgress[];
+  questDailyRefreshTime: number;
+  questCounters: Record<string, number>;
 }
