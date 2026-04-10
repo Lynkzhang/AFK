@@ -1761,4 +1761,290 @@ test.describe('Onboarding Full Flow', () => {
     const battleBtnVisible = await page.locator('.ui-actions button', { hasText: '战斗' }).isVisible();
     expect(battleBtnVisible).toBe(true);
   });
+
+});
+
+test.describe('M22 UX Polish', () => {
+
+  test('archive full: archive button disabled and toast shown', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await startFreshGame(page);
+
+    await page.evaluate(() => {
+      const gm = window.__GM!;
+      const state = gm.getState();
+      state.archiveCapacity = 1;
+      if (state.slimes.length > 0) {
+        const s = state.slimes[0]!;
+        state.slimes.splice(0, 1);
+        state.archivedSlimes.push(s);
+      }
+    });
+    await page.waitForTimeout(300);
+
+    const archiveBtnDisabled = await page.evaluate(() => {
+      const btns = document.querySelectorAll('.slime-item .slime-actions button:nth-child(3)');
+      return Array.from(btns).every(b => (b as HTMLButtonElement).disabled);
+    });
+    expect(archiveBtnDisabled).toBe(true);
+  });
+
+  test('sell price preview shown on sell button', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await startFreshGame(page);
+
+    const sellText = await page.evaluate(() => {
+      const btn = document.querySelector('.slime-item .slime-actions button:nth-child(2)') as HTMLButtonElement | null;
+      return btn?.textContent ?? '';
+    });
+    expect(sellText).toContain('💰');
+    expect(sellText).toContain('出售');
+  });
+
+  test('sort button active state indicator', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await startFreshGame(page);
+
+    const rarityActive = await page.evaluate(() => {
+      const btns = document.querySelectorAll('.sort-actions button');
+      return (btns[0] as HTMLElement)?.classList.contains('sort-btn-active') ?? false;
+    });
+    expect(rarityActive).toBe(true);
+
+    await page.locator('.sort-actions button', { hasText: '按属性总和' }).click();
+    await page.waitForTimeout(100);
+
+    const statsActive = await page.evaluate(() => {
+      const btns = document.querySelectorAll('.sort-actions button');
+      const first = (btns[0] as HTMLElement)?.classList.contains('sort-btn-active') ?? false;
+      const second = (btns[1] as HTMLElement)?.classList.contains('sort-btn-active') ?? false;
+      return { first, second };
+    });
+    expect(statsActive.first).toBe(false);
+    expect(statsActive.second).toBe(true);
+  });
+
+  test('arena buy button disabled when currency insufficient', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await startFreshGame(page);
+
+    await page.evaluate(() => window.__GM!.setCurrency(0));
+    await page.waitForTimeout(100);
+
+    await page.locator('.ui-actions button', { hasText: '场地' }).click();
+    await page.waitForSelector('.arena-panel', { timeout: 3000 });
+
+    const buyBtnsDisabled = await page.evaluate(() => {
+      const btns = document.querySelectorAll('.arena-buy-btn');
+      return Array.from(btns).every(b => (b as HTMLButtonElement).disabled);
+    });
+    expect(buyBtnsDisabled).toBe(true);
+  });
+
+  test('unarchive blocked when breeding ground is full', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await startFreshGame(page);
+
+    await page.evaluate(() => {
+      const gm = window.__GM!;
+      const state = gm.getState();
+      // Move first slime to archive
+      const archiveTarget = state.slimes[0]!;
+      state.slimes.splice(0, 1);
+      state.archivedSlimes.push(archiveTarget);
+      // Fill slimes array directly to exceed max capacity
+      const template = state.slimes[0] || archiveTarget;
+      while (state.slimes.length < 30) {
+        state.slimes.push({
+          ...template,
+          id: 'fill-' + state.slimes.length,
+          name: 'Fill ' + state.slimes.length,
+          position: { x: 0, y: 0.5, z: 0 },
+        });
+      }
+    });
+    await page.waitForTimeout(200);
+
+    await page.locator('.ui-actions button', { hasText: '封存库' }).click();
+    await page.waitForSelector('.archive-panel', { timeout: 3000 });
+
+    await page.locator('.archive-action-btn', { hasText: '解封' }).first().click();
+    await page.waitForTimeout(500);
+
+    const toastText = await page.evaluate(() => {
+      const el = document.querySelector('.toast-message');
+      return el?.textContent ?? '';
+    });
+    expect(toastText).toContain('培养场地已满');
+  });
+
+  test('codex panel displays in Chinese', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await startFreshGame(page);
+
+    await page.locator('.ui-actions button', { hasText: '图鉴' }).click();
+    await page.waitForSelector('.codex-panel', { timeout: 3000 });
+
+    const titleText = await page.locator('.codex-panel h2').textContent();
+    expect(titleText).toBe('图鉴');
+
+    const overallText = await page.locator('.codex-overall').textContent();
+    expect(overallText).toContain('总计');
+
+    const tabTexts = await page.evaluate(() => {
+      const tabs = document.querySelectorAll('.codex-tab');
+      return Array.from(tabs).map(t => t.textContent ?? '');
+    });
+    expect(tabTexts.some(t => t.includes('稀有度'))).toBe(true);
+    expect(tabTexts.some(t => t.includes('特性'))).toBe(true);
+    expect(tabTexts.some(t => t.includes('技能'))).toBe(true);
+
+    const backText = await page.locator('.codex-panel .back-btn').textContent();
+    expect(backText).toBe('返回');
+  });
+
+  test('quest panel displays in Chinese', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await startFreshGame(page);
+
+    await page.locator('.ui-actions button', { hasText: '任务' }).click();
+    await page.waitForSelector('.quest-panel', { timeout: 3000 });
+
+    const titleText = await page.locator('.quest-panel h2').textContent();
+    expect(titleText).toBe('任务面板');
+
+    const tabTexts = await page.evaluate(() => {
+      const tabs = document.querySelectorAll('.quest-tab');
+      return Array.from(tabs).map(t => t.textContent ?? '');
+    });
+    expect(tabTexts).toContain('日常');
+    expect(tabTexts).toContain('成就');
+    expect(tabTexts).toContain('悬赏');
+
+    const rewardTexts = await page.evaluate(() => {
+      const els = document.querySelectorAll('.quest-reward');
+      return Array.from(els).map(e => e.textContent ?? '');
+    });
+    const hasChineseReward = rewardTexts.some(t => t.includes('奖励') && t.includes('金币'));
+    expect(hasChineseReward).toBe(true);
+
+    const backText = await page.locator('.quest-panel .back-btn').textContent();
+    expect(backText).toBe('返回');
+  });
+
+  test('sell toast shows gold amount', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await startFreshGame(page);
+
+    await page.evaluate(() => {
+      const btn = document.querySelector('.slime-item .slime-actions button:nth-child(2)') as HTMLButtonElement | null;
+      btn?.click();
+    });
+    await page.waitForTimeout(500);
+
+    const toastText = await page.evaluate(() => {
+      const el = document.querySelector('.toast-message');
+      return el?.textContent ?? '';
+    });
+    expect(toastText).toContain('出售成功');
+    expect(toastText).toContain('💰');
+  });
+
+  test('panel mutual exclusion: opening panel disables main buttons', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await startFreshGame(page);
+
+    await page.locator('.ui-actions button', { hasText: '封存库' }).click();
+    await page.waitForSelector('.archive-panel', { timeout: 3000 });
+
+    const mainBtnsDisabled = await page.evaluate(() => {
+      const btns = document.querySelectorAll('.ui-actions button');
+      return Array.from(btns).every(b => (b as HTMLButtonElement).disabled);
+    });
+    expect(mainBtnsDisabled).toBe(true);
+
+    await page.locator('.archive-panel .back-btn').click();
+    await page.waitForTimeout(200);
+
+    const mainBtnsEnabled = await page.evaluate(() => {
+      const btns = document.querySelectorAll('.ui-actions button');
+      return Array.from(btns).some(b => !(b as HTMLButtonElement).disabled);
+    });
+    expect(mainBtnsEnabled).toBe(true);
+  });
+
+  test('quest status labels in Chinese', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await startFreshGame(page);
+
+    await page.locator('.ui-actions button', { hasText: '任务' }).click();
+    await page.waitForSelector('.quest-panel', { timeout: 3000 });
+
+    const statusTexts = await page.evaluate(() => {
+      const els = document.querySelectorAll('.quest-status');
+      return Array.from(els).map(e => e.textContent ?? '');
+    });
+    const allChinese = statusTexts.every(t => t === '进行中' || t === '已完成' || t === '已领取');
+    expect(allChinese).toBe(true);
+  });
+
+  test('shop item use with target slime selector', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await startFreshGame(page);
+
+    await page.evaluate(() => {
+      const gm = window.__GM!;
+      gm.setCurrency(1000);
+      const state = gm.getState();
+      state.items.push({ type: 'stat-booster', name: 'Stat Booster', quantity: 1 } as any);
+    });
+    await page.waitForTimeout(100);
+
+    await page.locator('.ui-actions button', { hasText: '商店' }).click();
+    await page.waitForSelector('.shop-panel', { timeout: 3000 });
+
+    const hasSelect = await page.evaluate(() => {
+      return document.querySelector('.item-target-select') !== null;
+    });
+    expect(hasSelect).toBe(true);
+  });
+
+  test('bounty quest shows slime selector instead of auto-submit', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await startFreshGame(page);
+
+    await page.evaluate(() => {
+      const gm = window.__GM!;
+      const state = gm.getState();
+      if (state.slimes[0]) {
+        state.slimes[0].stats = { health: 50, attack: 30, defense: 20, speed: 20, mut: 0.1 };
+        (state.slimes[0] as any).rarity = 'Rare';
+      }
+    });
+    await page.waitForTimeout(100);
+
+    await page.locator('.ui-actions button', { hasText: '任务' }).click();
+    await page.waitForSelector('.quest-panel', { timeout: 3000 });
+
+    await page.locator('.quest-tab', { hasText: '悬赏' }).click();
+    await page.waitForTimeout(300);
+
+    const hasBountyUI = await page.evaluate(() => {
+      return document.querySelector('.bounty-slime-select') !== null ||
+        document.querySelector('.bounty-no-eligible') !== null;
+    });
+    expect(hasBountyUI).toBe(true);
+  });
 });

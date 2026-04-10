@@ -384,6 +384,44 @@ body,
   font-size: 15px;
   cursor: pointer;
 }
+/* Sort button active state */
+.sort-btn-active {
+  background: rgba(255, 215, 0, 0.25) !important;
+  border: 1px solid #ffd700 !important;
+  color: #ffd700 !important;
+}
+
+/* Disabled buttons */
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Item target select */
+.item-target-select, .bounty-slime-select, .accessory-select {
+  background: rgba(255,255,255,0.1);
+  color: #f0f3ff;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  max-width: 160px;
+}
+
+.bounty-no-eligible, .item-no-target {
+  font-size: 12px;
+  color: #ff8f8f;
+  font-style: italic;
+}
+
+/* Inventory row */
+.inventory-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
 .onboarding-bubble {
   position: fixed;
   top: 50%;

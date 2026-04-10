@@ -1,10 +1,26 @@
-import type { GameState, QuestCategory } from '../types';
+import type { GameState, QuestCategory, Slime } from '../types';
+import { Rarity } from '../types';
 import { QuestSystem } from '../systems/QuestSystem';
 
 interface QuestUIHandlers {
   onClaim: (questId: string) => void;
   onSubmitBounty: (questId: string, slimeId: string) => void;
   onBack: () => void;
+}
+
+function slimeTotalStats(s: Slime): number {
+  return s.stats.health + s.stats.attack + s.stats.defense + s.stats.speed;
+}
+
+function meetsRarity(s: Slime, minRarity: Rarity): boolean {
+  const order: Record<Rarity, number> = {
+    [Rarity.Common]: 1,
+    [Rarity.Uncommon]: 2,
+    [Rarity.Rare]: 3,
+    [Rarity.Epic]: 4,
+    [Rarity.Legendary]: 5,
+  };
+  return (order[s.rarity] ?? 0) >= (order[minRarity] ?? 0);
 }
 
 export class QuestUI {
@@ -33,7 +49,7 @@ export class QuestUI {
     this.root.replaceChildren();
 
     const title = document.createElement('h2');
-    title.textContent = 'Quest Board';
+    title.textContent = '\u4efb\u52a1\u9762\u677f';
     this.root.appendChild(title);
 
     // Tab bar
@@ -41,9 +57,9 @@ export class QuestUI {
     tabBar.className = 'quest-tabs';
     const categories: QuestCategory[] = ['daily', 'achievement', 'bounty'];
     const tabLabels: Record<QuestCategory, string> = {
-      daily: 'Daily',
-      achievement: 'Achievement',
-      bounty: 'Bounty',
+      daily: '\u65e5\u5e38',
+      achievement: '\u6210\u5c31',
+      bounty: '\u60ac\u8d4f',
     };
 
     for (const cat of categories) {
@@ -67,7 +83,7 @@ export class QuestUI {
     if (quests.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'quest-empty';
-      empty.textContent = 'No quests available';
+      empty.textContent = '\u6682\u65e0\u4efb\u52a1';
       listEl.appendChild(empty);
     }
 
@@ -83,7 +99,7 @@ export class QuestUI {
       nameEl.textContent = q.template.name;
       const statusEl = document.createElement('span');
       statusEl.className = 'quest-status';
-      statusEl.textContent = q.status === 'claimed' ? 'Claimed' : q.status === 'completed' ? 'Complete!' : 'In Progress';
+      statusEl.textContent = q.status === 'claimed' ? '\u5df2\u9886\u53d6' : q.status === 'completed' ? '\u5df2\u5b8c\u6210' : '\u8fdb\u884c\u4e2d';
       header.append(nameEl, statusEl);
 
       const desc = document.createElement('div');
@@ -107,9 +123,9 @@ export class QuestUI {
       const rewardEl = document.createElement('div');
       rewardEl.className = 'quest-reward';
       const parts: string[] = [];
-      if (q.template.reward.gold) parts.push(`${q.template.reward.gold} Gold`);
-      if (q.template.reward.crystal) parts.push(`${q.template.reward.crystal} Crystal`);
-      rewardEl.textContent = 'Reward: ' + parts.join(', ');
+      if (q.template.reward.gold) parts.push(`${q.template.reward.gold} \u91d1\u5e01`);
+      if (q.template.reward.crystal) parts.push(`${q.template.reward.crystal} \u6676\u77f3`);
+      rewardEl.textContent = '\u5956\u52b1: ' + parts.join(', ');
 
       // Action button
       const actions = document.createElement('div');
@@ -118,7 +134,7 @@ export class QuestUI {
       if (q.status === 'completed') {
         const claimBtn = document.createElement('button');
         claimBtn.className = 'quest-claim-btn';
-        claimBtn.textContent = 'Claim';
+        claimBtn.textContent = '\u9886\u53d6';
         claimBtn.onclick = () => {
           this.handlers?.onClaim(q.questId);
         };
@@ -126,23 +142,41 @@ export class QuestUI {
       }
 
       if (q.status === 'active' && q.template.category === 'bounty') {
-        // Show submit options for bounty quests
+        // Show submit options for bounty quests — properly check criteria
         const allSlimes = [...state.slimes, ...state.archivedSlimes];
-        if (allSlimes.length > 0) {
+        const criteria = q.template.bountyCriteria;
+        const eligible = allSlimes.filter((s) => {
+          if (criteria?.minRarity && !meetsRarity(s, criteria.minRarity)) return false;
+          if (criteria?.minTotalStats && slimeTotalStats(s) < criteria.minTotalStats) return false;
+          if (criteria?.requiredTraitId && !s.traits.some((tr) => tr.id === criteria.requiredTraitId)) return false;
+          return true;
+        });
+
+        if (eligible.length > 0) {
+          // Create a select dropdown for choosing which slime to submit
+          const select = document.createElement('select');
+          select.className = 'bounty-slime-select';
+          for (const s of eligible) {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = `${s.name} (${s.rarity}, \u603b${slimeTotalStats(s)})`;
+            select.appendChild(opt);
+          }
+
           const submitBtn = document.createElement('button');
           submitBtn.className = 'quest-submit-btn';
-          submitBtn.textContent = 'Submit Slime';
+          submitBtn.textContent = '\u63d0\u4ea4\u53f2\u83b1\u59c6';
           submitBtn.onclick = () => {
-            // Submit first eligible slime
-            for (const s of allSlimes) {
-              const submitted = this.handlers !== null;
-              if (submitted) {
-                this.handlers!.onSubmitBounty(q.questId, s.id);
-                break;
-              }
+            if (select.value) {
+              this.handlers?.onSubmitBounty(q.questId, select.value);
             }
           };
-          actions.appendChild(submitBtn);
+          actions.append(select, submitBtn);
+        } else {
+          const hintEl = document.createElement('span');
+          hintEl.className = 'bounty-no-eligible';
+          hintEl.textContent = '\u65e0\u7b26\u5408\u6761\u4ef6\u7684\u53f2\u83b1\u59c6';
+          actions.appendChild(hintEl);
         }
       }
 
@@ -154,7 +188,7 @@ export class QuestUI {
     // Back button
     const backBtn = document.createElement('button');
     backBtn.className = 'back-btn';
-    backBtn.textContent = 'Back';
+    backBtn.textContent = '\u8fd4\u56de';
     backBtn.onclick = () => this.handlers?.onBack();
     this.root.appendChild(backBtn);
   }

@@ -17,6 +17,8 @@ interface UIHandlers {
   onOpenArena: () => void;
 }
 
+export type PriceEvaluatorFn = (slime: Slime) => number;
+
 type SortMode = 'rarity' | 'stats';
 
 export class UIManager {
@@ -30,6 +32,7 @@ export class UIManager {
   private sortMode: SortMode = 'rarity';
   private handlers: UIHandlers | null = null;
   private currentUnlocks: FeatureUnlocks | null = null;
+  private priceEvaluator: PriceEvaluatorFn | null = null;
 
   constructor() {
     this.root = document.createElement('div');
@@ -83,6 +86,7 @@ export class UIManager {
     const sortActions = document.createElement('div');
     sortActions.className = 'sort-actions';
     const sortByRarityBtn = this.makeButton('\u6309\u7a00\u6709\u5ea6');
+    sortByRarityBtn.classList.add('sort-btn-active');
     const sortByStatsBtn = this.makeButton('\u6309\u5c5e\u6027\u603b\u548c');
     sortActions.append(sortByRarityBtn, sortByStatsBtn);
 
@@ -119,6 +123,10 @@ export class UIManager {
     return btn;
   }
 
+  setPriceEvaluator(fn: PriceEvaluatorFn): void {
+    this.priceEvaluator = fn;
+  }
+
   bind(handlers: UIHandlers): void {
     this.handlers = handlers;
     this.buttons.newBtn.onclick = handlers.onNewGame;
@@ -133,9 +141,13 @@ export class UIManager {
     this.buttons.arenaBtn.onclick = handlers.onOpenArena;
     this.buttons.sortByRarityBtn.onclick = () => {
       this.sortMode = 'rarity';
+      this.buttons.sortByRarityBtn.classList.add('sort-btn-active');
+      this.buttons.sortByStatsBtn.classList.remove('sort-btn-active');
     };
     this.buttons.sortByStatsBtn.onclick = () => {
       this.sortMode = 'stats';
+      this.buttons.sortByStatsBtn.classList.add('sort-btn-active');
+      this.buttons.sortByRarityBtn.classList.remove('sort-btn-active');
     };
   }
 
@@ -174,10 +186,10 @@ export class UIManager {
       return this.getRarityOrder(b.rarity) - this.getRarityOrder(a.rarity);
     });
 
-    this.slimeListEl.replaceChildren(...sortedSlimes.map((slime) => this.createSlimeCard(slime)));
+    this.slimeListEl.replaceChildren(...sortedSlimes.map((slime) => this.createSlimeCard(slime, state)));
   }
 
-  private createSlimeCard(slime: Slime): HTMLDivElement {
+  private createSlimeCard(slime: Slime, state: GameState): HTMLDivElement {
     const item = document.createElement('div');
     item.className = 'slime-item';
 
@@ -201,7 +213,10 @@ export class UIManager {
     const actions = document.createElement('div');
     actions.className = 'slime-actions';
     const cullBtn = this.makeButton('\u5254\u9664');
-    const sellBtn = this.makeButton('\u51fa\u552e');
+
+    // Sell button with price preview
+    const price = this.priceEvaluator ? this.priceEvaluator(slime) : 0;
+    const sellBtn = this.makeButton(price > 0 ? `\u51fa\u552e (\u{1F4B0}${price})` : '\u51fa\u552e');
 
     cullBtn.onclick = () => {
       this.handlers?.onCull(slime.id);
@@ -211,6 +226,11 @@ export class UIManager {
     };
 
     const archiveBtn = this.makeButton('\u5c01\u5b58');
+    // Disable archive button if archive is full
+    if (state.archivedSlimes.length >= state.archiveCapacity) {
+      archiveBtn.disabled = true;
+      archiveBtn.title = '\u5c01\u5b58\u5e93\u5df2\u6ee1';
+    }
     archiveBtn.onclick = () => {
       this.handlers?.onArchive(slime.id);
     };
