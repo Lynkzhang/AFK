@@ -78,15 +78,15 @@ function createStarterSlime(): import('./core/types').Slime {
 
 function createSecondSlime(): import('./core/types').Slime {
   return {
-    id: 'starter-2',
-    name: '果冻二号',
-    stats: { health: 12, attack: 2, defense: 2, speed: 4, mut: 0.06 },
+    id: 'slime-starter-2',
+    name: '小蓝',
+    stats: { health: 12, attack: 4, defense: 3, speed: 2, mut: 0.06 },
     traits: [{
-      id: 'calm',
-      name: '沉着冷静',
+      id: 'tough-body',
+      name: '坚韧体质',
       description: '防御略微提升',
       rarity: Rarity.Common,
-      effect: 'defense-up-10%',
+      effect: 'defense+8%',
     }],
     skills: [{
       id: 'bounce',
@@ -99,8 +99,8 @@ function createSecondSlime(): import('./core/types').Slime {
     rarity: Rarity.Common,
     generation: 1,
     parentId: null,
-    color: '#7ecf6a',
-    position: { x: 0.5, y: 0.5, z: 0 },
+    color: '#6ab4e8',
+    position: { x: 1.5, y: 0.5, z: 0.3 },
   };
 }
 function createDefaultState(): GameState {
