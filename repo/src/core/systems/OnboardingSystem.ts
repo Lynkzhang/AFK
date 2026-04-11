@@ -76,10 +76,20 @@ const STEPS: StepDef[] = [
     onShow: (s) => { s.onboarding.unlocks.cull = true; },
   },
   {
+    id: 'step-wait-recover-1',
+    text: '⏰ 场地里只剩一只史莱姆了...\n\n等待它分裂出新的伙伴，你才能继续学习其他操作。',
+    checkComplete: (s) => s.slimes.length >= 2,
+  },
+  {
     id: 'step-teach-sell',
     text: '💰 剔除可以清理空间，但出售更划算！\n\n出售史莱姆可以获得金币。\n稀有度越高、属性越强，卖价越高。\n\n试着出售一只不需要的史莱姆吧。',
     checkComplete: (_s, events) => events.has('sell'),
     onShow: (s) => { s.onboarding.unlocks.sell = true; },
+  },
+  {
+    id: 'step-wait-recover-2',
+    text: '⏰ 史莱姆数量不够了...\n\n等待分裂恢复，然后我们学习最后一个管理操作——封存！',
+    checkComplete: (s) => s.slimes.length >= 2,
   },
   {
     id: 'step-teach-archive',
