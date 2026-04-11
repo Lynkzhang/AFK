@@ -59,6 +59,7 @@ export class ItemSystem {
     switch (itemType) {
       case 'mutation-catalyst': {
         item.quantity -= 1;
+        state.activeBuffs.mutationCatalystActive = true;
         return '变异催化剂已激活，下次分裂变异概率×2';
       }
       case 'stat-booster': {
@@ -75,6 +76,7 @@ export class ItemSystem {
       }
       case 'rare-essence': {
         item.quantity -= 1;
+        state.activeBuffs.rareEssenceActive = true;
         return '稀有精华已激活，下次分裂稀有特性概率×3';
       }
       default:

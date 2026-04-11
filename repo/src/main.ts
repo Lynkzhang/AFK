@@ -47,6 +47,21 @@ function showToast(msg: string): void {
   }, 2000);
 }
 
+function showBuffToast(message: string): void {
+  const toast = document.createElement('div');
+  toast.className = 'buff-toast';
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  // Force reflow for animation
+  void toast.offsetWidth;
+  toast.classList.add('buff-toast-visible');
+  setTimeout(() => {
+    toast.classList.remove('buff-toast-visible');
+    toast.classList.add('buff-toast-fade');
+    setTimeout(() => toast.remove(), 500);
+  }, 2500);
+}
+
 function createStarterSlime(): import('./core/types').Slime {
   return {
     id: 'slime-starter',
@@ -126,6 +141,10 @@ function createDefaultState(): GameState {
     activeArenaId: 'grassland',
     accessories: [],
     onboarding: createDefaultOnboarding(),
+    activeBuffs: {
+      mutationCatalystActive: false,
+      rareEssenceActive: false,
+    },
   };
   QuestSystem.initQuests(s);
   CodexSystem.recordFromState(s);
@@ -176,6 +195,10 @@ function migrateState(state: GameState): void {
   if (!Array.isArray(s['accessories'])) s['accessories'] = [];
   if (!s['onboarding'] || typeof s['onboarding'] !== 'object') {
     s['onboarding'] = createAllUnlockedOnboarding();
+  }
+  // Buff migration
+  if (!s['activeBuffs'] || typeof s['activeBuffs'] !== 'object') {
+    s['activeBuffs'] = { mutationCatalystActive: false, rareEssenceActive: false };
   }
 }
 
@@ -297,6 +320,13 @@ const loop = new GameLoop({
       soundManager.playSplit();
       if (breedResult.wasMutation) {
         soundManager.playMutation();
+      }
+      // Show buff effect toast on split
+      if (breedResult.buffApplied?.mutationCatalyst) {
+        showBuffToast('🧬 变异催化加持！变异概率已翻倍！');
+      }
+      if (breedResult.buffApplied?.rareEssence) {
+        showBuffToast('💎 稀有精华加持！稀有特性概率×3！');
       }
     }
     scene.update(state, elapsedTime, breedingSystem.getTimeUntilNextSplit());
@@ -497,6 +527,13 @@ shopUI.bind({
     const targetId = slimeId ?? state.slimes[0]?.id;
     ItemSystem.useItem(state, itemType as 'mutation-catalyst' | 'stat-booster' | 'rare-essence', targetId);
     shopUI.render(state);
+
+    // Show buff activation toast
+    if (itemType === 'mutation-catalyst' && state.activeBuffs.mutationCatalystActive) {
+      showBuffToast('🧬 变异催化剂已激活！下次分裂变异概率×2');
+    } else if (itemType === 'rare-essence' && state.activeBuffs.rareEssenceActive) {
+      showBuffToast('💎 稀有精华已激活！下次分裂稀有特性概率×3');
+    }
   },
   onBack: () => {
     soundManager.playPanelClose();

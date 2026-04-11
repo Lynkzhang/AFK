@@ -68,6 +68,9 @@ interface GMApi {
   // Sound GM commands
   getSoundManager(): { isMuted: boolean; masterVolume: number; bgmPlaying: boolean };
   playTestSound(name: string): void;
+  // Buff GM commands
+  getActiveBuffs(): { mutationCatalystActive: boolean; rareEssenceActive: boolean };
+  setActiveBuffs(buffs: Partial<{ mutationCatalystActive: boolean; rareEssenceActive: boolean }>): void;
 }
 
 declare global {
@@ -269,7 +272,7 @@ export function initGM(
     useItem(itemType: string, slimeId?: string): string {
       const s = getState();
       const result = ItemSystem.useItem(s, itemType as Item['type'], slimeId);
-      setState({ ...s, items: [...s.items], slimes: [...s.slimes] });
+      setState({ ...s, items: [...s.items], slimes: [...s.slimes], activeBuffs: { ...s.activeBuffs } });
       return result;
     },
     unlockChapter(n: number): void {
@@ -431,6 +434,14 @@ export function initGM(
       if (typeof fn === 'function') {
         (fn as () => void).call(soundManager);
       }
+    },
+    getActiveBuffs() {
+      return { ...getState().activeBuffs };
+    },
+    setActiveBuffs(buffs: Partial<{ mutationCatalystActive: boolean; rareEssenceActive: boolean }>) {
+      const s = getState();
+      s.activeBuffs = { ...s.activeBuffs, ...buffs };
+      setState({ ...s, activeBuffs: { ...s.activeBuffs } });
     },
   };
 

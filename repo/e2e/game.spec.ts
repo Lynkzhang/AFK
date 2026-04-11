@@ -2557,4 +2557,78 @@ test.describe('M32 Sound System', () => {
     await expect(audioControl.locator('.bgm-btn')).toBeVisible();
     await expect(audioControl.locator('.volume-slider')).toBeVisible();
   });
+
+  test('mutation-catalyst buff activates and clears after split', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForFunction(() => window.__GM !== undefined, { timeout: 15000 });
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(500);
+
+    // Give gold and buy mutation catalyst
+    await page.evaluate(() => window.__GM!.setCurrency(5000));
+    await page.evaluate(() => window.__GM!.buyItem('shop-mutation-catalyst'));
+
+    // Use mutation catalyst
+    const useResult = await page.evaluate(() => window.__GM!.useItem('mutation-catalyst'));
+    expect(useResult).toContain('变异催化剂已激活');
+
+    // Check buff is active
+    const buffs = await page.evaluate(() => window.__GM!.getActiveBuffs());
+    expect(buffs.mutationCatalystActive).toBe(true);
+    expect(buffs.rareEssenceActive).toBe(false);
+
+    // Re-activate buff and verify clearing via BreedingSystem
+    await page.evaluate(() => window.__GM!.setActiveBuffs({ mutationCatalystActive: true }));
+    const beforeSplit = await page.evaluate(() => window.__GM!.getActiveBuffs());
+    expect(beforeSplit.mutationCatalystActive).toBe(true);
+
+    // Wait for natural split (max 12s with 10s interval)
+    const slimesBefore = await page.evaluate(() => window.__GM!.getState().slimes.length) as number;
+    await page.waitForFunction(
+      (count) => window.__GM!.getState().slimes.length > count,
+      slimesBefore,
+      { timeout: 15000 },
+    );
+
+    // After natural split, buff should be cleared
+    const afterSplit = await page.evaluate(() => window.__GM!.getActiveBuffs());
+    expect(afterSplit.mutationCatalystActive).toBe(false);
+  });
+
+  test('rare-essence buff activates and clears after split', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForFunction(() => window.__GM !== undefined, { timeout: 15000 });
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(500);
+
+    // Give crystals and buy rare essence
+    await page.evaluate(() => window.__GM!.setCrystal(500));
+    await page.evaluate(() => window.__GM!.buyItem('shop-rare-essence'));
+
+    // Use rare essence
+    const useResult = await page.evaluate(() => window.__GM!.useItem('rare-essence'));
+    expect(useResult).toContain('稀有精华已激活');
+
+    // Check buff is active
+    const buffs = await page.evaluate(() => window.__GM!.getActiveBuffs());
+    expect(buffs.rareEssenceActive).toBe(true);
+    expect(buffs.mutationCatalystActive).toBe(false);
+
+    // Set buff and verify clearing after natural split
+    await page.evaluate(() => window.__GM!.setActiveBuffs({ rareEssenceActive: true }));
+    const beforeSplit = await page.evaluate(() => window.__GM!.getActiveBuffs());
+    expect(beforeSplit.rareEssenceActive).toBe(true);
+
+    // Wait for natural split
+    const slimesBefore = await page.evaluate(() => window.__GM!.getState().slimes.length) as number;
+    await page.waitForFunction(
+      (count) => window.__GM!.getState().slimes.length > count,
+      slimesBefore,
+      { timeout: 15000 },
+    );
+
+    // After natural split, buff should be cleared
+    const afterSplit = await page.evaluate(() => window.__GM!.getActiveBuffs());
+    expect(afterSplit.rareEssenceActive).toBe(false);
+  });
 });
