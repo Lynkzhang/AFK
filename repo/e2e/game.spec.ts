@@ -2447,3 +2447,107 @@ test.describe('M31 UI Upgrades', () => {
     expect(checked).toBe(false);
   });
 });
+
+/* ======== M32: Sound System E2E Tests ======== */
+
+test.describe('M32 Sound System', () => {
+  test('mute button is visible and toggleable', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+
+    const muteBtn = page.locator('.mute-btn');
+    await expect(muteBtn).toBeVisible();
+    await expect(muteBtn).toContainText('🔊');
+
+    // Click to mute
+    await muteBtn.click();
+    await page.waitForTimeout(200);
+    await expect(muteBtn).toContainText('🔇');
+
+    // Click to unmute
+    await muteBtn.click();
+    await page.waitForTimeout(200);
+    await expect(muteBtn).toContainText('🔊');
+  });
+
+  test('volume slider is visible and adjustable', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+
+    const slider = page.locator('.volume-slider');
+    await expect(slider).toBeVisible();
+
+    // Set volume to 80
+    await slider.fill('80');
+    await page.waitForTimeout(100);
+    const val = await slider.inputValue();
+    expect(val).toBe('80');
+  });
+
+  test('BGM button is visible and toggleable', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+
+    const bgmBtn = page.locator('.bgm-btn');
+    await expect(bgmBtn).toBeVisible();
+    await expect(bgmBtn).toContainText('BGM');
+
+    // Toggle BGM on
+    await bgmBtn.click();
+    await page.waitForTimeout(200);
+    const text = await bgmBtn.textContent();
+    expect(text).toBeTruthy();
+  });
+
+  test('SoundManager is accessible via GM API', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+
+    const soundState = await page.evaluate(() => window.__GM!.getSoundManager());
+    expect(soundState).toBeDefined();
+    expect(typeof soundState.isMuted).toBe('boolean');
+    expect(typeof soundState.masterVolume).toBe('number');
+    expect(typeof soundState.bgmPlaying).toBe('boolean');
+  });
+
+  test('mute state syncs with GM API', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+
+    // Initially not muted
+    let soundState = await page.evaluate(() => window.__GM!.getSoundManager());
+    expect(soundState.isMuted).toBe(false);
+
+    // Click mute button
+    await page.locator('.mute-btn').click();
+    await page.waitForTimeout(200);
+
+    soundState = await page.evaluate(() => window.__GM!.getSoundManager());
+    expect(soundState.isMuted).toBe(true);
+  });
+
+  test('audio control panel layout is correct', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+
+    const audioControl = page.locator('.audio-control');
+    await expect(audioControl).toBeVisible();
+
+    // Should contain mute button, BGM button, and volume slider
+    await expect(audioControl.locator('.mute-btn')).toBeVisible();
+    await expect(audioControl.locator('.bgm-btn')).toBeVisible();
+    await expect(audioControl.locator('.volume-slider')).toBeVisible();
+  });
+});
