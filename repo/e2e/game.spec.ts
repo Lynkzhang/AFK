@@ -2205,3 +2205,245 @@ test.describe('M30 Bug Fixes', () => {
     }
   });
 });
+
+// =========================================================
+// M31 UI Upgrades Tests (#142 #143 #144 #145 #146 #147)
+// =========================================================
+test.describe('M31 UI Upgrades', () => {
+  // #142: Expand/Compact mode
+  test('#142 view toggle button exists and toggles compact mode', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    await setupClassicState(page);
+    await page.waitForSelector('.slime-item', { timeout: 5000 });
+
+    const viewToggle = page.locator('.view-toggle-btn');
+    await expect(viewToggle).toBeVisible();
+
+    const infoEl = page.locator('.slime-item .slime-info').first();
+    await expect(infoEl).toBeVisible();
+
+    await viewToggle.click();
+    await page.waitForTimeout(100);
+
+    await expect(infoEl).not.toBeVisible();
+
+    const btnText = await viewToggle.textContent();
+    expect(btnText).toContain('展开');
+  });
+
+  test('#142 compact mode hides slime action buttons', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    await setupClassicState(page);
+    await page.waitForSelector('.slime-item', { timeout: 5000 });
+
+    const viewToggle = page.locator('.view-toggle-btn');
+    const actionsEl = page.locator('.slime-item .slime-actions').first();
+    await expect(actionsEl).toBeVisible();
+
+    await viewToggle.click();
+    await page.waitForTimeout(100);
+    await expect(actionsEl).not.toBeVisible();
+
+    await viewToggle.click();
+    await page.waitForTimeout(100);
+    await expect(actionsEl).toBeVisible();
+  });
+
+  test('#143 checkboxes appear on slime cards', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    await setupClassicState(page);
+    await page.waitForSelector('.slime-item', { timeout: 5000 });
+
+    const checkboxes = page.locator('.slime-checkbox');
+    const count = await checkboxes.count();
+    expect(count).toBeGreaterThan(0);
+  });
+
+  test('#143 selecting slime shows batch action row', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    await setupClassicState(page);
+    await page.waitForSelector('.slime-item', { timeout: 5000 });
+
+    const batchRow = page.locator('.batch-row');
+    await expect(batchRow).not.toBeVisible();
+
+    await page.evaluate(() => {
+      const cb = document.querySelector('.slime-checkbox');
+      if (cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+    });
+    await page.waitForTimeout(100);
+
+    await expect(batchRow).toBeVisible();
+    await expect(page.locator('.batch-cull-btn')).toBeVisible();
+    await expect(page.locator('.batch-sell-btn')).toBeVisible();
+  });
+
+  test('#143 batch cull removes selected slimes', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    await setupClassicState(page);
+    await page.waitForSelector('.slime-item', { timeout: 5000 });
+
+    const countBefore = await page.evaluate(() => window.__GM!.getState().slimes.length);
+
+    await page.evaluate(() => {
+      const cb = document.querySelector('.slime-checkbox');
+      if (cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+    });
+    await page.waitForTimeout(100);
+
+    const toastPromise = page.waitForSelector('.toast-message', { state: 'attached', timeout: 5000 });
+    await page.locator('.batch-cull-btn').click();
+    const toastEl = await toastPromise;
+    const toastText = await toastEl.textContent();
+    expect(toastText).toMatch(/批量剔除/);
+
+    const countAfter = await page.evaluate(() => window.__GM!.getState().slimes.length);
+    expect(countAfter).toBeLessThan(countBefore);
+  });
+
+  test('#143 batch sell removes selected slimes and adds currency', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    await setupClassicState(page);
+    await page.waitForSelector('.slime-item', { timeout: 5000 });
+
+    const countBefore = await page.evaluate(() => window.__GM!.getState().slimes.length);
+    const currencyBefore = await page.evaluate(() => window.__GM!.getState().currency);
+
+    await page.evaluate(() => {
+      const cb = document.querySelector('.slime-checkbox');
+      if (cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+    });
+    await page.waitForTimeout(100);
+
+    const toastPromise = page.waitForSelector('.toast-message', { state: 'attached', timeout: 5000 });
+    await page.locator('.batch-sell-btn').click();
+    const toastEl = await toastPromise;
+    const toastText = await toastEl.textContent();
+    expect(toastText).toMatch(/批量出售/);
+
+    const countAfter = await page.evaluate(() => window.__GM!.getState().slimes.length);
+    const currencyAfter = await page.evaluate(() => window.__GM!.getState().currency);
+    expect(countAfter).toBeLessThan(countBefore);
+    expect(currencyAfter).toBeGreaterThanOrEqual(currencyBefore);
+  });
+
+  test('#144 rarity filter row exists with all filter buttons', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+
+    const filterRow = page.locator('.filter-row');
+    await expect(filterRow).toBeVisible();
+
+    const allBtn = page.locator('.filter-btn[data-filter-value="all"]');
+    await expect(allBtn).toBeVisible();
+    await expect(allBtn).toHaveClass(/filter-btn-active/);
+  });
+
+  test('#144 rarity filter hides non-matching slimes', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    await setupClassicState(page);
+    await page.waitForSelector('.slime-item', { timeout: 5000 });
+
+    const totalCount = await page.locator('.slime-item').count();
+    expect(totalCount).toBeGreaterThan(0);
+
+    await page.locator('.filter-btn[data-filter-value="Legendary"]').click();
+    await page.waitForTimeout(100);
+    const legendaryCount = await page.locator('.slime-item').count();
+    expect(legendaryCount).toBe(0);
+
+    await page.locator('.filter-btn[data-filter-value="all"]').click();
+    await page.waitForTimeout(100);
+    const resetCount = await page.locator('.slime-item').count();
+    expect(resetCount).toBe(totalCount);
+  });
+
+  test('#145 pixel art buttons have pixel-btn class', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+
+    const uiButtons = page.locator('.ui-actions .pixel-btn');
+    const count = await uiButtons.count();
+    expect(count).toBeGreaterThan(0);
+  });
+
+  test('#147 canvas exists with positive dimensions', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+
+    const canvas = page.locator('canvas');
+    await expect(canvas).toBeVisible();
+
+    const dimensions = await canvas.evaluate((el: HTMLCanvasElement) => ({
+      w: el.width,
+      h: el.height,
+    }));
+    expect(dimensions.w).toBeGreaterThan(0);
+    expect(dimensions.h).toBeGreaterThan(0);
+  });
+
+  test('#143 cancel batch selection hides batch row', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    await setupClassicState(page);
+    await page.waitForSelector('.slime-item', { timeout: 5000 });
+
+    await page.evaluate(() => {
+      const cb = document.querySelector('.slime-checkbox');
+      if (cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+    });
+    await page.waitForTimeout(100);
+    const batchRow = page.locator('.batch-row');
+    await expect(batchRow).toBeVisible();
+
+    await page.locator('.batch-clear-btn').click();
+    await page.waitForTimeout(100);
+    await expect(batchRow).not.toBeVisible();
+
+    const checked = await page.evaluate(() => {
+      const cb = document.querySelector('.slime-checkbox');
+      return cb ? cb.checked : false;
+    });
+    expect(checked).toBe(false);
+  });
+});
