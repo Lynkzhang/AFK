@@ -297,6 +297,26 @@ ui.bind({
     QuestSystem.incrementCounter(state, 'total_sells');
     onboardingSystem.notifyEvent('sell');
   },
+  onBatchCull: (ids: string[]) => {
+    state.slimes = state.slimes.filter((slime) => !ids.includes(slime.id));
+    showToast(`批量剔除 ${ids.length} 只史莱姆 🗑️`);
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+  },
+  onBatchSell: (ids: string[]) => {
+    let total = 0;
+    for (const id of ids) {
+      const slime = state.slimes.find((s) => s.id === id);
+      if (slime) {
+        total += evaluatePrice(slime);
+        QuestSystem.incrementCounter(state, 'daily_sells');
+        QuestSystem.incrementCounter(state, 'total_sells');
+      }
+    }
+    state.currency += total;
+    state.slimes = state.slimes.filter((s) => !ids.includes(s.id));
+    showToast(`批量出售 ${ids.length} 只，获得 💰${total} 金币`);
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+  },
   onArchive: (id: string) => {
     const result = archiveSlime(state, id);
     if (result.success) {

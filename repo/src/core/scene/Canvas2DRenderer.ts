@@ -98,14 +98,14 @@ export class Canvas2DRenderer {
 
     // --- Sky: horizontal color-band stripes (each 4-6px tall) ---
     const skyColors = [
-      '#5b9bd5', // top dark blue
-      '#6aaee0',
-      '#7fc0ec',
-      '#93d0f5',
-      '#a8dcf7',
-      '#bde7ff',
-      '#cdefff',
-      '#ddf4ff',
+      '#3a6fa0', // top dark blue — deeper
+      '#4a88c0',
+      '#5a9ed8',
+      '#6ab4e8',
+      '#7ac8f0',
+      '#8ad8f5',
+      '#9ae4fa',
+      '#aaeeff',
     ];
     const bandH = Math.max(4, Math.floor(grassTop / skyColors.length));
     for (let i = 0; i < skyColors.length; i++) {
@@ -119,7 +119,7 @@ export class Canvas2DRenderer {
     this.drawPixelClouds(w, h, grassTop);
 
     // --- Grass: 4 green colors in pixel-block grid pattern ---
-    const grassColors = ['#5da832', '#6dbf3a', '#7dd444', '#4a9026'];
+    const grassColors = ['#3a7820', '#4a9828', '#5aaa30', '#2e6018'];
     const blockSize = 4; // pixel block size
     for (let gy = grassTop; gy < h; gy += blockSize) {
       for (let gx = 0; gx < w; gx += blockSize) {
@@ -131,7 +131,7 @@ export class Canvas2DRenderer {
     }
 
     // --- Grass top edge: 2px darker strip for contrast ---
-    ctx.fillStyle = '#3a7a20';
+    ctx.fillStyle = '#1e4a10';
     ctx.fillRect(0, grassTop, w, 2);
 
     // --- Pixel decorations ---
