@@ -296,13 +296,13 @@ test.describe('Save & Load', () => {
     await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
     await page.waitForTimeout(300);
 
-    // Currency should be reset to default (0, not 100 — new initial state)
+    // Currency should be reset to default (50 — new initial state)
     const currency = await page.evaluate(() => window.__GM!.getState().currency);
-    expect(currency).toBe(0);
+    expect(currency).toBe(50);
 
-    // Should have 1 slime (new default)
+    // Should have 2 slimes (new default)
     const slimeCount = await page.evaluate(() => window.__GM!.getState().slimes.length);
-    expect(slimeCount).toBe(1);
+    expect(slimeCount).toBe(2);
   });
 });
 
@@ -1507,7 +1507,7 @@ test.describe('Accessory Inheritance', () => {
 // Onboarding System Tests
 // =========================================================
 test.describe('Onboarding System', () => {
-  test('new game starts with 1 slime, 0 gold, and onboarding active', async ({ page }) => {
+  test('new game starts with 2 slimes, 50 gold, and onboarding active', async ({ page }) => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
@@ -1518,9 +1518,10 @@ test.describe('Onboarding System', () => {
     await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
     await page.waitForTimeout(200);
     const state = await page.evaluate(() => window.__GM!.getState());
-    expect(state.slimes.length).toBe(1);
+    expect(state.slimes.length).toBe(2);
     expect(state.slimes[0].name).toBe('小绿');
-    expect(state.currency).toBe(0);
+    expect(state.slimes[1].name).toBe('小蓝');
+    expect(state.currency).toBe(50);
     expect(state.onboarding.currentStep).toBe('step-welcome');
     expect(state.onboarding.unlocks.battle).toBe(false);
     expect(state.onboarding.unlocks.shop).toBe(false);
@@ -2101,8 +2102,8 @@ test.describe('M28 UX Polish', () => {
     await page.waitForTimeout(500);
 
     const state = await page.evaluate(() => window.__GM!.getState());
-    expect(state.currency).toBe(0);
-    expect(state.slimes.length).toBe(1);
+    expect(state.currency).toBe(50);
+    expect(state.slimes.length).toBe(2);
   });
 
   test('battle result has visual distinction', async ({ page }) => {

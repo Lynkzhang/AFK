@@ -75,14 +75,42 @@ function createStarterSlime(): import('./core/types').Slime {
   };
 }
 
+
+function createSecondSlime(): import('./core/types').Slime {
+  return {
+    id: 'starter-2',
+    name: '果冻二号',
+    stats: { health: 12, attack: 2, defense: 2, speed: 4, mut: 0.06 },
+    traits: [{
+      id: 'calm',
+      name: '沉着冷静',
+      description: '防御略微提升',
+      rarity: Rarity.Common,
+      effect: 'defense-up-10%',
+    }],
+    skills: [{
+      id: 'bounce',
+      name: '弹跳',
+      type: 'attack',
+      targetType: 'single',
+      damage: 3,
+      cooldown: 0,
+    }],
+    rarity: Rarity.Common,
+    generation: 1,
+    parentId: null,
+    color: '#7ecf6a',
+    position: { x: 0.5, y: 0.5, z: 0 },
+  };
+}
 function createDefaultState(): GameState {
   const s: GameState = {
-    slimes: [createStarterSlime()],
+    slimes: [createStarterSlime(), createSecondSlime()],
     breedingGrounds: [
       { id: 'bg-1', name: 'Starter Pen', level: 1, capacity: 4, slimes: [], facilityLevel: 1 },
     ],
     facilities: DEFAULT_FACILITIES.map((f) => ({ ...f })),
-    currency: 0,
+    currency: 50,
     crystal: 0,
     timestamp: Date.now(),
     stageProgress: {},
@@ -249,7 +277,10 @@ const loop = new GameLoop({
   update: (deltaTime, elapsedTime) => {
     state.timestamp = Date.now();
     const baseSplitInterval = FacilitySystem.getSplitInterval(state);
-    const effectiveSplitInterval = (state.onboarding?.currentStep === 'step-wait-split')
+    const isWaitingForSplit = state.onboarding?.currentStep === 'step-wait-split'
+      || state.onboarding?.currentStep === 'step-wait-recover-1'
+      || state.onboarding?.currentStep === 'step-wait-recover-2';
+    const effectiveSplitInterval = isWaitingForSplit
       ? Math.min(baseSplitInterval, 5000)
       : baseSplitInterval;
     const dynamicConfig = {
@@ -257,7 +288,9 @@ const loop = new GameLoop({
       maxCapacity: FacilitySystem.getMaxCapacity(state),
     };
     const isOnboarding = state.onboarding?.currentStep !== null && state.onboarding?.currentStep !== undefined;
-    const isWaitingSplit = state.onboarding?.currentStep === 'step-wait-split';
+    const isWaitingSplit = state.onboarding?.currentStep === 'step-wait-split'
+      || state.onboarding?.currentStep === 'step-wait-recover-1'
+      || state.onboarding?.currentStep === 'step-wait-recover-2';
     const effectiveDelta = (isOnboarding && !isWaitingSplit) ? 0 : deltaTime;
     const breedResult = breedingSystem.update(state, effectiveDelta, dynamicConfig);
     if (breedResult.didSplit) {
@@ -266,7 +299,7 @@ const loop = new GameLoop({
         soundManager.playMutation();
       }
     }
-    scene.update(state, elapsedTime);
+    scene.update(state, elapsedTime, breedingSystem.getTimeUntilNextSplit());
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
     // Sync derived quest counters each frame
     QuestSystem.syncDerivedCounters(state);
