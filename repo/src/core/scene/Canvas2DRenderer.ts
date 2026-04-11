@@ -1,6 +1,41 @@
 import { Rarity } from '../types';
 import type { GameState, Slime } from '../types';
 
+// ---------------------------------------------------------------------------
+// Pixel art Canvas2DRenderer
+// Renders a pixel-art style scene with 8x8 pixel-block slimes.
+// ---------------------------------------------------------------------------
+
+/** 10x10 slime template — 0=transparent, 1=body, 2=outline, 3=eye, 4=highlight */
+const SLIME_IDLE: number[][] = [
+  [0, 0, 2, 2, 2, 2, 2, 0, 0, 0],
+  [0, 2, 1, 1, 1, 1, 1, 2, 0, 0],
+  [2, 1, 4, 1, 1, 1, 1, 1, 2, 0],
+  [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
+  [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
+  [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+  [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+  [0, 2, 1, 1, 1, 1, 1, 2, 0, 0],
+  [0, 2, 2, 1, 1, 1, 2, 2, 0, 0],
+  [0, 0, 2, 2, 2, 2, 2, 0, 0, 0],
+];
+
+/** 10x10 slime bounce frame — slightly squished vertically */
+const SLIME_BOUNCE: number[][] = [
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 2, 2, 2, 2, 2, 2, 2, 0, 0],
+  [2, 1, 4, 1, 1, 1, 1, 1, 2, 0],
+  [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
+  [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
+  [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+  [0, 2, 1, 1, 1, 1, 1, 2, 0, 0],
+  [0, 2, 2, 1, 2, 1, 2, 2, 0, 0],
+  [0, 2, 2, 2, 2, 2, 2, 2, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+];
+
+const GRID = 10; // template size
+
 export class Canvas2DRenderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -12,11 +47,13 @@ export class Canvas2DRenderer {
     this.canvas.style.width = '100%';
     this.canvas.style.height = '100%';
     this.canvas.style.display = 'block';
+    this.canvas.style.imageRendering = 'pixelated';
     container.appendChild(this.canvas);
 
     const ctx = this.canvas.getContext('2d');
     if (!ctx) throw new Error('2D canvas context is not supported');
     this.ctx = ctx;
+    this.ctx.imageSmoothingEnabled = false;
 
     this.resize(container);
     window.addEventListener('resize', () => this.resize(container));
@@ -30,8 +67,8 @@ export class Canvas2DRenderer {
   render(): void {
     const { ctx, canvas } = this;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.imageSmoothingEnabled = false;
     this.drawBackground();
-    this.drawClouds();
     if (!this.state) return;
 
     const sortedSlimes = [...this.state.slimes].sort((a, b) => a.position.z - b.position.z);
@@ -46,409 +83,256 @@ export class Canvas2DRenderer {
     this.canvas.width = Math.max(1, Math.floor(rect.width * dpr));
     this.canvas.height = Math.max(1, Math.floor(rect.height * dpr));
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.ctx.imageSmoothingEnabled = false;
   }
+
+  // ---------------------------------------------------------------------------
+  // Background — pixel art bands for sky, pixel grid for grass, decorations
+  // ---------------------------------------------------------------------------
 
   private drawBackground(): void {
     const { ctx } = this;
     const w = this.canvas.clientWidth;
     const h = this.canvas.clientHeight;
+    const grassTop = Math.floor(h * 0.68);
 
-    // Sky gradient — warm pastel
-    const sky = ctx.createLinearGradient(0, 0, 0, h * 0.7);
-    sky.addColorStop(0, '#bfe7ff');
-    sky.addColorStop(1, '#f8fdff');
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, w, h);
-
-    // Ground
-    const grassTop = h * 0.68;
-    const ground = ctx.createLinearGradient(0, grassTop, 0, h);
-    ground.addColorStop(0, '#8dde74');
-    ground.addColorStop(1, '#57b653');
-    ctx.fillStyle = ground;
-    ctx.fillRect(0, grassTop, w, h - grassTop);
-
-    // Grass blades (existing)
-    for (let i = 0; i < 14; i++) {
-      const gx = ((i * 137) % 1000) / 1000 * w;
-      const gy = grassTop + ((i * 79) % 250) / 250 * (h - grassTop - 12);
-      ctx.strokeStyle = '#3ea548';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(gx, gy + 10);
-      ctx.quadraticCurveTo(gx - 2, gy + 4, gx - 1, gy);
-      ctx.moveTo(gx, gy + 10);
-      ctx.quadraticCurveTo(gx + 2, gy + 4, gx + 1, gy + 1);
-      ctx.stroke();
+    // --- Sky: horizontal color-band stripes (each 4-6px tall) ---
+    const skyColors = [
+      '#5b9bd5', // top dark blue
+      '#6aaee0',
+      '#7fc0ec',
+      '#93d0f5',
+      '#a8dcf7',
+      '#bde7ff',
+      '#cdefff',
+      '#ddf4ff',
+    ];
+    const bandH = Math.max(4, Math.floor(grassTop / skyColors.length));
+    for (let i = 0; i < skyColors.length; i++) {
+      const by = i * bandH;
+      const bh = (i === skyColors.length - 1) ? Math.max(0, grassTop - by) : bandH;
+      ctx.fillStyle = skyColors[i];
+      ctx.fillRect(0, by, w, bh);
     }
 
-    // Existing daisies (white petals + yellow center)
-    for (let i = 0; i < 6; i++) {
-      const fx = ((i * 173 + 41) % 1000) / 1000 * w;
-      const fy = grassTop + ((i * 61 + 23) % 220) / 220 * (h - grassTop - 14);
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(fx, fy, 3, 0, Math.PI * 2);
-      ctx.arc(fx - 4, fy + 2, 3, 0, Math.PI * 2);
-      ctx.arc(fx + 4, fy + 2, 3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#ffd95b';
-      ctx.beginPath();
-      ctx.arc(fx, fy + 1.5, 1.5, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    // --- Pixel clouds ---
+    this.drawPixelClouds(w, h, grassTop);
 
-    // --- NEW DECORATIONS ---
-
-    // Colorful flowers (red, pink, yellow, purple)
-    const flowerColors = ['#ff6b7a', '#ff9ecb', '#ffe066', '#c49bff', '#ff8f5b', '#7be69a'];
-    for (let i = 0; i < 10; i++) {
-      const fx = ((i * 211 + 67) % 1000) / 1000 * w;
-      const fy = grassTop + ((i * 97 + 43) % 200) / 200 * (h - grassTop - 18) + 6;
-      const color = flowerColors[i % flowerColors.length];
-      // Stem
-      ctx.strokeStyle = '#4aad52';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(fx, fy + 6);
-      ctx.lineTo(fx, fy + 14);
-      ctx.stroke();
-      // Petals
-      ctx.fillStyle = color;
-      const petalR = 2.8;
-      for (let p = 0; p < 5; p++) {
-        const angle = (p / 5) * Math.PI * 2 - Math.PI / 2;
-        ctx.beginPath();
-        ctx.arc(fx + Math.cos(angle) * 3.2, fy + Math.sin(angle) * 3.2, petalR, 0, Math.PI * 2);
-        ctx.fill();
+    // --- Grass: 4 green colors in pixel-block grid pattern ---
+    const grassColors = ['#5da832', '#6dbf3a', '#7dd444', '#4a9026'];
+    const blockSize = 4; // pixel block size
+    for (let gy = grassTop; gy < h; gy += blockSize) {
+      for (let gx = 0; gx < w; gx += blockSize) {
+        // deterministic color per block based on position
+        const ci = ((gx / blockSize) * 3 + (gy / blockSize) * 7) % grassColors.length | 0;
+        ctx.fillStyle = grassColors[ci];
+        ctx.fillRect(gx, gy, blockSize, blockSize);
       }
-      // Center
-      ctx.fillStyle = '#ffeaa0';
-      ctx.beginPath();
-      ctx.arc(fx, fy, 2, 0, Math.PI * 2);
-      ctx.fill();
     }
 
-    // Cute mushrooms (3 varied sizes with round caps)
-    const mushrooms = [
-      { x: 0.15, yOff: 0.4, size: 1.0 },
-      { x: 0.55, yOff: 0.6, size: 0.7 },
-      { x: 0.82, yOff: 0.25, size: 1.2 },
-      { x: 0.38, yOff: 0.8, size: 0.6 },
-    ];
-    for (const m of mushrooms) {
-      const mx = m.x * w;
-      const my = grassTop + m.yOff * (h - grassTop - 16) + 4;
-      const ms = m.size;
-      // Stem
-      ctx.fillStyle = '#f5eed5';
-      ctx.beginPath();
-      ctx.moveTo(mx - 3 * ms, my);
-      ctx.lineTo(mx - 2.5 * ms, my + 10 * ms);
-      ctx.lineTo(mx + 2.5 * ms, my + 10 * ms);
-      ctx.lineTo(mx + 3 * ms, my);
-      ctx.closePath();
-      ctx.fill();
-      // Cap
-      ctx.fillStyle = '#e85d6f';
-      ctx.beginPath();
-      ctx.ellipse(mx, my - 1 * ms, 8 * ms, 6 * ms, 0, Math.PI, 0);
-      ctx.fill();
-      // Spots
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(mx - 3 * ms, my - 4 * ms, 1.5 * ms, 0, Math.PI * 2);
-      ctx.arc(mx + 2 * ms, my - 3 * ms, 1.2 * ms, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    // --- Grass top edge: 2px darker strip for contrast ---
+    ctx.fillStyle = '#3a7a20';
+    ctx.fillRect(0, grassTop, w, 2);
 
-    // Smooth round stones (gray, 3)
-    const stones = [
-      { x: 0.25, yOff: 0.7, rx: 8, ry: 5 },
-      { x: 0.68, yOff: 0.5, rx: 6, ry: 3.5 },
-      { x: 0.9, yOff: 0.85, rx: 10, ry: 5.5 },
-    ];
-    for (const s of stones) {
-      const sx = s.x * w;
-      const sy = grassTop + s.yOff * (h - grassTop - 12) + 4;
-      ctx.fillStyle = '#b8bfc4';
-      ctx.beginPath();
-      ctx.ellipse(sx, sy, s.rx, s.ry, 0, 0, Math.PI * 2);
-      ctx.fill();
-      // Highlight
-      ctx.fillStyle = 'rgba(255,255,255,0.35)';
-      ctx.beginPath();
-      ctx.ellipse(sx - s.rx * 0.2, sy - s.ry * 0.3, s.rx * 0.45, s.ry * 0.35, -0.3, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Butterflies (2, with simple wing-flap using elapsedTime)
-    this.drawButterflies(w, h, grassTop);
+    // --- Pixel decorations ---
+    this.drawPixelDecorations(w, h, grassTop);
   }
 
-  /** Draw animated butterflies */
-  private drawButterflies(w: number, _h: number, grassTop: number): void {
-    const { ctx } = this;
+  /** Draw pixel-art block clouds */
+  private drawPixelClouds(w: number, _h: number, grassTop: number): void {
     const t = this.elapsedTime / 1000;
 
-    const butterflies = [
-      { baseX: 0.3, baseY: 0.55, color1: '#ffb3d9', color2: '#ff7eb3', speed: 1.4, phase: 0 },
-      { baseX: 0.72, baseY: 0.62, color1: '#b3d4ff', color2: '#7eb3ff', speed: 1.1, phase: 2.1 },
+    // Cloud template: 1=white, 2=light-gray shadow
+    const cloudTemplate: number[][] = [
+      [0, 0, 1, 1, 1, 0, 0, 0],
+      [0, 1, 1, 1, 1, 1, 0, 0],
+      [1, 1, 1, 1, 1, 1, 1, 0],
+      [1, 1, 1, 1, 1, 1, 1, 1],
+      [2, 2, 2, 2, 2, 2, 2, 2],
+      [0, 2, 2, 2, 2, 2, 2, 0],
+    ];
+    const cloudDefs = [
+      { baseX: 0.1, y: 0.05, scale: 5, speed: 6 },
+      { baseX: 0.4, y: 0.12, scale: 7, speed: 4 },
+      { baseX: 0.7, y: 0.07, scale: 5, speed: 8 },
+      { baseX: 0.88, y: 0.16, scale: 4, speed: 5 },
     ];
 
-    for (const b of butterflies) {
-      const bx = b.baseX * w + Math.sin(t * 0.8 + b.phase) * 18;
-      const by = grassTop * 0.85 + b.baseY * (grassTop * 0.15) + Math.sin(t * 1.2 + b.phase) * 6;
-      const wingFlap = Math.sin(t * b.speed * 4 + b.phase) * 0.6;
-
-      ctx.save();
-      ctx.translate(bx, by);
-
-      // Left wing
-      ctx.fillStyle = b.color1;
-      ctx.beginPath();
-      ctx.ellipse(-4, -1, 5, 3.5 * Math.abs(Math.cos(wingFlap)), -0.3, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Right wing
-      ctx.fillStyle = b.color2;
-      ctx.beginPath();
-      ctx.ellipse(4, -1, 5, 3.5 * Math.abs(Math.cos(wingFlap)), 0.3, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Body
-      ctx.fillStyle = '#554433';
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 1.2, 3, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.restore();
+    for (const cd of cloudDefs) {
+      const cloudW = cloudTemplate[0].length * cd.scale;
+      const cx = Math.floor(((cd.baseX * w + t * cd.speed) % (w + cloudW * 2)) - cloudW);
+      const cy = Math.floor(cd.y * grassTop);
+      this.drawPixelSprite(cloudTemplate, cx, cy, cd.scale, { 1: '#e8f4ff', 2: '#c8dff0' });
     }
   }
 
-  /** Draw drifting clouds across the sky */
-  private drawClouds(): void {
+  /** Draw pixel art decorations: flowers, mushrooms, stones */
+  private drawPixelDecorations(w: number, h: number, grassTop: number): void {
+    // Pixel flower template (5x8)
+    const flowerTemplate: number[][] = [
+      [0, 0, 1, 0, 0],
+      [0, 1, 1, 1, 0],
+      [0, 0, 1, 0, 0],
+      [0, 0, 2, 0, 0],
+      [0, 0, 2, 0, 0],
+    ];
+
+    // Pixel mushroom template (7x8)
+    const shroomTemplate: number[][] = [
+      [0, 1, 1, 1, 1, 1, 0],
+      [1, 1, 1, 1, 1, 1, 1],
+      [1, 2, 1, 1, 1, 2, 1],
+      [1, 1, 1, 1, 1, 1, 1],
+      [0, 0, 3, 3, 3, 0, 0],
+      [0, 0, 3, 3, 3, 0, 0],
+    ];
+
+    // Pixel stone template (6x4)
+    const stoneTemplate: number[][] = [
+      [0, 1, 1, 1, 1, 0],
+      [1, 1, 2, 1, 1, 1],
+      [1, 1, 1, 1, 1, 1],
+      [0, 1, 1, 1, 1, 0],
+    ];
+
+    const flowerColors = ['#ff6b7a', '#ff9ecb', '#ffe066', '#c49bff', '#ff8f5b', '#7be69a'];
+
+    // Scattered flowers
+    const flowerPositions = [0.08, 0.22, 0.45, 0.62, 0.78, 0.91];
+    for (let i = 0; i < flowerPositions.length; i++) {
+      const fx = Math.floor(flowerPositions[i] * w) - 4;
+      const depthFrac = ((i * 79) % 100) / 100;
+      const fy = Math.floor(grassTop + depthFrac * (h - grassTop) * 0.6);
+      const scale = 2;
+      const fc = flowerColors[i % flowerColors.length];
+      this.drawPixelSprite(flowerTemplate, fx, fy, scale, { 1: fc, 2: '#4aad52' });
+    }
+
+    // Mushrooms
+    const mushroomPositions = [0.15, 0.55, 0.82];
+    for (let i = 0; i < mushroomPositions.length; i++) {
+      const mx = Math.floor(mushroomPositions[i] * w) - 7;
+      const depthFrac = ((i * 113 + 30) % 100) / 100;
+      const my = Math.floor(grassTop + depthFrac * (h - grassTop) * 0.55);
+      const scale = 2 + (i % 2);
+      this.drawPixelSprite(shroomTemplate, mx, my, scale, {
+        1: '#e85d6f',
+        2: '#ffffff',
+        3: '#f5eed5',
+      });
+    }
+
+    // Stones
+    const stonePositions = [0.28, 0.67, 0.88];
+    for (let i = 0; i < stonePositions.length; i++) {
+      const sx = Math.floor(stonePositions[i] * w) - 6;
+      const depthFrac = ((i * 97 + 50) % 100) / 100;
+      const sy = Math.floor(grassTop + depthFrac * (h - grassTop) * 0.65);
+      this.drawPixelSprite(stoneTemplate, sx, sy, 3, { 1: '#a8b4bc', 2: '#d0dde5' });
+    }
+  }
+
+  /** Render a 2D pixel sprite template at given world position with given scale */
+  private drawPixelSprite(
+    template: number[][],
+    x: number,
+    y: number,
+    scale: number,
+    colors: Record<number, string>,
+  ): void {
     const { ctx } = this;
-    const w = this.canvas.clientWidth;
-    const h = this.canvas.clientHeight;
-    const t = this.elapsedTime / 1000;
-
-    const clouds: Array<{ baseX: number; y: number; size: number; speed: number }> = [
-      { baseX: 0.12, y: 0.08, size: 38, speed: 8 },
-      { baseX: 0.42, y: 0.14, size: 50, speed: 5 },
-      { baseX: 0.72, y: 0.06, size: 42, speed: 7 },
-      { baseX: 0.90, y: 0.18, size: 34, speed: 10 },
-      { baseX: 0.28, y: 0.22, size: 30, speed: 6 },
-    ];
-
-    ctx.save();
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-    for (const cloud of clouds) {
-      const cx = ((cloud.baseX * w + t * cloud.speed) % (w + cloud.size * 4)) - cloud.size * 2;
-      const cy = cloud.y * h;
-      const s = cloud.size;
-      ctx.beginPath();
-      ctx.arc(cx, cy, s * 0.42, 0, Math.PI * 2);
-      ctx.arc(cx - s * 0.38, cy + s * 0.12, s * 0.32, 0, Math.PI * 2);
-      ctx.arc(cx + s * 0.4, cy + s * 0.1, s * 0.35, 0, Math.PI * 2);
-      ctx.arc(cx + s * 0.12, cy - s * 0.18, s * 0.28, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.restore();
-  }
-
-  /** Returns a size multiplier based on rarity (Legendary is larger, Common smaller) */
-  private getRaritySizeScale(rarity: Rarity): number {
-    switch (rarity) {
-      case Rarity.Legendary:
-        return 1.25;
-      case Rarity.Epic:
-        return 1.12;
-      case Rarity.Rare:
-        return 1.05;
-      case Rarity.Uncommon:
-        return 1.0;
-      case Rarity.Common:
-      default:
-        return 0.92;
+    for (let row = 0; row < template.length; row++) {
+      for (let col = 0; col < template[row].length; col++) {
+        const v = template[row][col];
+        if (v === 0) continue;
+        const c = colors[v];
+        if (!c) continue;
+        ctx.fillStyle = c;
+        ctx.fillRect(x + col * scale, y + row * scale, scale, scale);
+      }
     }
   }
 
-  /**
-   * Draw a mushroom/fungi-shaped slime (Fung-ji / 方吉 style):
-   * - Large round mushroom cap head (~70% of total height)
-   * - Small stubby body below the cap
-   * - Big cute eyes with large pupils + highlights
-   * - Simple ω or smile expression
-   */
+  // ---------------------------------------------------------------------------
+  // Slime drawing — pixel art block sprite
+  // ---------------------------------------------------------------------------
+
   private drawSlime(slime: Slime): void {
     const { x, z } = this.mapTo2D(slime.position.x, slime.position.z);
     const t = this.elapsedTime / 1000;
     const phase = this.hashPhase(slime.id);
-    const bounce = Math.sin(t * 3.2 + phase);
-    const breath = Math.sin(t * 1.8 + phase * 0.7) * 0.04;
-    const stretch = bounce * 0.08;
-    const scaleX = 1 - stretch + breath;
-    const scaleY = 1 + stretch + breath;
+    const bounceVal = Math.sin(t * 3.2 + phase);
+    const isBouncing = bounceVal > 0.3;
 
-    // Idle sway: gentle left-right wobble
-    const sway = Math.sin(t * 1.2 + phase * 1.3) * 3.5;
-
-    const yPos = z - 6 - bounce * 8;
-
-    // Rarity-based size difference
+    // Rarity-based scale: pixel block size
     const rarityScale = this.getRaritySizeScale(slime.rarity);
-    const baseSize = (46 + (slime.position.y ?? 0) * 4) * rarityScale;
+    const pixelSize = Math.max(2, Math.floor(4 * rarityScale));
 
-    // Rarity glow
+    // Bounce offset (vertical)
+    const bounceOffset = isBouncing ? Math.floor(-bounceVal * 6) : 0;
+
+    // Rarity glow — drawn under slime
     const rarityGlow = this.getRarityGlow(slime.rarity);
     if (rarityGlow) {
+      const glowW = GRID * pixelSize * 1.4;
+      const glowH = pixelSize * 3;
       this.ctx.save();
-      this.ctx.globalAlpha = 0.75;
-      this.ctx.shadowBlur = 22;
-      this.ctx.shadowColor = rarityGlow;
+      this.ctx.globalAlpha = 0.5;
       this.ctx.fillStyle = rarityGlow;
-      this.ctx.beginPath();
-      this.ctx.ellipse(x + sway, yPos + baseSize * 0.55, baseSize * 0.5, baseSize * 0.2, 0, 0, Math.PI * 2);
-      this.ctx.fill();
+      this.ctx.fillRect(
+        Math.floor(x - glowW / 2),
+        Math.floor(z + GRID * pixelSize * 0.6),
+        Math.floor(glowW),
+        Math.floor(glowH),
+      );
       this.ctx.restore();
     }
 
-    this.ctx.save();
-    this.ctx.translate(x + sway, yPos);
-    this.ctx.scale(scaleX, scaleY);
+    const template = isBouncing ? SLIME_BOUNCE : SLIME_IDLE;
+    const drawX = Math.floor(x - (GRID * pixelSize) / 2);
+    const drawY = Math.floor(z - GRID * pixelSize * 0.8 + bounceOffset);
 
-    const capR = baseSize * 0.52; // Mushroom cap radius
-    const capCY = -baseSize * 0.18; // Cap center Y
-    const bodyW = baseSize * 0.28; // Body half-width
-    const bodyH = baseSize * 0.32; // Body height
-    const bodyTop = capCY + capR * 0.45; // Where body starts (under cap)
+    // Parse slime color
+    const { r: sr, g: sg, b: sb } = this.parseHexColor(slime.color);
 
-    // --- Small stubby body (below cap) ---
-    this.ctx.fillStyle = this.lightenColor(slime.color, 0.25);
-    this.ctx.beginPath();
-    this.ctx.moveTo(-bodyW, bodyTop);
-    this.ctx.quadraticCurveTo(-bodyW * 1.05, bodyTop + bodyH, -bodyW * 0.4, bodyTop + bodyH);
-    this.ctx.lineTo(bodyW * 0.4, bodyTop + bodyH);
-    this.ctx.quadraticCurveTo(bodyW * 1.05, bodyTop + bodyH, bodyW, bodyTop);
-    this.ctx.closePath();
-    this.ctx.fill();
+    // Derive colors from base color
+    const bodyColor = `rgb(${sr},${sg},${sb})`;
+    const outlineColor = `rgb(${Math.max(0, sr - 60)},${Math.max(0, sg - 60)},${Math.max(0, sb - 60)})`;
+    const highlightColor = `rgb(${Math.min(255, sr + 60)},${Math.min(255, sg + 60)},${Math.min(255, sb + 60)})`;
+    const eyeColor = '#1a1a2e';
 
-    // --- Large round mushroom cap head ---
-    this.ctx.fillStyle = slime.color;
-    this.ctx.beginPath();
-    this.ctx.arc(0, capCY, capR, 0, Math.PI * 2);
-    this.ctx.fill();
+    this.drawPixelSprite(template, drawX, drawY, pixelSize, {
+      1: bodyColor,
+      2: outlineColor,
+      3: eyeColor,
+      4: highlightColor,
+    });
 
-    // Cap bottom rim (slightly darker arc)
-    this.ctx.strokeStyle = this.darkenColor(slime.color, 0.15);
-    this.ctx.lineWidth = 1.5;
-    this.ctx.beginPath();
-    this.ctx.arc(0, capCY, capR, 0.15, Math.PI - 0.15);
-    this.ctx.stroke();
-
-    // Highlight on cap
-    this.ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    this.ctx.beginPath();
-    this.ctx.ellipse(-capR * 0.28, capCY - capR * 0.35, capR * 0.28, capR * 0.38, -0.35, 0, Math.PI * 2);
-    this.ctx.fill();
-
-    // Small decorative spots on cap
-    this.ctx.fillStyle = 'rgba(255,255,255,0.22)';
-    this.ctx.beginPath();
-    this.ctx.arc(capR * 0.3, capCY - capR * 0.15, capR * 0.1, 0, Math.PI * 2);
-    this.ctx.fill();
-    this.ctx.beginPath();
-    this.ctx.arc(-capR * 0.05, capCY - capR * 0.55, capR * 0.08, 0, Math.PI * 2);
-    this.ctx.fill();
-
-    // --- Big cute eyes (larger, with big pupils + highlights) ---
-    const eyeY = capCY + capR * 0.1;
-    const eyeSpacing = capR * 0.36;
-    const eyeR = capR * 0.22; // Bigger eyes for cute factor
-    this.drawMushroomEye(-eyeSpacing, eyeY, eyeR);
-    this.drawMushroomEye(eyeSpacing, eyeY, eyeR);
-
-    // --- Simple ω mouth (cute fungi expression) ---
-    this.ctx.strokeStyle = '#4f2a25';
-    this.ctx.lineWidth = 1.8;
-    this.ctx.lineCap = 'round';
-    this.ctx.lineJoin = 'round';
-    const mouthY = capCY + capR * 0.4;
-    const mouthW = capR * 0.22;
-    // ω shape: two small arcs side by side
-    this.ctx.beginPath();
-    this.ctx.arc(-mouthW * 0.5, mouthY, mouthW * 0.45, Math.PI * 0.1, Math.PI * 0.9);
-    this.ctx.stroke();
-    this.ctx.beginPath();
-    this.ctx.arc(mouthW * 0.5, mouthY, mouthW * 0.45, Math.PI * 0.1, Math.PI * 0.9);
-    this.ctx.stroke();
-
-    // Optional blush spots
-    this.ctx.fillStyle = 'rgba(255, 140, 160, 0.25)';
-    this.ctx.beginPath();
-    this.ctx.ellipse(-eyeSpacing - capR * 0.05, eyeY + eyeR * 1.2, capR * 0.12, capR * 0.07, 0, 0, Math.PI * 2);
-    this.ctx.fill();
-    this.ctx.beginPath();
-    this.ctx.ellipse(eyeSpacing + capR * 0.05, eyeY + eyeR * 1.2, capR * 0.12, capR * 0.07, 0, 0, Math.PI * 2);
-    this.ctx.fill();
-
-    // Legendary stars
+    // Legendary pixel stars
     if (slime.rarity === Rarity.Legendary) {
-      this.drawLegendaryStars(baseSize);
+      this.drawPixelStars(drawX, drawY, pixelSize);
     }
-
-    this.ctx.restore();
   }
 
-  /** Draw a big cute eye with large pupil and two highlight spots */
-  private drawMushroomEye(ex: number, ey: number, r: number): void {
-    // White of eye
-    this.ctx.fillStyle = '#ffffff';
-    this.ctx.beginPath();
-    this.ctx.ellipse(ex, ey, r, r * 1.05, 0, 0, Math.PI * 2);
-    this.ctx.fill();
-
-    // Large pupil
-    this.ctx.fillStyle = '#1a1a2e';
-    this.ctx.beginPath();
-    this.ctx.arc(ex, ey + r * 0.05, r * 0.7, 0, Math.PI * 2);
-    this.ctx.fill();
-
-    // Main highlight (top-left)
-    this.ctx.fillStyle = '#ffffff';
-    this.ctx.beginPath();
-    this.ctx.arc(ex - r * 0.25, ey - r * 0.2, r * 0.3, 0, Math.PI * 2);
-    this.ctx.fill();
-
-    // Small secondary highlight
-    this.ctx.fillStyle = '#ffffff';
-    this.ctx.beginPath();
-    this.ctx.arc(ex + r * 0.2, ey + r * 0.25, r * 0.14, 0, Math.PI * 2);
-    this.ctx.fill();
-  }
-
-  private drawLegendaryStars(size: number): void {
-    const points: Array<[number, number]> = [
-      [-size * 0.55, -size * 0.58],
-      [size * 0.5, -size * 0.62],
-      [0, -size * 1.08],
+  /** Draw small pixel stars around legendary slime */
+  private drawPixelStars(x: number, y: number, ps: number): void {
+    const { ctx } = this;
+    const starPositions: Array<[number, number]> = [
+      [-ps * 2, -ps * 2],
+      [GRID * ps + ps, -ps * 2],
+      [GRID * ps / 2 - ps, -ps * 4],
     ];
-    this.ctx.fillStyle = '#ffd867';
-    for (const [sx, sy] of points) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(sx, sy - 4);
-      this.ctx.lineTo(sx + 1.5, sy - 1.5);
-      this.ctx.lineTo(sx + 4, sy);
-      this.ctx.lineTo(sx + 1.5, sy + 1.5);
-      this.ctx.lineTo(sx, sy + 4);
-      this.ctx.lineTo(sx - 1.5, sy + 1.5);
-      this.ctx.lineTo(sx - 4, sy);
-      this.ctx.lineTo(sx - 1.5, sy - 1.5);
-      this.ctx.closePath();
-      this.ctx.fill();
+    ctx.fillStyle = '#ffd867';
+    for (const [sx, sy] of starPositions) {
+      ctx.fillRect(x + sx, y + sy, ps, ps);
+      ctx.fillRect(x + sx - ps, y + sy + ps, ps * 3, ps);
+      ctx.fillRect(x + sx, y + sy + ps * 2, ps, ps);
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Utilities (preserved from original)
+  // ---------------------------------------------------------------------------
 
   private mapTo2D(worldX: number, worldZ: number): { x: number; z: number } {
     const w = this.canvas.clientWidth;
@@ -475,6 +359,22 @@ export class Canvas2DRenderer {
     }
   }
 
+  private getRaritySizeScale(rarity: Rarity): number {
+    switch (rarity) {
+      case Rarity.Legendary:
+        return 1.5;
+      case Rarity.Epic:
+        return 1.3;
+      case Rarity.Rare:
+        return 1.15;
+      case Rarity.Uncommon:
+        return 1.0;
+      case Rarity.Common:
+      default:
+        return 0.85;
+    }
+  }
+
   private hashPhase(id: string): number {
     let hash = 0;
     for (let i = 0; i < id.length; i++) {
@@ -483,18 +383,7 @@ export class Canvas2DRenderer {
     return (hash % 628) / 100;
   }
 
-  /** Lighten a hex/CSS color by mixing toward white */
-  private lightenColor(color: string, amount: number): string {
-    return this.adjustColor(color, amount);
-  }
-
-  /** Darken a hex/CSS color by mixing toward black */
-  private darkenColor(color: string, amount: number): string {
-    return this.adjustColor(color, -amount);
-  }
-
-  private adjustColor(color: string, amount: number): string {
-    // Parse hex color
+  private parseHexColor(color: string): { r: number; g: number; b: number } {
     let r = 128, g = 128, b = 128;
     if (color.startsWith('#')) {
       const hex = color.slice(1);
@@ -508,16 +397,6 @@ export class Canvas2DRenderer {
         b = parseInt(hex.slice(4, 6), 16);
       }
     }
-    if (amount > 0) {
-      r = Math.min(255, Math.round(r + (255 - r) * amount));
-      g = Math.min(255, Math.round(g + (255 - g) * amount));
-      b = Math.min(255, Math.round(b + (255 - b) * amount));
-    } else {
-      const d = -amount;
-      r = Math.max(0, Math.round(r * (1 - d)));
-      g = Math.max(0, Math.round(g * (1 - d)));
-      b = Math.max(0, Math.round(b * (1 - d)));
-    }
-    return `rgb(${r},${g},${b})`;
+    return { r, g, b };
   }
 }
