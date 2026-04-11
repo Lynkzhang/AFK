@@ -16,6 +16,7 @@ import { QuestUI } from './core/ui/QuestUI';
 import { CodexUI } from './core/ui/CodexUI';
 import { ArenaUI } from './core/ui/ArenaUI';
 import { OnboardingUI } from './core/ui/OnboardingUI';
+import { soundManager } from './core/audio/SoundManager';
 import type { BattleResult } from './core/combat/CombatTypes';
 import { initGM } from './core/debug/GMCommands';
 import { archiveSlime, unarchiveSlime, removeArchivedSlime } from './core/systems/ArchiveSystem';
@@ -202,6 +203,40 @@ gameRoot.appendChild(arenaUI.root);
 const onboardingUI = new OnboardingUI();
 gameRoot.appendChild(onboardingUI.root);
 
+/* === M32: Audio Control UI === */
+const audioControlEl = document.createElement('div');
+audioControlEl.className = 'audio-control';
+
+const muteBtn = document.createElement('button');
+muteBtn.className = 'mute-btn pixel-btn';
+muteBtn.textContent = '🔊';
+muteBtn.onclick = () => {
+  const muted = soundManager.toggleMute();
+  muteBtn.textContent = muted ? '🔇' : '🔊';
+};
+
+const bgmBtn = document.createElement('button');
+bgmBtn.className = 'bgm-btn pixel-btn';
+bgmBtn.textContent = '🎵 BGM';
+bgmBtn.onclick = () => {
+  soundManager.playUIClick();
+  const playing = soundManager.toggleBGM();
+  bgmBtn.textContent = playing ? '🎵 BGM' : '🎵 OFF';
+};
+
+const volumeSlider = document.createElement('input');
+volumeSlider.type = 'range';
+volumeSlider.className = 'volume-slider';
+volumeSlider.min = '0';
+volumeSlider.max = '100';
+volumeSlider.value = '50';
+volumeSlider.oninput = () => {
+  soundManager.setMasterVolume(parseInt(volumeSlider.value, 10) / 100);
+};
+
+audioControlEl.append(muteBtn, bgmBtn, volumeSlider);
+gameRoot.appendChild(audioControlEl);
+
 const saveManager = new SaveManager();
 let state = saveManager.load() ?? createDefaultState();
 migrateState(state);
@@ -242,6 +277,7 @@ const stopAutoSave = saveManager.startAutoSave(10000, () => state);
 
 ui.bind({
   onNewGame: () => {
+    soundManager.playUIClick();
     if (saveManager.hasSave()) {
       if (!confirm('\u786e\u5b9a\u8981\u5f00\u59cb\u65b0\u6e38\u620f\u5417\uff1f\u5f53\u524d\u672a\u4fdd\u5b58\u7684\u8fdb\u5ea6\u5c06\u4e22\u5931\u3002')) return;
     }
@@ -250,6 +286,7 @@ ui.bind({
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
   onSave: () => {
+    soundManager.playUIClick();
     state.timestamp = Date.now();
     try {
       saveManager.save(state);
@@ -263,6 +300,7 @@ ui.bind({
     }
   },
   onLoad: () => {
+    soundManager.playUIClick();
     const loaded = saveManager.load();
     if (loaded) {
       state = loaded;
@@ -275,17 +313,21 @@ ui.bind({
     }
   },
   onBattle: () => {
+    soundManager.playUIClick();
+    soundManager.playPanelOpen();
     ui.setActionsDisabled(true);
     stageSelectUI.render(state);
     stageSelectUI.show();
   },
   onCull: (id: string) => {
+    soundManager.playCull();
     state.slimes = state.slimes.filter((slime) => slime.id !== id);
     showToast('剔除成功 🗑️');
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
     onboardingSystem.notifyEvent('cull');
   },
   onSell: (id: string) => {
+    soundManager.playSell();
     const slime = state.slimes.find((item) => item.id === id);
     if (!slime) return;
     const price = evaluatePrice(slime);
@@ -298,11 +340,13 @@ ui.bind({
     onboardingSystem.notifyEvent('sell');
   },
   onBatchCull: (ids: string[]) => {
+    soundManager.playCull();
     state.slimes = state.slimes.filter((slime) => !ids.includes(slime.id));
     showToast(`批量剔除 ${ids.length} 只史莱姆 🗑️`);
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
   onBatchSell: (ids: string[]) => {
+    soundManager.playSell();
     let total = 0;
     for (const id of ids) {
       const slime = state.slimes.find((s) => s.id === id);
@@ -320,6 +364,7 @@ ui.bind({
   onArchive: (id: string) => {
     const result = archiveSlime(state, id);
     if (result.success) {
+      soundManager.playArchive();
       showToast('\u5c01\u5b58\u6210\u529f \ud83d\udce6');
       // Track quest counters
       QuestSystem.incrementCounter(state, 'daily_archives');
@@ -330,21 +375,29 @@ ui.bind({
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
   onOpenArchive: () => {
+    soundManager.playUIClick();
+    soundManager.playPanelOpen();
     ui.setActionsDisabled(true);
     archiveUI.render(state);
     archiveUI.show();
   },
   onOpenFacility: () => {
+    soundManager.playUIClick();
+    soundManager.playPanelOpen();
     ui.setActionsDisabled(true);
     facilityUI.render(state);
     facilityUI.show();
   },
   onOpenShop: () => {
+    soundManager.playUIClick();
+    soundManager.playPanelOpen();
     ui.setActionsDisabled(true);
     shopUI.render(state);
     shopUI.show();
   },
   onOpenQuest: () => {
+    soundManager.playUIClick();
+    soundManager.playPanelOpen();
     ui.setActionsDisabled(true);
     QuestSystem.syncDerivedCounters(state);
     questUI.render(state);
@@ -352,12 +405,16 @@ ui.bind({
     onboardingSystem.notifyEvent('quest-opened');
   },
   onOpenCodex: () => {
+    soundManager.playUIClick();
+    soundManager.playPanelOpen();
     ui.setActionsDisabled(true);
     CodexSystem.recordFromState(state);
     codexUI.render(state);
     codexUI.show();
   },
   onOpenArena: () => {
+    soundManager.playUIClick();
+    soundManager.playPanelOpen();
     ui.setActionsDisabled(true);
     arenaUI.render(state);
     arenaUI.show();
@@ -375,11 +432,13 @@ facilityUI.bind({
     facilityUI.render(state);
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
     if (ok) {
+      soundManager.playAchievement();
       const newLevel = facility ? facility.level : oldLevel;
       showToast(`${facility?.name ?? '\u8bbe\u65bd'} \u5347\u7ea7\u5230 Lv.${newLevel} \u2713`);
     }
   },
   onBack: () => {
+    soundManager.playPanelClose();
     facilityUI.hide();
     ui.setActionsDisabled(false);
   },
@@ -401,6 +460,7 @@ shopUI.bind({
     shopUI.render(state);
   },
   onBack: () => {
+    soundManager.playPanelClose();
     shopUI.hide();
     ui.setActionsDisabled(false);
   },
@@ -408,6 +468,7 @@ shopUI.bind({
 
 questUI.bind({
   onClaim: (questId: string) => {
+    soundManager.playRewardClaim();
     QuestSystem.claimQuest(state, questId);
     questUI.render(state);
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
@@ -418,6 +479,7 @@ questUI.bind({
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
   onBack: () => {
+    soundManager.playPanelClose();
     questUI.hide();
     ui.setActionsDisabled(false);
   },
@@ -425,6 +487,7 @@ questUI.bind({
 
 codexUI.bind({
   onBack: () => {
+    soundManager.playPanelClose();
     codexUI.hide();
     ui.setActionsDisabled(false);
   },
@@ -444,6 +507,7 @@ arenaUI.bind({
     arenaUI.render(state);
   },
   onBack: () => {
+    soundManager.playPanelClose();
     arenaUI.hide();
     ui.setActionsDisabled(false);
   },
@@ -459,6 +523,7 @@ stageSelectUI.bind({
     teamSelectUI.show();
   },
   onBack: () => {
+    soundManager.playPanelClose();
     stageSelectUI.hide();
     ui.setActionsDisabled(false);
   },
@@ -472,6 +537,7 @@ teamSelectUI.bind({
     battleUI.startBattle(team, currentStageId);
   },
   onBack: () => {
+    soundManager.playPanelClose();
     teamSelectUI.hide();
     stageSelectUI.render(state);
     stageSelectUI.show();
@@ -483,6 +549,7 @@ battleUI.bind({
     battleUI.hide();
     ui.setActionsDisabled(false);
     if (result.victory) {
+      soundManager.playVictory();
       const prev = state.stageProgress[currentStageId];
       if (!prev || result.stars > prev.stars) {
         state.stageProgress = {
@@ -508,6 +575,8 @@ battleUI.bind({
       QuestSystem.incrementCounter(state, 'daily_battles_won');
       QuestSystem.incrementCounter(state, 'total_battles_won');
       onboardingSystem.notifyEvent('battle-victory');
+    } else {
+      soundManager.playDefeat();
     }
     onboardingSystem.notifyEvent('battle-complete');
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
@@ -546,6 +615,7 @@ archiveUI.bind({
     archiveUI.render(state);
   },
   onBack: () => {
+    soundManager.playPanelClose();
     archiveUI.hide();
     ui.setActionsDisabled(false);
   },
