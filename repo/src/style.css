@@ -687,3 +687,122 @@ button:disabled {
     width: 50px;
   }
 }
+
+
+/* ============================================================
+   M33 Visual Audit Fixes — P1-3, P0-1, P2-3
+   ============================================================ */
+
+/* P1-3: rarity-tag contrast — dark text for WCAG AA readability */
+.rarity-tag {
+  color: #1a1a2e !important;
+}
+
+/* P0-1: Chapter/Stage Select tabs */
+.chapter-tabs { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.chapter-tab {
+  cursor: pointer; background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #ccc; border-radius: 8px; padding: 6px 14px; font-size: 13px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.chapter-tab.active { background: rgba(255,215,0,0.2); border-color: #ffd700; color: #ffd700; }
+.chapter-tab.locked { opacity: 0.4; cursor: not-allowed; }
+
+/* P0-1: Shop panel */
+.shop-panel {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(10,14,26,0.95); display: flex; flex-direction: column;
+  padding: 20px; overflow-y: auto; z-index: 100;
+}
+.shop-currency { font-size: 14px; color: #ffd700; margin-bottom: 12px; }
+.shop-item-list {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px; margin-bottom: 16px;
+}
+.shop-card {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 4px;
+}
+.shop-card-name { font-size: 14px; font-weight: bold; color: #f0f3ff; }
+.shop-card-desc { font-size: 12px; color: #aab; }
+.shop-card-price { font-size: 13px; color: #ffd700; }
+
+/* P0-1: Facility panel */
+.facility-panel {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(10,14,26,0.95); display: flex; flex-direction: column;
+  padding: 20px; overflow-y: auto; z-index: 100;
+}
+.facility-cards { display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; }
+.facility-card {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px; padding: 12px;
+}
+.facility-name { font-size: 15px; font-weight: bold; color: #f0f3ff; margin-bottom: 4px; }
+.facility-level { font-size: 13px; color: #ffd700; }
+.facility-cost { font-size: 12px; color: #aab; }
+.facility-effect { font-size: 12px; color: #7be69a; margin-top: 4px; }
+.facility-back-btn {
+  align-self: flex-start; margin-top: 10px;
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+  color: #ccc; border-radius: 10px; padding: 6px 14px; font-size: 14px; cursor: pointer;
+}
+
+/* P0-1: Codex panel */
+.codex-panel {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(10,14,26,0.95); display: flex; flex-direction: column;
+  padding: 20px; overflow-y: auto; z-index: 100;
+}
+.codex-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.codex-tab {
+  cursor: pointer; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+  color: #ccc; border-radius: 8px; padding: 6px 12px; font-size: 13px;
+}
+.codex-tab.active { background: rgba(255,215,0,0.2); border-color: #ffd700; color: #ffd700; }
+.codex-overall { font-size: 13px; color: #aab; margin-bottom: 8px; }
+.codex-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; flex: 1; }
+.codex-entry {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px; padding: 8px; font-size: 13px; color: #ccd;
+}
+
+/* P0-1: Arena panel */
+.arena-panel {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(10,14,26,0.95); display: flex; flex-direction: column;
+  padding: 20px; overflow-y: auto; z-index: 100;
+}
+.arena-list { display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; }
+.arena-card {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px; padding: 12px;
+}
+.arena-name { font-size: 15px; font-weight: bold; color: #f0f3ff; }
+.arena-desc { font-size: 12px; color: #aab; margin-top: 2px; }
+.arena-effect { font-size: 12px; color: #c49bff; margin-top: 4px; }
+.arena-price { font-size: 13px; color: #ffd700; margin-top: 4px; }
+.arena-buy-btn, .arena-switch-btn {
+  margin-top: 8px; cursor: pointer; background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2); color: #ccc; border-radius: 8px;
+  padding: 4px 12px; font-size: 13px; transition: background 0.2s;
+}
+.arena-switch-btn { border-color: #f0c040; color: #f0c040; }
+
+/* P0-1: Archive accessory section */
+.archive-accessory-section { margin-top: 6px; font-size: 12px; color: #aab; }
+.equipped-accessory { color: #ffd700; font-size: 12px; }
+
+/* P0-1: Quest panel */
+.quest-panel {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(10,14,26,0.95); display: flex; flex-direction: column;
+  padding: 20px; overflow-y: auto; z-index: 100;
+}
+
+/* P2-3: Slime list custom scrollbar */
+.slime-list::-webkit-scrollbar { width: 6px; }
+.slime-list::-webkit-scrollbar-track { background: rgba(200,180,150,0.1); border-radius: 3px; }
+.slime-list::-webkit-scrollbar-thumb { background: rgba(200,160,32,0.5); border-radius: 3px; }
+.slime-list::-webkit-scrollbar-thumb:hover { background: rgba(200,160,32,0.8); }

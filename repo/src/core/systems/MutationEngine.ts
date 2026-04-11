@@ -84,7 +84,7 @@ export class MutationEngine {
   generateColor(rarity: Rarity): string {
     switch (rarity) {
       case Rarity.Common:
-        return '#56d364';
+        return '#f0c040'; // warm yellow — contrasts with grass (was #56d364)
       case Rarity.Uncommon:
         return '#4f8cff';
       case Rarity.Rare:
@@ -94,7 +94,7 @@ export class MutationEngine {
       case Rarity.Legendary:
         return '#ffd700';
       default:
-        return '#56d364';
+        return '#f0c040'; // warm yellow — contrasts with grass (was #56d364)
     }
   }
 
