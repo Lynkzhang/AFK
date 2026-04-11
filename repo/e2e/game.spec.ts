@@ -1520,7 +1520,7 @@ test.describe('Onboarding System', () => {
     const state = await page.evaluate(() => window.__GM!.getState());
     expect(state.slimes.length).toBe(2);
     expect(state.slimes[0].name).toBe('小绿');
-    expect(state.slimes[1].name).toBe('果冻二号');
+    expect(state.slimes[1].name).toBe('小蓝');
     expect(state.currency).toBe(50);
     expect(state.onboarding.currentStep).toBe('step-welcome');
     expect(state.onboarding.unlocks.battle).toBe(false);
