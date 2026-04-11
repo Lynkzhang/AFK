@@ -119,7 +119,7 @@ export class Canvas2DRenderer {
     this.drawPixelClouds(w, h, grassTop);
 
     // --- Grass: 4 green colors in pixel-block grid pattern ---
-    const grassColors = ['#3a7820', '#4a9828', '#5aaa30', '#2e6018'];
+    const grassColors = ['#2a5c14', '#35720a', '#1e4a0c', '#3a6818']; // deeper greens for contrast with slimes
     const blockSize = 4; // pixel block size
     for (let gy = grassTop; gy < h; gy += blockSize) {
       for (let gx = 0; gx < w; gx += blockSize) {
@@ -277,7 +277,7 @@ export class Canvas2DRenderer {
       const glowW = GRID * pixelSize * 1.4;
       const glowH = pixelSize * 3;
       this.ctx.save();
-      this.ctx.globalAlpha = 0.5;
+      this.ctx.globalAlpha = 0.28; // reduced from 0.5 — less intrusive glow
       this.ctx.fillStyle = rarityGlow;
       this.ctx.fillRect(
         Math.floor(x - glowW / 2),
@@ -346,13 +346,13 @@ export class Canvas2DRenderer {
   private getRarityGlow(rarity: Rarity): string | null {
     switch (rarity) {
       case Rarity.Uncommon:
-        return 'rgba(145, 255, 156, 0.95)';
+        return 'rgba(145, 255, 156, 0.6)';
       case Rarity.Rare:
-        return 'rgba(119, 191, 255, 0.95)';
+        return 'rgba(119, 191, 255, 0.6)';
       case Rarity.Epic:
-        return 'rgba(200, 137, 255, 0.95)';
+        return 'rgba(200, 137, 255, 0.6)';
       case Rarity.Legendary:
-        return 'rgba(255, 212, 93, 0.98)';
+        return 'rgba(255, 212, 93, 0.7)';
       case Rarity.Common:
       default:
         return null;
