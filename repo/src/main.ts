@@ -221,7 +221,10 @@ const loop = new GameLoop({
       splitIntervalMs: effectiveSplitInterval,
       maxCapacity: FacilitySystem.getMaxCapacity(state),
     };
-    breedingSystem.update(state, deltaTime, dynamicConfig);
+    const isOnboarding = state.onboarding?.currentStep !== null && state.onboarding?.currentStep !== undefined;
+    const isWaitingSplit = state.onboarding?.currentStep === 'step-wait-split';
+    const effectiveDelta = (isOnboarding && !isWaitingSplit) ? 0 : deltaTime;
+    breedingSystem.update(state, effectiveDelta, dynamicConfig);
     scene.update(state, elapsedTime);
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
     // Sync derived quest counters each frame
@@ -278,6 +281,8 @@ ui.bind({
   },
   onCull: (id: string) => {
     state.slimes = state.slimes.filter((slime) => slime.id !== id);
+    showToast('剔除成功 🗑️');
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
     onboardingSystem.notifyEvent('cull');
   },
   onSell: (id: string) => {
