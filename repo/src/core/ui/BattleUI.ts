@@ -2,6 +2,7 @@ import type { BattleResult, BattleLogEntry, BattleReward } from '../combat/Comba
 import type { Slime } from '../types';
 import { runBattle } from '../combat/CombatEngine';
 import { getStage } from '../combat/StageData';
+import { soundManager } from '../audio/SoundManager';
 
 export interface BattleUICallbacks {
   onFinish: (result: BattleResult) => void;
@@ -144,6 +145,15 @@ export class BattleUI {
   }
 
   private appendLogEntry(entry: BattleLogEntry): void {
+    // Play battle sounds
+    if (entry.detail === 'HEAL') {
+      soundManager.playHeal();
+    } else if (entry.detail === 'SHIELD' || entry.detail === 'DODGE') {
+      soundManager.playDefense();
+    } else if (entry.action !== 'DOT' && entry.action !== 'SKIP' && entry.action !== 'RAGE') {
+      soundManager.playAttack();
+    }
+
     const line = document.createElement('div');
     line.className = `log-entry log-${entry.detail.toLowerCase().replace(/[^a-z]/g, '')}`;
     let text = `[回合${entry.turn}] ${entry.actorName}`;
