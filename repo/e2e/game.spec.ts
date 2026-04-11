@@ -2138,3 +2138,70 @@ test.describe('M28 UX Polish', () => {
     expect(className).toMatch(/result-victory|result-defeat/);
   });
 });
+
+// =========================================================
+// =========================================================
+// M30 Bug Fix Tests
+// =========================================================
+test.describe('M30 Bug Fixes', () => {
+  test('cull button shows toast and updates UI', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    await setupClassicState(page);
+
+    // Wait for slime list to render
+    await page.waitForSelector('.slime-item', { timeout: 5000 });
+
+    // Get slime count before cull
+    const countBefore = await page.evaluate(() => window.__GM!.getState().slimes.length);
+    expect(countBefore).toBeGreaterThan(1);
+
+    // Click the cull button using evaluate (avoids DOM detach from game loop re-renders)
+    // Start watching for toast BEFORE clicking
+    const toastPromise = page.waitForSelector('.toast-message', { state: 'attached', timeout: 5000 });
+    await page.evaluate(() => {
+      const item = document.querySelector('.slime-item');
+      if (item) {
+        const btn = item.querySelector<HTMLButtonElement>('button');
+        if (btn) btn.click();
+      }
+    });
+
+    // Wait for toast element to be attached to DOM
+    const toastEl = await toastPromise;
+    const toastText = await toastEl.textContent();
+    expect(toastText).toContain('剔除');
+
+    // Slime count should have decreased
+    const countAfter = await page.evaluate(() => window.__GM!.getState().slimes.length);
+    expect(countAfter).toBeLessThan(countBefore);
+  });
+
+  test('breeding paused during onboarding', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    // Skip onboarding overlay so we can click new game
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    // Click new game — starts fresh state with onboarding enabled
+    acceptDialogs(page);
+    await page.locator('.ui-actions button', { hasText: '新游戏' }).click();
+    await page.waitForTimeout(300);
+
+    // New game state has onboarding active
+    const onboardingStep = await page.evaluate(() => window.__GM!.getState().onboarding?.currentStep);
+    const countBefore = await page.evaluate(() => window.__GM!.getState().slimes.length);
+    expect(countBefore).toBe(1);
+
+    // If onboarding is active, wait 2 seconds and verify breeding is paused
+    if (onboardingStep !== null && onboardingStep !== undefined) {
+      await page.waitForTimeout(2000);
+      const countAfter = await page.evaluate(() => window.__GM!.getState().slimes.length);
+      expect(countAfter).toBe(1);
+    }
+  });
+});
