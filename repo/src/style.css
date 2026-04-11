@@ -120,6 +120,43 @@ body,
   box-shadow: 3px 3px 0 #3a2808, inset 1px 1px 0 #f0d050 !important;
 }
 
+/* ===== M35 #170: Overlay buttons — unified pixel style ===== */
+.back-btn,
+.confirm-btn,
+.archive-action-btn,
+.facility-back-btn,
+.arena-buy-btn,
+.arena-switch-btn,
+.battle-controls button,
+.shop-back-btn {
+  border-radius: 0 !important;
+  font-family: 'Courier New', Courier, monospace !important;
+  font-weight: bold;
+  image-rendering: pixelated;
+  border: 2px solid #8a7060;
+  border-top: 3px solid #ffd700;
+  box-shadow: 2px 2px 0 #1a1018, inset 1px 1px 0 rgba(255,255,255,0.15);
+  padding: 6px 14px;
+  font-size: 13px;
+  background: rgba(255,255,255,0.1);
+  color: #ddd;
+  cursor: pointer;
+  transition: box-shadow 0.08s, transform 0.08s, background 0.08s;
+}
+
+.back-btn:hover,
+.confirm-btn:hover,
+.archive-action-btn:hover,
+.facility-back-btn:hover,
+.arena-buy-btn:hover,
+.arena-switch-btn:hover,
+.battle-controls button:hover,
+.shop-back-btn:hover {
+  background: rgba(255,255,255,0.18);
+  box-shadow: 3px 3px 0 #1a1018, inset 1px 1px 0 rgba(255,255,255,0.25);
+  transform: translateY(-1px);
+}
+
 .full-hint {
   margin-top: 8px;
   color: #cc5555;
@@ -176,7 +213,7 @@ body,
 }
 
 .rarity-tag {
-  color: #fff;
+  color: #1a1a2e;
   font-size: 11px;
   padding: 1px 6px;
   border-radius: 2px;
@@ -412,8 +449,7 @@ body,
   text-align: center;
 }
 
-.result-victory { color: #4CAF50; font-size: 18px; }
-.result-defeat { color: #f44336; font-size: 18px; }
+/* M35 #174: removed duplicate — full version below */
 .result-stars { font-size: 24px; color: #ffd700; margin: 8px 0; }
 .result-info { font-size: 14px; color: #ccc; margin-bottom: 8px; }
 .result-rewards { font-size: 13px; color: #aab; margin-bottom: 12px; }
@@ -500,13 +536,17 @@ body,
 .onboarding-dialog {
   max-width: 420px;
   background: #fffaf2;
-  border-radius: 18px;
+  border-radius: 0;
+  border: 2px solid #8a7060;
+  border-top: 3px solid #ffd700;
   padding: 24px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  box-shadow: 4px 4px 0 #3a2818;
   color: #4a3728;
   font-size: 14px;
+  font-family: 'Courier New', Courier, monospace;
   line-height: 1.6;
   text-align: center;
+  image-rendering: pixelated;
 }
 .onboarding-text {
   margin-bottom: 16px;
@@ -516,17 +556,23 @@ body,
   display: inline-block;
   background: #6dbe6e;
   color: #fff;
-  border: none;
-  border-radius: 10px;
+  border: 2px solid #3a7a3a;
+  border-top: 3px solid #ffd700;
+  border-radius: 0;
   padding: 8px 24px;
   min-width: 120px;
   font-size: 14px;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
   cursor: pointer;
-  transition: background 0.2s, transform 0.15s;
+  image-rendering: pixelated;
+  box-shadow: 2px 2px 0 #1a3a1a, inset 1px 1px 0 #8de88d;
+  transition: box-shadow 0.08s, transform 0.08s, background 0.08s;
 }
 .onboarding-btn:hover {
   background: #5cad5d;
-  transform: scale(1.04);
+  box-shadow: 3px 3px 0 #1a3a1a, inset 1px 1px 0 #a0f0a0;
+  transform: translateY(-1px);
 }
 
 /* Sort button active state */
@@ -575,15 +621,18 @@ button:disabled {
   transform: translate(-50%, -50%);
   max-width: 300px;
   background: #fffaf2;
-  border: 1px solid #e8c976;
-  border-radius: 14px;
+  border: 2px solid #8a7060;
+  border-top: 3px solid #ffd700;
+  border-radius: 0;
   padding: 14px 18px;
   color: #4a3728;
   font-size: 14px;
+  font-family: 'Courier New', Courier, monospace;
   line-height: 1.5;
   z-index: 910;
   white-space: pre-line;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: 4px 4px 0 #3a2818;
+  image-rendering: pixelated;
 }
 
 /* === M28: Battle result visual enhancement === */
@@ -592,7 +641,7 @@ button:disabled {
   font-size: 18px;
   background: rgba(76, 175, 80, 0.15) !important;
   border: 2px solid #4CAF50;
-  border-radius: 8px;
+  border-radius: 0;
   padding: 8px 16px;
 }
 .result-defeat {
@@ -600,7 +649,7 @@ button:disabled {
   font-size: 18px;
   background: rgba(244, 67, 54, 0.15) !important;
   border: 2px solid #f44336;
-  border-radius: 8px;
+  border-radius: 0;
   padding: 8px 16px;
 }
 
@@ -693,10 +742,7 @@ button:disabled {
    M33 Visual Audit Fixes — P1-3, P0-1, P2-3
    ============================================================ */
 
-/* P1-3: rarity-tag contrast — dark text for WCAG AA readability */
-.rarity-tag {
-  color: #1a1a2e !important;
-}
+/* M35 #174: rarity-tag color consolidated into main .rarity-tag rule */
 
 /* P0-1: Chapter/Stage Select tabs */
 .chapter-tabs { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }

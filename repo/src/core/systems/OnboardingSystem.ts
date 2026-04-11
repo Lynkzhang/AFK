@@ -54,18 +54,18 @@ interface StepDef {
 const STEPS: StepDef[] = [
   {
     id: 'step-welcome',
-    text: '欢迎来到史莱姆世界！🌟\n\n这是你的第一只史莱姆——"小绿"。\n它看起来普通，但蕴藏着无限进化潜能。\n\n让我们一起见证它的第一次分裂吧！',
+    text: '欢迎来到史莱姆世界！🌟\n\n这是你的第一批史莱姆——“小绿”和“小蓝”。\n它们看起来普通，但蕴藏着无限进化潜能。\n\n让我们一起见证它们的第一次分裂吧！',
     buttonText: '好的！',
     checkComplete: (_s, events) => events.has('dialog-ok'),
   },
   {
     id: 'step-wait-split',
     text: '⏰ 注意倒计时——当它归零时，小绿就会分裂产生新的史莱姆！\n\n耐心等待一下...',
-    checkComplete: (s) => s.slimes.length >= 2,
+    checkComplete: (s) => s.slimes.length >= 3,
   },
   {
     id: 'step-first-split',
-    text: '🎉 恭喜！小绿成功分裂了！\n\n史莱姆会不断分裂，每次都可能产生变异。\n留下强的，淘汰弱的——这就是培养的核心！',
+    text: '🎉 恭喜！史莱姆成功分裂了！\n\n史莱姆会不断分裂，每次都可能产生变异。\n留下强的，淘汰弱的——这就是培养的核心！',
     buttonText: '明白了！',
     checkComplete: (_s, events) => events.has('dialog-ok'),
   },

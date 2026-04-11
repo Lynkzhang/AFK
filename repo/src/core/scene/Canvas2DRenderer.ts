@@ -29,7 +29,7 @@ const SLIME_BOUNCE: number[][] = [
   [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
   [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
   [0, 2, 1, 1, 1, 1, 1, 2, 0, 0],
-  [0, 2, 2, 1, 2, 1, 2, 2, 0, 0],
+  [0, 2, 2, 2, 2, 2, 2, 2, 0, 0],
   [0, 2, 2, 2, 2, 2, 2, 2, 0, 0],
   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ];
@@ -41,6 +41,7 @@ export class Canvas2DRenderer {
   private ctx: CanvasRenderingContext2D;
   private state: GameState | null = null;
   private elapsedTime = 0;
+  private splitCountdown = Infinity;
 
   constructor(container: HTMLElement) {
     this.canvas = document.createElement('canvas');
@@ -59,9 +60,10 @@ export class Canvas2DRenderer {
     window.addEventListener('resize', () => this.resize(container));
   }
 
-  update(state: GameState, elapsedTime: number): void {
+  update(state: GameState, elapsedTime: number, splitCountdown?: number): void {
     this.state = state;
     this.elapsedTime = elapsedTime;
+    this.splitCountdown = splitCountdown ?? Infinity;
   }
 
   render(): void {
@@ -271,17 +273,46 @@ export class Canvas2DRenderer {
     // Bounce offset (vertical)
     const bounceOffset = isBouncing ? Math.floor(-bounceVal * 6) : 0;
 
+    // --- Pre-split animation: last 3 seconds ---
+    let preSplitScale = 1;
+    let preSplitGlow = false;
+    if (this.splitCountdown <= 3000 && this.splitCountdown > 0) {
+      const progress = 1 - this.splitCountdown / 3000; // 0→1
+      // Pulsing scale: grows with a sine wobble
+      preSplitScale = 1 + 0.15 * progress + 0.05 * Math.sin(t * 8);
+      preSplitGlow = true;
+    }
+
+    const finalPixelSize = Math.max(2, Math.floor(pixelSize * preSplitScale));
+
     // Rarity glow — drawn under slime
     const rarityGlow = this.getRarityGlow(slime.rarity);
     if (rarityGlow) {
-      const glowW = GRID * pixelSize * 1.4;
-      const glowH = pixelSize * 3;
+      const glowW = GRID * finalPixelSize * 1.4;
+      const glowH = finalPixelSize * 3;
       this.ctx.save();
-      this.ctx.globalAlpha = 0.28; // reduced from 0.5 — less intrusive glow
+      this.ctx.globalAlpha = 0.28;
       this.ctx.fillStyle = rarityGlow;
       this.ctx.fillRect(
         Math.floor(x - glowW / 2),
-        Math.floor(z + GRID * pixelSize * 0.6),
+        Math.floor(z + GRID * finalPixelSize * 1.0),
+        Math.floor(glowW),
+        Math.floor(glowH),
+      );
+      this.ctx.restore();
+    }
+
+    // Pre-split glow effect
+    if (preSplitGlow) {
+      const glowW = GRID * finalPixelSize * 1.6;
+      const glowH = GRID * finalPixelSize + finalPixelSize * 4;
+      this.ctx.save();
+      const glowAlpha = 0.15 + 0.15 * Math.sin(t * 6);
+      this.ctx.globalAlpha = glowAlpha;
+      this.ctx.fillStyle = '#fffbe0';
+      this.ctx.fillRect(
+        Math.floor(x - glowW / 2),
+        Math.floor(z - GRID * finalPixelSize * 0.8 + bounceOffset - finalPixelSize * 2),
         Math.floor(glowW),
         Math.floor(glowH),
       );
@@ -289,8 +320,8 @@ export class Canvas2DRenderer {
     }
 
     const template = isBouncing ? SLIME_BOUNCE : SLIME_IDLE;
-    const drawX = Math.floor(x - (GRID * pixelSize) / 2);
-    const drawY = Math.floor(z - GRID * pixelSize * 0.8 + bounceOffset);
+    const drawX = Math.floor(x - (GRID * finalPixelSize) / 2);
+    const drawY = Math.floor(z - GRID * finalPixelSize * 0.8 + bounceOffset);
 
     // Parse slime color
     const { r: sr, g: sg, b: sb } = this.parseHexColor(slime.color);
@@ -301,7 +332,7 @@ export class Canvas2DRenderer {
     const highlightColor = `rgb(${Math.min(255, sr + 60)},${Math.min(255, sg + 60)},${Math.min(255, sb + 60)})`;
     const eyeColor = '#1a1a2e';
 
-    this.drawPixelSprite(template, drawX, drawY, pixelSize, {
+    this.drawPixelSprite(template, drawX, drawY, finalPixelSize, {
       1: bodyColor,
       2: outlineColor,
       3: eyeColor,
@@ -310,7 +341,7 @@ export class Canvas2DRenderer {
 
     // Legendary pixel stars
     if (slime.rarity === Rarity.Legendary) {
-      this.drawPixelStars(drawX, drawY, pixelSize);
+      this.drawPixelStars(drawX, drawY, finalPixelSize);
     }
   }
 
