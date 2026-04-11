@@ -56,29 +56,68 @@ body,
 .sort-actions {
   margin-top: 10px;
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
+/* ===== M31 #145: Pixel art button unified style ===== */
 .ui-actions button,
 .sort-actions button,
-.slime-actions button {
+.slime-actions button,
+.pixel-btn {
   cursor: pointer;
-  border: none;
-  border-radius: 10px;
-  padding: 6px 12px;
-  font-size: 13px;
-  background: rgba(120, 100, 80, 0.12);
-  color: #4a3728;
-  transition: background 0.2s, transform 0.15s, filter 0.2s;
+  border: 2px solid #8a7060;
+  border-radius: 0;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-family: 'Courier New', Courier, monospace;
+  background: #e8ddd0;
+  color: #3a2818;
+  image-rendering: pixelated;
+  box-shadow: 2px 2px 0 #5a4030, inset 1px 1px 0 #f8f0e8;
+  transition: box-shadow 0.08s, transform 0.08s, background 0.08s;
+  letter-spacing: 0.02em;
+  font-weight: bold;
 }
 
 .ui-actions button:hover,
 .sort-actions button:hover,
-.slime-actions button:hover {
-  background: rgba(120, 100, 80, 0.22);
-  transform: scale(1.04);
-  filter: brightness(1.05);
+.slime-actions button:hover,
+.pixel-btn:hover {
+  background: #f0e4d4;
+  box-shadow: 3px 3px 0 #3a2818, inset 1px 1px 0 #fff8f0;
+  transform: translateY(-1px);
+}
+
+.ui-actions button:active,
+.sort-actions button:active,
+.slime-actions button:active,
+.pixel-btn:active {
+  box-shadow: 1px 1px 0 #5a4030;
+  transform: translateY(1px);
+}
+
+/* Pixel button variants */
+.pixel-btn-danger {
+  background: #c84040 !important;
+  border-color: #7a1818 !important;
+  color: #fff !important;
+  box-shadow: 2px 2px 0 #3a0808, inset 1px 1px 0 #e86060 !important;
+}
+.pixel-btn-danger:hover {
+  background: #e05050 !important;
+  box-shadow: 3px 3px 0 #3a0808, inset 1px 1px 0 #f07070 !important;
+}
+
+.pixel-btn-gold {
+  background: #c8a020 !important;
+  border-color: #7a5808 !important;
+  color: #fff !important;
+  box-shadow: 2px 2px 0 #3a2808, inset 1px 1px 0 #e8c040 !important;
+}
+.pixel-btn-gold:hover {
+  background: #e0b830 !important;
+  box-shadow: 3px 3px 0 #3a2808, inset 1px 1px 0 #f0d050 !important;
 }
 
 .full-hint {
@@ -109,35 +148,93 @@ body,
 .slime-item {
   background: rgba(255, 255, 255, 0.6);
   border: 1px solid rgba(200, 180, 150, 0.3);
-  border-radius: 12px;
-  padding: 8px;
+  border-radius: 4px;
+  padding: 6px;
   color: #444;
+}
+
+/* #142: Selected slime highlight */
+.slime-item.slime-selected {
+  background: rgba(255, 215, 0, 0.18);
+  border-color: #c8a020;
 }
 
 .slime-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
+}
+
+/* #143: Checkbox style */
+.slime-checkbox {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  accent-color: #c8a020;
 }
 
 .rarity-tag {
   color: #fff;
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 999px;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 2px;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
 }
 
 .slime-info {
-  margin-top: 6px;
-  font-size: 13px;
+  margin-top: 4px;
+  font-size: 12px;
   color: #555;
 }
 
 .slime-actions {
-  margin-top: 8px;
+  margin-top: 6px;
   display: flex;
-  gap: 8px;
+  gap: 6px;
+}
+
+/* ===== M31 #144: Rarity filter row ===== */
+.filter-row {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  font-size: 11px;
+  color: #4a3728;
+  font-weight: bold;
+  margin-right: 2px;
+}
+
+.filter-btn {
+  min-width: 28px;
+  padding: 2px 5px !important;
+  font-size: 10px !important;
+}
+
+.filter-btn-active {
+  background: #c8a020 !important;
+  border-color: #7a5808 !important;
+  color: #fff !important;
+  box-shadow: 2px 2px 0 #3a2808 !important;
+}
+
+/* ===== M31 #143: Batch action row ===== */
+.batch-row {
+  margin-top: 6px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 6px;
+  background: rgba(200, 160, 32, 0.12);
+  border: 1px solid rgba(200, 160, 32, 0.3);
+  border-radius: 4px;
 }
 
 /* ===== Battle/Overlay UI Styles — keep dark for readability ===== */
@@ -431,11 +528,13 @@ body,
   background: #5cad5d;
   transform: scale(1.04);
 }
+
 /* Sort button active state */
 .sort-btn-active {
-  background: rgba(255, 215, 0, 0.25) !important;
-  border: 1px solid #ffd700 !important;
-  color: #b8860b !important;
+  background: #c8a020 !important;
+  border-color: #7a5808 !important;
+  color: #fff !important;
+  box-shadow: 2px 2px 0 #3a2808 !important;
 }
 
 /* Disabled buttons */
@@ -520,9 +619,10 @@ button:disabled {
   }
   .ui-actions button,
   .sort-actions button,
-  .slime-actions button {
-    font-size: 11px;
-    padding: 5px 8px;
+  .slime-actions button,
+  .pixel-btn {
+    font-size: 10px;
+    padding: 4px 6px;
   }
   .overlay-panel {
     width: calc(100% - 20px) !important;
