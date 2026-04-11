@@ -1,11 +1,16 @@
 import type { GameState } from '../types';
 import { MutationEngine } from './MutationEngine';
+import type { BuffModifiers } from './MutationEngine';
 import { ArenaSystem } from './ArenaSystem';
 import { AccessorySystem } from './AccessorySystem';
 
 export interface BreedingResult {
   didSplit: boolean;
   wasMutation: boolean;
+  buffApplied?: {
+    mutationCatalyst: boolean;
+    rareEssence: boolean;
+  };
 }
 
 export interface BreedingConfig {
@@ -42,7 +47,13 @@ export class BreedingSystem {
           ? state.accessories.find((a) => a.id === parent.equippedAccessoryId)
           : undefined;
 
-        const offspring = this.engine.createOffspring(parent, modifiers, parentAccessory);
+        // Read buff state
+        const buffs: BuffModifiers = {
+          mutationCatalystActive: state.activeBuffs?.mutationCatalystActive ?? false,
+          rareEssenceActive: state.activeBuffs?.rareEssenceActive ?? false,
+        };
+
+        const offspring = this.engine.createOffspring(parent, modifiers, parentAccessory, buffs);
 
         // Handle inherited accessory
         const inheritedTemplateId = offspring._inheritedAccessoryTemplateId;
@@ -65,8 +76,21 @@ export class BreedingSystem {
           AccessorySystem.equip(state, pendingAccId, offspring.id);
         }
 
+        // Clear one-time buffs after split
+        if (state.activeBuffs) {
+          state.activeBuffs.mutationCatalystActive = false;
+          state.activeBuffs.rareEssenceActive = false;
+        }
+
         const wasMutation = offspring.rarity !== parent.rarity;
-        return { didSplit: true, wasMutation };
+        return {
+          didSplit: true,
+          wasMutation,
+          buffApplied: {
+            mutationCatalyst: buffs.mutationCatalystActive ?? false,
+            rareEssence: buffs.rareEssenceActive ?? false,
+          },
+        };
       }
     }
     return { didSplit: false, wasMutation: false };

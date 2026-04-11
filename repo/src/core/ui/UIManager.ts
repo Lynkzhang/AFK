@@ -32,6 +32,7 @@ export class UIManager {
   private readonly countdownEl: HTMLSpanElement;
   private readonly capacityEl: HTMLSpanElement;
   private readonly fullHintEl: HTMLDivElement;
+  private readonly buffStatusEl: HTMLDivElement;
   private readonly slimeListEl: HTMLDivElement;
   private sortMode: SortMode = 'rarity';
   private viewMode: ViewMode = 'expanded';
@@ -69,6 +70,9 @@ export class UIManager {
     this.fullHintEl = document.createElement('div');
     this.fullHintEl.className = 'full-hint hidden';
     this.fullHintEl.textContent = '\u573a\u5730\u5df2\u6ee1\uff0c\u65e0\u6cd5\u7ee7\u7eed\u5206\u88c2';
+
+    this.buffStatusEl = document.createElement('div');
+    this.buffStatusEl.className = 'buff-status hidden';
 
     const actions = document.createElement('div');
     actions.className = 'ui-actions';
@@ -144,7 +148,7 @@ export class UIManager {
     this.slimeListEl = document.createElement('div');
     this.slimeListEl.className = 'slime-list';
 
-    this.root.append(title, currency, slimeCount, countdown, capacity, this.fullHintEl, actions, sortActions, filterRow, batchRow, listTitle, this.slimeListEl);
+    this.root.append(title, currency, slimeCount, countdown, capacity, this.fullHintEl, this.buffStatusEl, actions, sortActions, filterRow, batchRow, listTitle, this.slimeListEl);
 
     this.buttons = { newBtn, saveBtn, loadBtn, battleBtn, archiveBtn, facilityBtn, shopBtn, questBtn, codexBtn, arenaBtn, sortByRarityBtn, sortByStatsBtn, viewToggleBtn, allFilterBtn, commonFilterBtn, uncommonFilterBtn, rareFilterBtn, epicFilterBtn, legendaryFilterBtn, batchCullBtn, batchSellBtn, batchClearBtn, batchRow };
   }
@@ -271,6 +275,16 @@ export class UIManager {
     this.countdownEl.textContent = `${(Math.max(timeUntilSplit, 0) / 1000).toFixed(1)}s`;
     this.capacityEl.textContent = `${state.slimes.length} / ${maxCapacity}`;
     this.fullHintEl.classList.toggle('hidden', state.slimes.length < maxCapacity);
+
+    // Buff status display
+    const hasBuff = state.activeBuffs?.mutationCatalystActive || state.activeBuffs?.rareEssenceActive;
+    this.buffStatusEl.classList.toggle('hidden', !hasBuff);
+    if (hasBuff) {
+      const parts: string[] = [];
+      if (state.activeBuffs.mutationCatalystActive) parts.push('🧬 变异催化×2');
+      if (state.activeBuffs.rareEssenceActive) parts.push('💎 稀有精华×3');
+      this.buffStatusEl.textContent = parts.join(' | ');
+    }
 
     // Progressive unlock
     this.currentUnlocks = (state.onboarding?.currentStep !== null) ? (state.onboarding?.unlocks ?? null) : null;

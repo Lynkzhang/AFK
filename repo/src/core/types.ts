@@ -223,4 +223,8 @@ export interface GameState {
   activeArenaId: ArenaId;
   accessories: Accessory[];
   onboarding: OnboardingState;
+  activeBuffs: {
+    mutationCatalystActive: boolean;
+    rareEssenceActive: boolean;
+  };
 }
