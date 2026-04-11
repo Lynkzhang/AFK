@@ -852,3 +852,51 @@ button:disabled {
 .slime-list::-webkit-scrollbar-track { background: rgba(200,180,150,0.1); border-radius: 3px; }
 .slime-list::-webkit-scrollbar-thumb { background: rgba(200,160,32,0.5); border-radius: 3px; }
 .slime-list::-webkit-scrollbar-thumb:hover { background: rgba(200,160,32,0.8); }
+
+
+/* === M36: Buff toast notification === */
+.buff-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: linear-gradient(180deg, #3a2a00 0%, #2a1a00 100%);
+  color: #ffd700;
+  border: 2px solid #c8a020;
+  border-radius: 2px;
+  padding: 8px 20px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  box-shadow: 2px 2px 0 #000, inset 1px 1px 0 #5a4a10;
+}
+.buff-toast-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.buff-toast-fade {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-10px);
+}
+
+/* === M36: Buff status indicator in UI panel === */
+.buff-status {
+  background: #2a1a00;
+  color: #ffd700;
+  border: 1px solid #c8a020;
+  border-radius: 2px;
+  padding: 4px 8px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  font-weight: bold;
+  margin-top: 4px;
+  text-align: center;
+}
+.buff-status.hidden {
+  display: none;
+}

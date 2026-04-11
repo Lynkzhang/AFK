@@ -3,6 +3,11 @@ import type { Stats, Trait, Skill, Slime, MutationModifiers, Accessory } from '.
 import { ALL_TRAITS } from '../data/traits';
 import { ALL_SKILLS } from '../data/skills';
 
+export interface BuffModifiers {
+  mutationCatalystActive?: boolean;
+  rareEssenceActive?: boolean;
+}
+
 export class MutationEngine {
   mutateStats(parentStats: Stats, modifiers?: MutationModifiers): Stats {
     const mutateValue = (base: number, statKey: keyof Stats): number => {
@@ -20,11 +25,12 @@ export class MutationEngine {
     };
   }
 
-  mutateTraits(parentTraits: Trait[], modifiers?: MutationModifiers): Trait[] {
+  mutateTraits(parentTraits: Trait[], modifiers?: MutationModifiers, buffs?: BuffModifiers): Trait[] {
     const inherited = parentTraits.filter(() => Math.random() < 0.5);
     const result = [...inherited];
 
-    if (Math.random() < 0.2) {
+    const traitMutationChance = (buffs?.mutationCatalystActive) ? 0.4 : 0.2;
+    if (Math.random() < traitMutationChance) {
       const preferIds = modifiers?.preferTraitIds ?? [];
       let newTrait: Trait;
       if (preferIds.length > 0 && Math.random() < 0.5) {
@@ -33,10 +39,10 @@ export class MutationEngine {
         if (preferred.length > 0) {
           newTrait = preferred[Math.floor(Math.random() * preferred.length)];
         } else {
-          newTrait = this.pickWeightedTrait(modifiers);
+          newTrait = this.pickWeightedTrait(modifiers, buffs);
         }
       } else {
-        newTrait = this.pickWeightedTrait(modifiers);
+        newTrait = this.pickWeightedTrait(modifiers, buffs);
       }
       if (!result.some((trait) => trait.id === newTrait.id)) {
         result.push(newTrait);
@@ -46,11 +52,12 @@ export class MutationEngine {
     return result;
   }
 
-  mutateSkills(parentSkills: Skill[], modifiers?: MutationModifiers): Skill[] {
+  mutateSkills(parentSkills: Skill[], modifiers?: MutationModifiers, buffs?: BuffModifiers): Skill[] {
     const inherited = parentSkills.filter(() => Math.random() < 0.5);
     const result = [...inherited];
 
-    if (Math.random() < 0.15) {
+    const skillMutationChance = (buffs?.mutationCatalystActive) ? 0.30 : 0.15;
+    if (Math.random() < skillMutationChance) {
       const preferTypes = modifiers?.preferSkillTypes ?? [];
       let newSkill: Skill | undefined;
       if (preferTypes.length > 0 && Math.random() < 0.5) {
@@ -98,10 +105,10 @@ export class MutationEngine {
     }
   }
 
-  createOffspring(parent: Slime, modifiers?: MutationModifiers, parentAccessory?: Accessory): Slime & { _inheritedAccessoryTemplateId?: string } {
+  createOffspring(parent: Slime, modifiers?: MutationModifiers, parentAccessory?: Accessory, buffs?: BuffModifiers): Slime & { _inheritedAccessoryTemplateId?: string } {
     const stats = this.mutateStats(parent.stats, modifiers);
-    const traits = this.mutateTraits(parent.traits, modifiers);
-    const skills = this.mutateSkills(parent.skills, modifiers);
+    const traits = this.mutateTraits(parent.traits, modifiers, buffs);
+    const skills = this.mutateSkills(parent.skills, modifiers, buffs);
     const rarity = this.determineRarity(stats);
     const color = this.generateColor(rarity);
 
@@ -135,8 +142,9 @@ export class MutationEngine {
     };
   }
 
-  private pickWeightedTrait(modifiers?: MutationModifiers): Trait {
+  private pickWeightedTrait(modifiers?: MutationModifiers, buffs?: BuffModifiers): Trait {
     const rarityBonus = modifiers?.rarityWeightBonus ?? 0;
+    const essenceBonus = (buffs?.rareEssenceActive) ? 2 : 0; // ×3 means add 2 to multiplier
 
     const weights: Record<Rarity, number> = {
       [Rarity.Common]: 50,
@@ -149,8 +157,8 @@ export class MutationEngine {
     const weightedPool = ALL_TRAITS.map((trait) => {
       let weight = weights[trait.rarity];
       // Apply rarity weight bonus for Rare/Epic/Legendary
-      if (rarityBonus > 0 && (trait.rarity === Rarity.Rare || trait.rarity === Rarity.Epic || trait.rarity === Rarity.Legendary)) {
-        weight *= (1 + rarityBonus);
+      if ((rarityBonus > 0 || essenceBonus > 0) && (trait.rarity === Rarity.Rare || trait.rarity === Rarity.Epic || trait.rarity === Rarity.Legendary)) {
+        weight *= (1 + rarityBonus + essenceBonus);
       }
       return { trait, weight };
     });
