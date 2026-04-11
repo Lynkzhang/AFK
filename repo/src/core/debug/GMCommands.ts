@@ -13,6 +13,7 @@ import { CodexSystem } from '../systems/CodexSystem';
 import { ArenaSystem } from '../systems/ArenaSystem';
 import { AccessorySystem } from '../systems/AccessorySystem';
 import { MutationEngine } from '../systems/MutationEngine';
+import { soundManager } from '../audio/SoundManager';
 
 type GetState = () => GameState;
 type SetState = (s: GameState) => void;
@@ -64,6 +65,9 @@ interface GMApi {
   getOnboardingState(): OnboardingState;
   resetOnboarding(): void;
   goToOnboardingStep(stepId: string): boolean;
+  // Sound GM commands
+  getSoundManager(): { isMuted: boolean; masterVolume: number; bgmPlaying: boolean };
+  playTestSound(name: string): void;
 }
 
 declare global {
@@ -412,6 +416,21 @@ export function initGM(
     },
     goToOnboardingStep(stepId: string): boolean {
       return onboardingApi ? onboardingApi.goToStep(stepId) : false;
+    },
+    // Sound GM commands
+    getSoundManager() {
+      return {
+        isMuted: soundManager.isMuted,
+        masterVolume: soundManager.masterVolume,
+        bgmPlaying: soundManager.isBGMPlaying,
+      };
+    },
+    playTestSound(name: string) {
+      const method = `play${name}` as keyof typeof soundManager;
+      const fn = soundManager[method];
+      if (typeof fn === 'function') {
+        (fn as () => void).call(soundManager);
+      }
     },
   };
 

@@ -631,3 +631,59 @@ button:disabled {
     max-height: calc(100% - 20px);
   }
 }
+
+/* === M32: Audio Control UI === */
+.audio-control {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 100;
+  background: rgba(255, 248, 230, 0.95);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 2px solid rgba(80, 60, 40, 0.3);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.mute-btn, .bgm-btn {
+  font-size: 16px !important;
+  padding: 4px 8px !important;
+  min-width: 36px;
+}
+
+.volume-slider {
+  width: 80px;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(80, 60, 40, 0.2);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #6dbe6e;
+  border: 2px solid #4a8f4a;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .audio-control {
+    top: auto;
+    bottom: 10px;
+    right: 10px;
+    padding: 4px 8px;
+  }
+  .volume-slider {
+    width: 50px;
+  }
+}
