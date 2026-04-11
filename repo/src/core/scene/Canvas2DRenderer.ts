@@ -87,14 +87,14 @@ export class Canvas2DRenderer {
   }
 
   // ---------------------------------------------------------------------------
-  // Background — pixel art bands for sky, pixel grid for grass, decorations
+  // Background — pixel art bands for sky, pixel grid for ground, decorations
   // ---------------------------------------------------------------------------
 
   private drawBackground(): void {
     const { ctx } = this;
     const w = this.canvas.clientWidth;
     const h = this.canvas.clientHeight;
-    const grassTop = Math.floor(h * 0.68);
+    const groundTop = Math.floor(h * 0.68);
 
     // --- Sky: horizontal color-band stripes (each 4-6px tall) ---
     const skyColors = [
@@ -107,39 +107,39 @@ export class Canvas2DRenderer {
       '#9ae4fa',
       '#aaeeff',
     ];
-    const bandH = Math.max(4, Math.floor(grassTop / skyColors.length));
+    const bandH = Math.max(4, Math.floor(groundTop / skyColors.length));
     for (let i = 0; i < skyColors.length; i++) {
       const by = i * bandH;
-      const bh = (i === skyColors.length - 1) ? Math.max(0, grassTop - by) : bandH;
+      const bh = (i === skyColors.length - 1) ? Math.max(0, groundTop - by) : bandH;
       ctx.fillStyle = skyColors[i];
       ctx.fillRect(0, by, w, bh);
     }
 
     // --- Pixel clouds ---
-    this.drawPixelClouds(w, h, grassTop);
+    this.drawPixelClouds(w, h, groundTop);
 
-    // --- Grass: 4 green colors in pixel-block grid pattern ---
-    const grassColors = ['#2a5c14', '#35720a', '#1e4a0c', '#3a6818']; // deeper greens for contrast with slimes
+    // --- Ground: warm sand/stone colors in pixel-block grid pattern ---
+    const groundColors = ['#d4c8a0', '#c9bc96', '#e0d5b5', '#bfb48a']; // warm sand/stone ground
     const blockSize = 4; // pixel block size
-    for (let gy = grassTop; gy < h; gy += blockSize) {
+    for (let gy = groundTop; gy < h; gy += blockSize) {
       for (let gx = 0; gx < w; gx += blockSize) {
         // deterministic color per block based on position
-        const ci = ((gx / blockSize) * 3 + (gy / blockSize) * 7) % grassColors.length | 0;
-        ctx.fillStyle = grassColors[ci];
+        const ci = ((gx / blockSize) * 3 + (gy / blockSize) * 7) % groundColors.length | 0;
+        ctx.fillStyle = groundColors[ci];
         ctx.fillRect(gx, gy, blockSize, blockSize);
       }
     }
 
-    // --- Grass top edge: 2px darker strip for contrast ---
-    ctx.fillStyle = '#1e4a10';
-    ctx.fillRect(0, grassTop, w, 2);
+    // --- Ground top edge: 2px strip for contrast ---
+    ctx.fillStyle = '#b8a882';
+    ctx.fillRect(0, groundTop, w, 2);
 
     // --- Pixel decorations ---
-    this.drawPixelDecorations(w, h, grassTop);
+    this.drawPixelDecorations(w, h, groundTop);
   }
 
   /** Draw pixel-art block clouds */
-  private drawPixelClouds(w: number, _h: number, grassTop: number): void {
+  private drawPixelClouds(w: number, _h: number, groundTop: number): void {
     const t = this.elapsedTime / 1000;
 
     // Cloud template: 1=white, 2=light-gray shadow
@@ -161,13 +161,13 @@ export class Canvas2DRenderer {
     for (const cd of cloudDefs) {
       const cloudW = cloudTemplate[0].length * cd.scale;
       const cx = Math.floor(((cd.baseX * w + t * cd.speed) % (w + cloudW * 2)) - cloudW);
-      const cy = Math.floor(cd.y * grassTop);
+      const cy = Math.floor(cd.y * groundTop);
       this.drawPixelSprite(cloudTemplate, cx, cy, cd.scale, { 1: '#e8f4ff', 2: '#c8dff0' });
     }
   }
 
   /** Draw pixel art decorations: flowers, mushrooms, stones */
-  private drawPixelDecorations(w: number, h: number, grassTop: number): void {
+  private drawPixelDecorations(w: number, h: number, groundTop: number): void {
     // Pixel flower template (5x8)
     const flowerTemplate: number[][] = [
       [0, 0, 1, 0, 0],
@@ -202,10 +202,10 @@ export class Canvas2DRenderer {
     for (let i = 0; i < flowerPositions.length; i++) {
       const fx = Math.floor(flowerPositions[i] * w) - 4;
       const depthFrac = ((i * 79) % 100) / 100;
-      const fy = Math.floor(grassTop + depthFrac * (h - grassTop) * 0.6);
+      const fy = Math.floor(groundTop + depthFrac * (h - groundTop) * 0.6);
       const scale = 2;
       const fc = flowerColors[i % flowerColors.length];
-      this.drawPixelSprite(flowerTemplate, fx, fy, scale, { 1: fc, 2: '#4aad52' });
+      this.drawPixelSprite(flowerTemplate, fx, fy, scale, { 1: fc, 2: '#8b7d5a' });
     }
 
     // Mushrooms
@@ -213,7 +213,7 @@ export class Canvas2DRenderer {
     for (let i = 0; i < mushroomPositions.length; i++) {
       const mx = Math.floor(mushroomPositions[i] * w) - 7;
       const depthFrac = ((i * 113 + 30) % 100) / 100;
-      const my = Math.floor(grassTop + depthFrac * (h - grassTop) * 0.55);
+      const my = Math.floor(groundTop + depthFrac * (h - groundTop) * 0.55);
       const scale = 2 + (i % 2);
       this.drawPixelSprite(shroomTemplate, mx, my, scale, {
         1: '#e85d6f',
@@ -227,7 +227,7 @@ export class Canvas2DRenderer {
     for (let i = 0; i < stonePositions.length; i++) {
       const sx = Math.floor(stonePositions[i] * w) - 6;
       const depthFrac = ((i * 97 + 50) % 100) / 100;
-      const sy = Math.floor(grassTop + depthFrac * (h - grassTop) * 0.65);
+      const sy = Math.floor(groundTop + depthFrac * (h - groundTop) * 0.65);
       this.drawPixelSprite(stoneTemplate, sx, sy, 3, { 1: '#a8b4bc', 2: '#d0dde5' });
     }
   }
