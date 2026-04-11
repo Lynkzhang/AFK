@@ -3,6 +3,11 @@ import { MutationEngine } from './MutationEngine';
 import { ArenaSystem } from './ArenaSystem';
 import { AccessorySystem } from './AccessorySystem';
 
+export interface BreedingResult {
+  didSplit: boolean;
+  wasMutation: boolean;
+}
+
 export interface BreedingConfig {
   splitIntervalMs: number;
   maxCapacity: number;
@@ -17,11 +22,11 @@ export class BreedingSystem {
     this.config = { splitIntervalMs: 10000, maxCapacity: 12, ...config };
   }
 
-  update(state: GameState, deltaTime: number, dynamicConfig?: { splitIntervalMs?: number; maxCapacity?: number }): void {
+  update(state: GameState, deltaTime: number, dynamicConfig?: { splitIntervalMs?: number; maxCapacity?: number }): BreedingResult {
     const splitInterval = dynamicConfig?.splitIntervalMs ?? this.config.splitIntervalMs;
     const maxCapacity = dynamicConfig?.maxCapacity ?? this.config.maxCapacity;
 
-    if (state.slimes.length >= maxCapacity) return;
+    if (state.slimes.length >= maxCapacity) return { didSplit: false, wasMutation: false };
 
     this.accumulated += deltaTime * 1000;
     if (this.accumulated >= splitInterval) {
@@ -59,8 +64,12 @@ export class BreedingSystem {
         if (pendingAccId) {
           AccessorySystem.equip(state, pendingAccId, offspring.id);
         }
+
+        const wasMutation = offspring.rarity !== parent.rarity;
+        return { didSplit: true, wasMutation };
       }
     }
+    return { didSplit: false, wasMutation: false };
   }
 
   getTimeUntilNextSplit(): number {
