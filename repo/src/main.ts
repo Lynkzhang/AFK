@@ -259,7 +259,13 @@ const loop = new GameLoop({
     const isOnboarding = state.onboarding?.currentStep !== null && state.onboarding?.currentStep !== undefined;
     const isWaitingSplit = state.onboarding?.currentStep === 'step-wait-split';
     const effectiveDelta = (isOnboarding && !isWaitingSplit) ? 0 : deltaTime;
-    breedingSystem.update(state, effectiveDelta, dynamicConfig);
+    const breedResult = breedingSystem.update(state, effectiveDelta, dynamicConfig);
+    if (breedResult.didSplit) {
+      soundManager.playSplit();
+      if (breedResult.wasMutation) {
+        soundManager.playMutation();
+      }
+    }
     scene.update(state, elapsedTime);
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
     // Sync derived quest counters each frame
