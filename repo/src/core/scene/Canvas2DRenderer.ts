@@ -6,32 +6,116 @@ import type { GameState, Slime } from '../types';
 // Renders a pixel-art style scene with 8x8 pixel-block slimes.
 // ---------------------------------------------------------------------------
 
-/** 10x10 slime template — 0=transparent, 1=body, 2=outline, 3=eye, 4=highlight */
-const SLIME_IDLE: number[][] = [
-  [0, 0, 2, 2, 2, 2, 2, 0, 0, 0],
-  [0, 2, 1, 1, 1, 1, 1, 2, 0, 0],
-  [2, 1, 4, 1, 1, 1, 1, 1, 2, 0],
-  [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
-  [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
-  [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
-  [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
-  [0, 2, 1, 1, 1, 1, 1, 2, 0, 0],
-  [0, 2, 2, 1, 1, 1, 2, 2, 0, 0],
-  [0, 0, 2, 2, 2, 2, 2, 0, 0, 0],
+/** 10x10 slime IDLE frames — 4-frame breathing cycle */
+const IDLE_FRAMES: number[][][] = [
+  // IDLE_0 — standard posture
+  [
+    [0, 0, 2, 2, 2, 2, 2, 0, 0, 0],
+    [0, 2, 1, 1, 1, 1, 1, 2, 0, 0],
+    [2, 1, 4, 1, 1, 1, 1, 1, 2, 0],
+    [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
+    [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
+    [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+    [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+    [0, 2, 1, 1, 1, 1, 1, 2, 0, 0],
+    [0, 2, 2, 1, 1, 1, 2, 2, 0, 0],
+    [0, 0, 2, 2, 2, 2, 2, 0, 0, 0],
+  ],
+  // IDLE_1 — slight inhale, bottom row pulled in
+  [
+    [0, 0, 2, 2, 2, 2, 2, 0, 0, 0],
+    [0, 2, 1, 1, 1, 1, 1, 2, 0, 0],
+    [2, 1, 4, 1, 1, 1, 1, 1, 2, 0],
+    [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
+    [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+    [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+    [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+    [0, 2, 1, 1, 1, 1, 1, 2, 0, 0],
+    [0, 0, 2, 2, 2, 2, 2, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  ],
+  // IDLE_2 — inhale peak, top slightly wider
+  [
+    [0, 0, 0, 2, 2, 2, 2, 0, 0, 0],
+    [0, 2, 2, 1, 1, 1, 1, 2, 2, 0],
+    [2, 1, 4, 1, 1, 1, 1, 1, 2, 0],
+    [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
+    [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
+    [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+    [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+    [0, 2, 1, 1, 1, 1, 1, 2, 0, 0],
+    [0, 0, 2, 2, 2, 2, 2, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  ],
+  // IDLE_3 — exhale, top slightly flat/wide
+  [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 2, 2, 2, 2, 2, 2, 2, 0, 0],
+    [2, 1, 4, 1, 1, 1, 1, 1, 2, 0],
+    [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
+    [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
+    [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+    [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+    [0, 2, 1, 1, 1, 1, 1, 2, 0, 0],
+    [0, 2, 2, 1, 1, 1, 2, 2, 0, 0],
+    [0, 0, 2, 2, 2, 2, 2, 0, 0, 0],
+  ],
 ];
 
-/** 10x10 slime bounce frame — slightly squished vertically */
-const SLIME_BOUNCE: number[][] = [
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 2, 2, 2, 2, 2, 2, 2, 0, 0],
-  [2, 1, 4, 1, 1, 1, 1, 1, 2, 0],
-  [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
-  [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
-  [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
-  [0, 2, 1, 1, 1, 1, 1, 2, 0, 0],
-  [0, 2, 2, 2, 2, 2, 2, 2, 0, 0],
-  [0, 2, 2, 2, 2, 2, 2, 2, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+/** 10x10 slime BOUNCE frames — 4-frame bounce cycle */
+const BOUNCE_FRAMES: number[][][] = [
+  // BOUNCE_0 — launch, bottom flat/wide
+  [
+    [0, 0, 2, 2, 2, 2, 2, 0, 0, 0],
+    [0, 2, 1, 1, 1, 1, 1, 2, 0, 0],
+    [2, 1, 4, 1, 1, 1, 1, 1, 2, 0],
+    [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
+    [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
+    [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+    [0, 2, 1, 1, 1, 1, 1, 2, 0, 0],
+    [0, 2, 2, 2, 2, 2, 2, 2, 0, 0],
+    [0, 2, 2, 2, 2, 2, 2, 2, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  ],
+  // BOUNCE_1 — airborne peak, vertically stretched
+  [
+    [0, 0, 0, 2, 2, 2, 2, 0, 0, 0],
+    [0, 0, 2, 1, 1, 1, 1, 2, 0, 0],
+    [0, 2, 4, 1, 1, 1, 1, 1, 2, 0],
+    [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
+    [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
+    [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+    [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+    [0, 2, 1, 1, 1, 1, 1, 2, 0, 0],
+    [0, 0, 2, 1, 1, 1, 2, 0, 0, 0],
+    [0, 0, 0, 2, 2, 2, 0, 0, 0, 0],
+  ],
+  // BOUNCE_2 — falling, vertically stretched, eyes merged
+  [
+    [0, 0, 0, 2, 2, 2, 2, 0, 0, 0],
+    [0, 0, 2, 1, 1, 1, 1, 2, 0, 0],
+    [0, 2, 4, 1, 1, 1, 1, 1, 2, 0],
+    [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
+    [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+    [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+    [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+    [0, 2, 1, 1, 1, 1, 1, 2, 0, 0],
+    [0, 0, 2, 1, 1, 1, 2, 0, 0, 0],
+    [0, 0, 0, 2, 2, 2, 0, 0, 0, 0],
+  ],
+  // BOUNCE_3 — landing squish
+  [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 2, 2, 2, 2, 2, 2, 2, 0, 0],
+    [2, 1, 4, 1, 1, 1, 1, 1, 2, 0],
+    [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
+    [2, 1, 1, 3, 1, 1, 3, 1, 2, 0],
+    [2, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+    [0, 2, 1, 1, 1, 1, 1, 2, 0, 0],
+    [0, 2, 2, 2, 2, 2, 2, 2, 0, 0],
+    [0, 2, 2, 2, 2, 2, 2, 2, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  ],
 ];
 
 const GRID = 10; // template size
@@ -138,6 +222,9 @@ export class Canvas2DRenderer {
 
     // --- Pixel decorations ---
     this.drawPixelDecorations(w, h, groundTop);
+
+    // --- Ground particles ---
+    this.drawGroundParticles(w, h, groundTop);
   }
 
   /** Draw pixel-art block clouds */
@@ -170,6 +257,8 @@ export class Canvas2DRenderer {
 
   /** Draw pixel art decorations: flowers, mushrooms, stones */
   private drawPixelDecorations(w: number, h: number, groundTop: number): void {
+    const t = this.elapsedTime / 1000;
+
     // Pixel flower template (5x8)
     const flowerTemplate: number[][] = [
       [0, 0, 1, 0, 0],
@@ -199,7 +288,7 @@ export class Canvas2DRenderer {
 
     const flowerColors = ['#ff6b7a', '#ff9ecb', '#ffe066', '#c49bff', '#ff8f5b', '#7be69a'];
 
-    // Scattered flowers
+    // Scattered flowers — with wind sway
     const flowerPositions = [0.08, 0.22, 0.45, 0.62, 0.78, 0.91];
     for (let i = 0; i < flowerPositions.length; i++) {
       const fx = Math.floor(flowerPositions[i] * w) - 4;
@@ -207,17 +296,23 @@ export class Canvas2DRenderer {
       const fy = Math.floor(groundTop + depthFrac * (h - groundTop) * 0.6);
       const scale = 2;
       const fc = flowerColors[i % flowerColors.length];
-      this.drawPixelSprite(flowerTemplate, fx, fy, scale, { 1: fc, 2: '#8b7d5a' });
+      // Wind sway offset
+      const windPhase = i * 0.8;
+      const windOffset = Math.floor(Math.sin(t * 1.2 + windPhase) * 1.5);
+      this.drawPixelSprite(flowerTemplate, fx + windOffset, fy, scale, { 1: fc, 2: '#8b7d5a' });
     }
 
-    // Mushrooms
+    // Mushrooms — with bounce
     const mushroomPositions = [0.15, 0.55, 0.82];
     for (let i = 0; i < mushroomPositions.length; i++) {
       const mx = Math.floor(mushroomPositions[i] * w) - 7;
       const depthFrac = ((i * 113 + 30) % 100) / 100;
       const my = Math.floor(groundTop + depthFrac * (h - groundTop) * 0.55);
       const scale = 2 + (i % 2);
-      this.drawPixelSprite(shroomTemplate, mx, my, scale, {
+      // Mushroom bounce offset
+      const shroomPhase = i * 1.3;
+      const shroomBounce = Math.floor(Math.abs(Math.sin(t * 0.8 + shroomPhase)) * 2);
+      this.drawPixelSprite(shroomTemplate, mx, my - shroomBounce, scale, {
         1: '#e85d6f',
         2: '#ffffff',
         3: '#f5eed5',
@@ -231,6 +326,27 @@ export class Canvas2DRenderer {
       const depthFrac = ((i * 97 + 50) % 100) / 100;
       const sy = Math.floor(groundTop + depthFrac * (h - groundTop) * 0.65);
       this.drawPixelSprite(stoneTemplate, sx, sy, 3, { 1: '#a8b4bc', 2: '#d0dde5' });
+    }
+  }
+
+  /** Draw animated ground particles */
+  private drawGroundParticles(w: number, h: number, groundTop: number): void {
+    const t = this.elapsedTime / 1000;
+    const PARTICLE_SEEDS = [0.12, 0.28, 0.45, 0.61, 0.77, 0.89, 0.33, 0.56];
+    for (let i = 0; i < PARTICLE_SEEDS.length; i++) {
+      const seed = PARTICLE_SEEDS[i];
+      const lifePhase = (t * 0.4 + seed * 7.3) % 3.0;
+      if (lifePhase > 1.0) continue;
+      const px = Math.floor(seed * w);
+      const py = Math.floor(groundTop + (1 - lifePhase) * (h - groundTop) * 0.4);
+      const alpha = lifePhase < 0.1 ? lifePhase * 10
+                 : lifePhase > 0.8 ? (1 - lifePhase) * 5
+                 : 1.0;
+      this.ctx.save();
+      this.ctx.globalAlpha = alpha * 0.6;
+      this.ctx.fillStyle = '#fffbe0';
+      this.ctx.fillRect(px, py, 2, 2);
+      this.ctx.restore();
     }
   }
 
@@ -260,27 +376,51 @@ export class Canvas2DRenderer {
   // ---------------------------------------------------------------------------
 
   private drawSlime(slime: Slime): void {
-    const { x, z } = this.mapTo2D(slime.position.x, slime.position.z);
+    const mapped = this.mapTo2D(slime.position.x, slime.position.z);
     const t = this.elapsedTime / 1000;
     const phase = this.hashPhase(slime.id);
+
+    // Drift offset — purely visual, does not modify position
+    const driftX = Math.sin(t * 0.3 + phase * 2.1) * 12;   // ±12px horizontal
+    const driftZ = Math.cos(t * 0.25 + phase * 1.7) * 6;   // ±6px vertical
+
+    const x = mapped.x + driftX;
+    const z = mapped.z + driftZ;
+
+    // 4-frame bounce logic
     const bounceVal = Math.sin(t * 3.2 + phase);
-    const isBouncing = bounceVal > 0.3;
+    const isInBounce = bounceVal > 0;
+
+    let template: number[][];
+    if (isInBounce) {
+      const bounceFrameIndex = Math.min(3, Math.floor(bounceVal * 4));
+      template = BOUNCE_FRAMES[bounceFrameIndex];
+    } else {
+      const breathCycle = (Math.sin(t * 1.8 + phase) + 1) / 2;
+      const idleFrameIndex = Math.floor(breathCycle * 4) % 4;
+      template = IDLE_FRAMES[idleFrameIndex];
+    }
+
+    // Bounce offset (vertical)
+    const bounceOffset = isInBounce ? Math.floor(-bounceVal * 8) : 0;
 
     // Rarity-based scale: pixel block size
     const rarityScale = this.getRaritySizeScale(slime.rarity);
     const pixelSize = Math.max(2, Math.floor(4 * rarityScale));
 
-    // Bounce offset (vertical)
-    const bounceOffset = isBouncing ? Math.floor(-bounceVal * 6) : 0;
-
     // --- Pre-split animation: last 3 seconds ---
     let preSplitScale = 1;
     let preSplitGlow = false;
+    let splitFlicker = false;
     if (this.splitCountdown <= 3000 && this.splitCountdown > 0) {
       const progress = 1 - this.splitCountdown / 3000; // 0→1
       // Pulsing scale: grows with a sine wobble
       preSplitScale = 1 + 0.15 * progress + 0.05 * Math.sin(t * 8);
       preSplitGlow = true;
+      // Last 1 second: fast flicker
+      if (this.splitCountdown <= 1000) {
+        splitFlicker = true;
+      }
     }
 
     const finalPixelSize = Math.max(2, Math.floor(pixelSize * preSplitScale));
@@ -319,7 +459,6 @@ export class Canvas2DRenderer {
       this.ctx.restore();
     }
 
-    const template = isBouncing ? SLIME_BOUNCE : SLIME_IDLE;
     const drawX = Math.floor(x - (GRID * finalPixelSize) / 2);
     const drawY = Math.floor(z - GRID * finalPixelSize * 0.8 + bounceOffset);
 
@@ -332,12 +471,23 @@ export class Canvas2DRenderer {
     const highlightColor = `rgb(${Math.min(255, sr + 60)},${Math.min(255, sg + 60)},${Math.min(255, sb + 60)})`;
     const eyeColor = '#1a1a2e';
 
+    // Apply flicker alpha for last 1s of pre-split
+    if (splitFlicker) {
+      this.ctx.save();
+      const flickerAlpha = 0.7 + 0.3 * ((Math.sin(t * 20) + 1) / 2);
+      this.ctx.globalAlpha = flickerAlpha;
+    }
+
     this.drawPixelSprite(template, drawX, drawY, finalPixelSize, {
       1: bodyColor,
       2: outlineColor,
       3: eyeColor,
       4: highlightColor,
     });
+
+    if (splitFlicker) {
+      this.ctx.restore();
+    }
 
     // Legendary pixel stars
     if (slime.rarity === Rarity.Legendary) {
