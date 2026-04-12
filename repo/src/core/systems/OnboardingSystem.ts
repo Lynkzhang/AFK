@@ -133,7 +133,7 @@ const STEPS: StepDef[] = [
     id: 'step-teach-quest',
     text: '📜 任务系统已开放！\n完成日常和成就任务可以获得额外奖励。\n\n点击 [任务] 按钮查看。',
     checkComplete: (_s, events) => events.has('quest-opened'),
-    onComplete: (s) => { s.onboarding.unlocks.quest = true; },
+    onShow: (s) => { s.onboarding.unlocks.quest = true; },
   },
   {
     id: 'step-complete',
