@@ -1582,7 +1582,7 @@ test.describe('Onboarding System', () => {
     const visibleCount = await page.locator('.ui-actions button').evaluateAll(
       btns => btns.filter(b => (b as HTMLElement).style.display !== 'none').length
     );
-    expect(visibleCount).toBe(10);
+    expect(visibleCount).toBe(11);
   });
 
   test('new game confirm dialog prevents accidental reset', async ({ page }) => {
@@ -1988,7 +1988,6 @@ test.describe('M22 UX Polish', () => {
     await waitForGameReady(page);
     await startFreshGame(page);
 
-    await page.evaluate(() => {
     // Sell via backpack
     await page.evaluate(() => window.__GM!.openBackpack());
     await page.waitForSelector('.backpack-card', { timeout: 3000 });
