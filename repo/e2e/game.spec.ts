@@ -100,10 +100,10 @@ test.describe('Page Load', () => {
 
     // Buttons – 新游戏, 保存, 加载, 战斗, 封存库, 设施, 商店, 任务, 图鉴, 场地
     const buttons = page.locator('.ui-actions button');
-    await expect(buttons).toHaveCount(10);
+    await expect(buttons).toHaveCount(11);
 
-    // Slime list section
-    await expect(page.locator('.slime-list')).toBeVisible();
+    // Backpack button exists in UI (replacing old slime list)
+    await expect(page.locator('.ui-actions button').nth(4)).toBeVisible();
   });
 });
 
@@ -342,13 +342,18 @@ test.describe('Split & Sell', () => {
     const initialCount = initialState.slimes.length as number;
     expect(initialCount).toBeGreaterThan(0);
 
-    // The game loop continuously re-renders the slime list, which detaches
-    // DOM nodes between frames. We use page.evaluate to click the sell button
-    // directly within a single JS tick, avoiding the detachment race.
+    // Open backpack, select first slime, sell it
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 5000 });
+    await page.locator('.backpack-card').first().click();
+    await page.waitForTimeout(100);
+    const toastPromise2 = page.waitForSelector('.toast-message', { state: 'attached', timeout: 5000 });
     await page.evaluate(() => {
-      const btn = document.querySelector('.slime-item .slime-actions button:nth-child(2)') as HTMLButtonElement | null;
+      const btn = document.querySelector('.backpack-detail-sell-btn') as HTMLButtonElement | null;
       btn?.click();
     });
+    await toastPromise2;
+    await page.evaluate(() => window.__GM!.closeBackpack());
 
     // Wait for state update + UI re-render
     await page.waitForTimeout(500);
@@ -984,9 +989,9 @@ test.describe('Quest System', () => {
     await clearSave(page);
     await startFreshGame(page);
 
-    // Verify quest button exists (10 buttons now)
+    // Verify quest button exists (11 buttons now with backpack)
     const buttons = page.locator('.ui-actions button');
-    await expect(buttons).toHaveCount(10);
+    await expect(buttons).toHaveCount(11);
 
     // Click quest button
     await page.locator('.ui-actions button', { hasText: '\u4efb\u52a1' }).click();
@@ -1305,9 +1310,9 @@ test.describe('Arena System', () => {
     await clearSave(page);
     await startFreshGame(page);
 
-    // Total button count should be 10
+    // Total button count should be 11 (includes backpack button)
     const buttons = page.locator('.ui-actions button');
-    await expect(buttons).toHaveCount(10);
+    await expect(buttons).toHaveCount(11);
 
     // Click arena button (🏔 场地)
     await page.locator('.ui-actions button', { hasText: '\u573a\u5730' }).click();
@@ -1706,18 +1711,20 @@ test.describe('Onboarding Full Flow', () => {
     expect(bubbleText).not.toContain('场地已满');
     expect(bubbleText).toContain('剔除');
 
-    // Verify cull button is visible in slime actions
-    const cullBtnVisible = await page.evaluate(() => {
-      const btn = document.querySelector('.slime-item .slime-actions button:nth-child(1)') as HTMLElement | null;
-      return btn ? btn.style.display !== 'none' : false;
-    });
+    // Verify backpack button is visible (cull is accessed via backpack)
+    const cullBtnVisible = await page.locator('.ui-actions button', { hasText: '\u80cc\u5305' }).isVisible();
     expect(cullBtnVisible).toBe(true);
 
-    // Perform cull via evaluate (to avoid DOM detachment race)
+    // Perform cull via backpack
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 3000 });
+    await page.locator('.backpack-card').first().click();
+    await page.waitForTimeout(100);
     await page.evaluate(() => {
-      const btn = document.querySelector('.slime-item .slime-actions button:nth-child(1)') as HTMLButtonElement | null;
+      const btn = document.querySelector('.backpack-detail-cull-btn') as HTMLButtonElement | null;
       btn?.click();
     });
+    await page.evaluate(() => window.__GM!.closeBackpack());
     await page.waitForTimeout(500);
 
     // Step 5: step-teach-sell — sell button should be visible
@@ -1731,11 +1738,16 @@ test.describe('Onboarding Full Flow', () => {
       await page.waitForTimeout(300);
     }
 
-    // Perform sell
+    // Perform sell via backpack
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 3000 });
+    await page.locator('.backpack-card').first().click();
+    await page.waitForTimeout(100);
     await page.evaluate(() => {
-      const btn = document.querySelector('.slime-item .slime-actions button:nth-child(2)') as HTMLButtonElement | null;
+      const btn = document.querySelector('.backpack-detail-sell-btn') as HTMLButtonElement | null;
       btn?.click();
     });
+    await page.evaluate(() => window.__GM!.closeBackpack());
     await page.waitForTimeout(500);
 
     // Advance through step-wait-recover-2 if needed (with 2 initial slimes, may need extra split)
@@ -1756,11 +1768,16 @@ test.describe('Onboarding Full Flow', () => {
       await page.waitForTimeout(200);
     }
 
-    // Perform archive
+    // Perform archive via backpack
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 3000 });
+    await page.locator('.backpack-card').first().click();
+    await page.waitForTimeout(100);
     await page.evaluate(() => {
-      const btn = document.querySelector('.slime-item .slime-actions button:nth-child(3)') as HTMLButtonElement | null;
+      const btn = document.querySelector('.backpack-detail-archive-btn') as HTMLButtonElement | null;
       btn?.click();
     });
+    await page.evaluate(() => window.__GM!.closeBackpack());
     await page.waitForTimeout(500);
 
     // Step 7: step-teach-battle — battle button should be visible
@@ -1794,10 +1811,16 @@ test.describe('M22 UX Polish', () => {
     });
     await page.waitForTimeout(300);
 
+    // Open backpack and check archive button is disabled
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 3000 });
+    await page.locator('.backpack-card').first().click();
+    await page.waitForTimeout(100);
     const archiveBtnDisabled = await page.evaluate(() => {
-      const btns = document.querySelectorAll('.slime-item .slime-actions button:nth-child(3)');
-      return Array.from(btns).every(b => (b as HTMLButtonElement).disabled);
+      const btn = document.querySelector('.backpack-detail-archive-btn') as HTMLButtonElement | null;
+      return btn ? btn.disabled : false;
     });
+    await page.evaluate(() => window.__GM!.closeBackpack());
     expect(archiveBtnDisabled).toBe(true);
   });
 
@@ -1806,10 +1829,16 @@ test.describe('M22 UX Polish', () => {
     await waitForGameReady(page);
     await startFreshGame(page);
 
+    // Open backpack and check sell button text
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 3000 });
+    await page.locator('.backpack-card').first().click();
+    await page.waitForTimeout(100);
     const sellText = await page.evaluate(() => {
-      const btn = document.querySelector('.slime-item .slime-actions button:nth-child(2)') as HTMLButtonElement | null;
+      const btn = document.querySelector('.backpack-detail-sell-btn') as HTMLButtonElement | null;
       return btn?.textContent ?? '';
     });
+    await page.evaluate(() => window.__GM!.closeBackpack());
     expect(sellText).toContain('💰');
     expect(sellText).toContain('出售');
   });
@@ -1819,21 +1848,25 @@ test.describe('M22 UX Polish', () => {
     await waitForGameReady(page);
     await startFreshGame(page);
 
+    // Sort buttons in BackpackUI
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-panel', { timeout: 3000 });
+
     const rarityActive = await page.evaluate(() => {
-      const btns = document.querySelectorAll('.sort-actions button');
-      return (btns[0] as HTMLElement)?.classList.contains('sort-btn-active') ?? false;
+      const btn = document.querySelector('.backpack-sort-btn[data-sort="rarity"]') as HTMLElement | null;
+      return btn?.classList.contains('backpack-sort-active') ?? false;
     });
     expect(rarityActive).toBe(true);
 
-    await page.locator('.sort-actions button', { hasText: '按属性总和' }).click();
+    await page.locator('.backpack-sort-btn[data-sort="stats"]').click();
     await page.waitForTimeout(100);
 
     const statsActive = await page.evaluate(() => {
-      const btns = document.querySelectorAll('.sort-actions button');
-      const first = (btns[0] as HTMLElement)?.classList.contains('sort-btn-active') ?? false;
-      const second = (btns[1] as HTMLElement)?.classList.contains('sort-btn-active') ?? false;
+      const first = document.querySelector('.backpack-sort-btn[data-sort="rarity"]')?.classList.contains('backpack-sort-active') ?? false;
+      const second = document.querySelector('.backpack-sort-btn[data-sort="stats"]')?.classList.contains('backpack-sort-active') ?? false;
       return { first, second };
     });
+    await page.evaluate(() => window.__GM!.closeBackpack());
     expect(statsActive.first).toBe(false);
     expect(statsActive.second).toBe(true);
   });
@@ -1956,10 +1989,19 @@ test.describe('M22 UX Polish', () => {
     await startFreshGame(page);
 
     await page.evaluate(() => {
-      const btn = document.querySelector('.slime-item .slime-actions button:nth-child(2)') as HTMLButtonElement | null;
+    // Sell via backpack
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 3000 });
+    await page.locator('.backpack-card').first().click();
+    await page.waitForTimeout(100);
+    const toastPromise4 = page.waitForSelector('.toast-message', { state: 'attached', timeout: 5000 });
+    await page.evaluate(() => {
+      const btn = document.querySelector('.backpack-detail-sell-btn') as HTMLButtonElement | null;
       btn?.click();
     });
-    await page.waitForTimeout(500);
+    await toastPromise4;
+    await page.evaluate(() => window.__GM!.closeBackpack());
+    await page.waitForTimeout(300);
 
     const toastText = await page.evaluate(() => {
       const el = document.querySelector('.toast-message');
@@ -2160,23 +2202,22 @@ test.describe('M30 Bug Fixes', () => {
     await page.waitForTimeout(200);
     await setupClassicState(page);
 
-    // Wait for slime list to render
-    await page.waitForSelector('.slime-item', { timeout: 5000 });
-
     // Get slime count before cull
     const countBefore = await page.evaluate(() => window.__GM!.getState().slimes.length);
     expect(countBefore).toBeGreaterThan(1);
 
-    // Click the cull button using evaluate (avoids DOM detach from game loop re-renders)
-    // Start watching for toast BEFORE clicking
+    // Open backpack and cull via detail
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 5000 });
+    await page.locator('.backpack-card').first().click();
+    await page.waitForTimeout(100);
+
     const toastPromise = page.waitForSelector('.toast-message', { state: 'attached', timeout: 5000 });
     await page.evaluate(() => {
-      const item = document.querySelector('.slime-item');
-      if (item) {
-        const btn = item.querySelector<HTMLButtonElement>('button');
-        if (btn) btn.click();
-      }
+      const btn = document.querySelector('.backpack-detail-cull-btn') as HTMLButtonElement | null;
+      btn?.click();
     });
+    await page.evaluate(() => window.__GM!.closeBackpack());
 
     // Wait for toast element to be attached to DOM
     const toastEl = await toastPromise;
@@ -2225,21 +2266,15 @@ test.describe('M31 UI Upgrades', () => {
     await page.evaluate(() => window.__GM!.skipOnboarding());
     await page.waitForTimeout(200);
     await setupClassicState(page);
-    await page.waitForSelector('.slime-item', { timeout: 5000 });
+    // View toggle moved to BackpackUI
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 5000 });
 
-    const viewToggle = page.locator('.view-toggle-btn');
-    await expect(viewToggle).toBeVisible();
+    // Backpack cards show stats inline
+    const statsEl = page.locator('.backpack-card-stats').first();
+    await expect(statsEl).toBeVisible();
 
-    const infoEl = page.locator('.slime-item .slime-info').first();
-    await expect(infoEl).toBeVisible();
-
-    await viewToggle.click();
-    await page.waitForTimeout(100);
-
-    await expect(infoEl).not.toBeVisible();
-
-    const btnText = await viewToggle.textContent();
-    expect(btnText).toContain('展开');
+    await page.evaluate(() => window.__GM!.closeBackpack());
   });
 
   test('#142 compact mode hides slime action buttons', async ({ page }) => {
@@ -2249,19 +2284,17 @@ test.describe('M31 UI Upgrades', () => {
     await page.evaluate(() => window.__GM!.skipOnboarding());
     await page.waitForTimeout(200);
     await setupClassicState(page);
-    await page.waitForSelector('.slime-item', { timeout: 5000 });
+    // Action buttons now in BackpackUI detail pane
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 5000 });
+    await page.locator('.backpack-card').first().click();
+    await page.waitForTimeout(100);
 
-    const viewToggle = page.locator('.view-toggle-btn');
-    const actionsEl = page.locator('.slime-item .slime-actions').first();
+    // Detail pane action buttons are visible
+    const actionsEl = page.locator('.backpack-detail-actions');
     await expect(actionsEl).toBeVisible();
 
-    await viewToggle.click();
-    await page.waitForTimeout(100);
-    await expect(actionsEl).not.toBeVisible();
-
-    await viewToggle.click();
-    await page.waitForTimeout(100);
-    await expect(actionsEl).toBeVisible();
+    await page.evaluate(() => window.__GM!.closeBackpack());
   });
 
   test('#143 checkboxes appear on slime cards', async ({ page }) => {
@@ -2271,11 +2304,15 @@ test.describe('M31 UI Upgrades', () => {
     await page.evaluate(() => window.__GM!.skipOnboarding());
     await page.waitForTimeout(200);
     await setupClassicState(page);
-    await page.waitForSelector('.slime-item', { timeout: 5000 });
+    // Checkboxes are in BackpackUI
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 5000 });
 
-    const checkboxes = page.locator('.slime-checkbox');
+    const checkboxes = page.locator('.backpack-card-checkbox');
     const count = await checkboxes.count();
     expect(count).toBeGreaterThan(0);
+
+    await page.evaluate(() => window.__GM!.closeBackpack());
   });
 
   test('#143 selecting slime shows batch action row', async ({ page }) => {
@@ -2285,20 +2322,24 @@ test.describe('M31 UI Upgrades', () => {
     await page.evaluate(() => window.__GM!.skipOnboarding());
     await page.waitForTimeout(200);
     await setupClassicState(page);
-    await page.waitForSelector('.slime-item', { timeout: 5000 });
+    // Batch bar is in BackpackUI
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 5000 });
 
-    const batchRow = page.locator('.batch-row');
-    await expect(batchRow).not.toBeVisible();
+    const batchBar = page.locator('.backpack-batch-bar');
+    await expect(batchBar).not.toBeVisible();
 
     await page.evaluate(() => {
-      const cb = document.querySelector('.slime-checkbox');
+      const cb = document.querySelector('.backpack-card-checkbox') as HTMLInputElement | null;
       if (cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
     });
     await page.waitForTimeout(100);
 
-    await expect(batchRow).toBeVisible();
-    await expect(page.locator('.batch-cull-btn')).toBeVisible();
-    await expect(page.locator('.batch-sell-btn')).toBeVisible();
+    await expect(batchBar).toBeVisible();
+    await expect(page.locator('.backpack-batch-cull-btn')).toBeVisible();
+    await expect(page.locator('.backpack-batch-sell-btn')).toBeVisible();
+
+    await page.evaluate(() => window.__GM!.closeBackpack());
   });
 
   test('#143 batch cull removes selected slimes', async ({ page }) => {
@@ -2308,22 +2349,25 @@ test.describe('M31 UI Upgrades', () => {
     await page.evaluate(() => window.__GM!.skipOnboarding());
     await page.waitForTimeout(200);
     await setupClassicState(page);
-    await page.waitForSelector('.slime-item', { timeout: 5000 });
+    // Batch cull via BackpackUI
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 5000 });
 
     const countBefore = await page.evaluate(() => window.__GM!.getState().slimes.length);
 
     await page.evaluate(() => {
-      const cb = document.querySelector('.slime-checkbox');
+      const cb = document.querySelector('.backpack-card-checkbox') as HTMLInputElement | null;
       if (cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
     });
     await page.waitForTimeout(100);
 
     const toastPromise = page.waitForSelector('.toast-message', { state: 'attached', timeout: 5000 });
-    await page.locator('.batch-cull-btn').click();
+    await page.locator('.backpack-batch-cull-btn').click();
     const toastEl = await toastPromise;
     const toastText = await toastEl.textContent();
     expect(toastText).toMatch(/批量剔除/);
 
+    await page.evaluate(() => window.__GM!.closeBackpack());
     const countAfter = await page.evaluate(() => window.__GM!.getState().slimes.length);
     expect(countAfter).toBeLessThan(countBefore);
   });
@@ -2335,23 +2379,26 @@ test.describe('M31 UI Upgrades', () => {
     await page.evaluate(() => window.__GM!.skipOnboarding());
     await page.waitForTimeout(200);
     await setupClassicState(page);
-    await page.waitForSelector('.slime-item', { timeout: 5000 });
+    // Batch sell via BackpackUI
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 5000 });
 
     const countBefore = await page.evaluate(() => window.__GM!.getState().slimes.length);
     const currencyBefore = await page.evaluate(() => window.__GM!.getState().currency);
 
     await page.evaluate(() => {
-      const cb = document.querySelector('.slime-checkbox');
+      const cb = document.querySelector('.backpack-card-checkbox') as HTMLInputElement | null;
       if (cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
     });
     await page.waitForTimeout(100);
 
     const toastPromise = page.waitForSelector('.toast-message', { state: 'attached', timeout: 5000 });
-    await page.locator('.batch-sell-btn').click();
+    await page.locator('.backpack-batch-sell-btn').click();
     const toastEl = await toastPromise;
     const toastText = await toastEl.textContent();
     expect(toastText).toMatch(/批量出售/);
 
+    await page.evaluate(() => window.__GM!.closeBackpack());
     const countAfter = await page.evaluate(() => window.__GM!.getState().slimes.length);
     const currencyAfter = await page.evaluate(() => window.__GM!.getState().currency);
     expect(countAfter).toBeLessThan(countBefore);
@@ -2365,12 +2412,18 @@ test.describe('M31 UI Upgrades', () => {
     await page.evaluate(() => window.__GM!.skipOnboarding());
     await page.waitForTimeout(200);
 
-    const filterRow = page.locator('.filter-row');
-    await expect(filterRow).toBeVisible();
+    // Filter toolbar is in BackpackUI
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-panel', { timeout: 3000 });
 
-    const allBtn = page.locator('.filter-btn[data-filter-value="all"]');
+    const filterToolbar = page.locator('.backpack-toolbar');
+    await expect(filterToolbar).toBeVisible();
+
+    const allBtn = page.locator('.backpack-filter-btn[data-filter="all"]');
     await expect(allBtn).toBeVisible();
-    await expect(allBtn).toHaveClass(/filter-btn-active/);
+    await expect(allBtn).toHaveClass(/backpack-filter-active/);
+
+    await page.evaluate(() => window.__GM!.closeBackpack());
   });
 
   test('#144 rarity filter hides non-matching slimes', async ({ page }) => {
@@ -2380,20 +2433,24 @@ test.describe('M31 UI Upgrades', () => {
     await page.evaluate(() => window.__GM!.skipOnboarding());
     await page.waitForTimeout(200);
     await setupClassicState(page);
-    await page.waitForSelector('.slime-item', { timeout: 5000 });
+    // Filter in BackpackUI
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 5000 });
 
-    const totalCount = await page.locator('.slime-item').count();
+    const totalCount = await page.locator('.backpack-card').count();
     expect(totalCount).toBeGreaterThan(0);
 
-    await page.locator('.filter-btn[data-filter-value="Legendary"]').click();
+    await page.locator('.backpack-filter-btn[data-filter="Legendary"]').click();
     await page.waitForTimeout(100);
-    const legendaryCount = await page.locator('.slime-item').count();
+    const legendaryCount = await page.locator('.backpack-card').count();
     expect(legendaryCount).toBe(0);
 
-    await page.locator('.filter-btn[data-filter-value="all"]').click();
+    await page.locator('.backpack-filter-btn[data-filter="all"]').click();
     await page.waitForTimeout(100);
-    const resetCount = await page.locator('.slime-item').count();
+    const resetCount = await page.locator('.backpack-card').count();
     expect(resetCount).toBe(totalCount);
+
+    await page.evaluate(() => window.__GM!.closeBackpack());
   });
 
   test('#145 pixel art buttons have pixel-btn class', async ({ page }) => {
@@ -2433,24 +2490,27 @@ test.describe('M31 UI Upgrades', () => {
     await page.evaluate(() => window.__GM!.skipOnboarding());
     await page.waitForTimeout(200);
     await setupClassicState(page);
-    await page.waitForSelector('.slime-item', { timeout: 5000 });
+    // Cancel batch via BackpackUI
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 5000 });
 
     await page.evaluate(() => {
-      const cb = document.querySelector('.slime-checkbox');
+      const cb = document.querySelector('.backpack-card-checkbox') as HTMLInputElement | null;
       if (cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
     });
     await page.waitForTimeout(100);
-    const batchRow = page.locator('.batch-row');
-    await expect(batchRow).toBeVisible();
+    const batchBar = page.locator('.backpack-batch-bar');
+    await expect(batchBar).toBeVisible();
 
-    await page.locator('.batch-clear-btn').click();
+    await page.locator('.backpack-batch-cancel-btn').click();
     await page.waitForTimeout(100);
-    await expect(batchRow).not.toBeVisible();
+    await expect(batchBar).not.toBeVisible();
 
     const checked = await page.evaluate(() => {
-      const cb = document.querySelector('.slime-checkbox');
+      const cb = document.querySelector('.backpack-card-checkbox') as HTMLInputElement | null;
       return cb ? cb.checked : false;
     });
+    await page.evaluate(() => window.__GM!.closeBackpack());
     expect(checked).toBe(false);
   });
 });
@@ -2631,4 +2691,287 @@ test.describe('M32 Sound System', () => {
     const afterSplit = await page.evaluate(() => window.__GM!.getActiveBuffs());
     expect(afterSplit.rareEssenceActive).toBe(false);
   });
+});
+
+// =========================================================
+// M38: BackpackUI E2E Tests (#194)
+// =========================================================
+test.describe('M38 BackpackUI', () => {
+
+  test('backpack button opens backpack panel', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+
+    // Backpack panel should be hidden initially
+    await expect(page.locator('.backpack-panel')).not.toBeVisible();
+
+    // Open via GM command
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-panel', { timeout: 3000 });
+    await expect(page.locator('.backpack-panel')).toBeVisible();
+  });
+
+  test('backpack close button hides panel', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-panel', { timeout: 3000 });
+
+    await page.locator('.backpack-close-btn').click();
+    await page.waitForTimeout(200);
+    await expect(page.locator('.backpack-panel')).not.toBeVisible();
+  });
+
+  test('backpack shows slime cards', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    await setupClassicState(page);
+
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 5000 });
+
+    const cardCount = await page.locator('.backpack-card').count();
+    expect(cardCount).toBeGreaterThan(0);
+
+    // Cards should show stats
+    await expect(page.locator('.backpack-card-stats').first()).toBeVisible();
+
+    await page.evaluate(() => window.__GM!.closeBackpack());
+  });
+
+  test('clicking backpack card shows detail pane', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    await setupClassicState(page);
+
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 5000 });
+
+    await page.locator('.backpack-card').first().click();
+    await page.waitForTimeout(200);
+
+    // Detail pane should show action buttons
+    await expect(page.locator('.backpack-detail-sell-btn')).toBeVisible();
+    await expect(page.locator('.backpack-detail-cull-btn')).toBeVisible();
+
+    await page.evaluate(() => window.__GM!.closeBackpack());
+  });
+
+  test('backpack tab switching works', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-panel', { timeout: 3000 });
+
+    // Active tab is default
+    await expect(page.locator('.backpack-tab-btn[data-tab="active"]')).toHaveClass(/active/);
+
+    // Switch to archived tab
+    await page.locator('.backpack-tab-btn[data-tab="archived"]').click();
+    await page.waitForTimeout(100);
+    await expect(page.locator('.backpack-tab-btn[data-tab="archived"]')).toHaveClass(/active/);
+
+    await page.evaluate(() => window.__GM!.closeBackpack());
+  });
+
+  test('backpack detail sell decreases slime count and increases currency', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    await setupClassicState(page);
+
+    const initialCount = await page.evaluate(() => window.__GM!.getState().slimes.length) as number;
+    const initialCurrency = await page.evaluate(() => window.__GM!.getState().currency) as number;
+
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 5000 });
+    await page.locator('.backpack-card').first().click();
+    await page.waitForTimeout(100);
+
+    await page.evaluate(() => {
+      const btn = document.querySelector('.backpack-detail-sell-btn') as HTMLButtonElement | null;
+      btn?.click();
+    });
+    await page.waitForTimeout(500);
+    await page.evaluate(() => window.__GM!.closeBackpack());
+
+    const afterCount = await page.evaluate(() => window.__GM!.getState().slimes.length) as number;
+    const afterCurrency = await page.evaluate(() => window.__GM!.getState().currency) as number;
+    expect(afterCount).toBe(initialCount - 1);
+    expect(afterCurrency).toBeGreaterThan(initialCurrency);
+  });
+
+  test('backpack sort by stats changes order', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    await setupClassicState(page);
+
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-panel', { timeout: 3000 });
+
+    // Default sort is rarity
+    const rarityActive = await page.evaluate(() => {
+      const btn = document.querySelector('.backpack-sort-btn[data-sort="rarity"]');
+      return btn?.classList.contains('backpack-sort-active') ?? false;
+    });
+    expect(rarityActive).toBe(true);
+
+    // Switch to stats sort
+    await page.locator('.backpack-sort-btn[data-sort="stats"]').click();
+    await page.waitForTimeout(100);
+
+    const statsActive = await page.evaluate(() => {
+      return document.querySelector('.backpack-sort-btn[data-sort="stats"]')?.classList.contains('backpack-sort-active') ?? false;
+    });
+    expect(statsActive).toBe(true);
+
+    await page.evaluate(() => window.__GM!.closeBackpack());
+  });
+
+  test('backpack rarity filter works', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    await setupClassicState(page);
+
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 5000 });
+
+    const totalCount = await page.locator('.backpack-card').count();
+    expect(totalCount).toBeGreaterThan(0);
+
+    // Filter by Legendary (none should match in classic state)
+    await page.locator('.backpack-filter-btn[data-filter="Legendary"]').click();
+    await page.waitForTimeout(100);
+    const legendaryCount = await page.locator('.backpack-card').count();
+    expect(legendaryCount).toBe(0);
+
+    // Reset filter
+    await page.locator('.backpack-filter-btn[data-filter="all"]').click();
+    await page.waitForTimeout(100);
+    const resetCount = await page.locator('.backpack-card').count();
+    expect(resetCount).toBe(totalCount);
+
+    await page.evaluate(() => window.__GM!.closeBackpack());
+  });
+
+  test('backpack batch operations work', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    await setupClassicState(page);
+
+    const initialCount = await page.evaluate(() => window.__GM!.getState().slimes.length) as number;
+
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 5000 });
+
+    // Check a checkbox to trigger batch bar
+    await page.evaluate(() => {
+      const cb = document.querySelector('.backpack-card-checkbox') as HTMLInputElement | null;
+      if (cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+    });
+    await page.waitForTimeout(100);
+
+    // Batch bar should appear
+    await expect(page.locator('.backpack-batch-bar')).toBeVisible();
+    await expect(page.locator('.backpack-batch-cull-btn')).toBeVisible();
+
+    // Click batch cull
+    const toastP = page.waitForSelector('.toast-message', { state: 'attached', timeout: 5000 });
+    await page.locator('.backpack-batch-cull-btn').click();
+    await toastP;
+    await page.evaluate(() => window.__GM!.closeBackpack());
+
+    const afterCount = await page.evaluate(() => window.__GM!.getState().slimes.length) as number;
+    expect(afterCount).toBeLessThan(initialCount);
+  });
+
+  test('backpack archive and unarchive flow', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+    await setupClassicState(page);
+
+    const initialActiveCount = await page.evaluate(() => window.__GM!.getState().slimes.length) as number;
+    expect(initialActiveCount).toBeGreaterThan(0);
+
+    // Open backpack and archive a slime
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-card', { timeout: 5000 });
+    await page.locator('.backpack-card').first().click();
+    await page.waitForTimeout(100);
+
+    await page.evaluate(() => {
+      const btn = document.querySelector('.backpack-detail-archive-btn') as HTMLButtonElement | null;
+      btn?.click();
+    });
+    await page.waitForTimeout(300);
+
+    // Switch to archived tab and verify
+    await page.locator('.backpack-tab-btn[data-tab="archived"]').click();
+    await page.waitForTimeout(100);
+
+    const archivedCount = await page.locator('.backpack-card').count();
+    expect(archivedCount).toBeGreaterThan(0);
+
+    // Unarchive
+    await page.locator('.backpack-card').first().click();
+    await page.waitForTimeout(100);
+    await page.evaluate(() => {
+      const btn = document.querySelector('.backpack-detail-unarchive-btn') as HTMLButtonElement | null;
+      btn?.click();
+    });
+    await page.waitForTimeout(300);
+
+    await page.evaluate(() => window.__GM!.closeBackpack());
+
+    const finalActiveCount = await page.evaluate(() => window.__GM!.getState().slimes.length) as number;
+    expect(finalActiveCount).toBe(initialActiveCount);
+  });
+
+  test('backpack Esc key closes panel', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await page.evaluate(() => window.__GM!.skipOnboarding());
+    await page.waitForTimeout(200);
+
+    await page.evaluate(() => window.__GM!.openBackpack());
+    await page.waitForSelector('.backpack-panel', { timeout: 3000 });
+    await expect(page.locator('.backpack-panel')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+    await expect(page.locator('.backpack-panel')).not.toBeVisible();
+  });
+
 });

@@ -71,8 +71,6 @@ interface GMApi {
   // Buff GM commands
   getActiveBuffs(): { mutationCatalystActive: boolean; rareEssenceActive: boolean };
   setActiveBuffs(buffs: Partial<{ mutationCatalystActive: boolean; rareEssenceActive: boolean }>): void;
-  openBackpack(): void;
-  closeBackpack(): void;
 }
 
 declare global {
@@ -445,8 +443,6 @@ export function initGM(
       s.activeBuffs = { ...s.activeBuffs, ...buffs };
       setState({ ...s, activeBuffs: { ...s.activeBuffs } });
     },
-    openBackpack() {},
-    closeBackpack() {},
   };
 
   window.__GM = api;

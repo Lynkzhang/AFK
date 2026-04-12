@@ -6,6 +6,7 @@ import { GameLoop } from './core/systems/GameLoop';
 import type { GameState } from './core/types';
 import { Rarity } from './core/types';
 import { UIManager } from './core/ui/UIManager';
+import { BackpackUI } from './core/ui/BackpackUI';
 import { StageSelectUI } from './core/ui/StageSelectUI';
 import { TeamSelectUI } from './core/ui/TeamSelectUI';
 import { BattleUI } from './core/ui/BattleUI';
@@ -231,6 +232,11 @@ archiveUI.hide();
 archiveUI.setPriceEvaluator(evaluatePrice);
 gameRoot.appendChild(archiveUI.root);
 
+const backpackUI = new BackpackUI();
+backpackUI.hide();
+backpackUI.setPriceEvaluator(evaluatePrice);
+gameRoot.appendChild(backpackUI.root);
+
 const facilityUI = new FacilityUI();
 facilityUI.hide();
 gameRoot.appendChild(facilityUI.root);
@@ -388,60 +394,12 @@ ui.bind({
     stageSelectUI.render(state);
     stageSelectUI.show();
   },
-  onCull: (id: string) => {
-    soundManager.playCull();
-    state.slimes = state.slimes.filter((slime) => slime.id !== id);
-    showToast('剔除成功 🗑️');
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
-    onboardingSystem.notifyEvent('cull');
-  },
-  onSell: (id: string) => {
-    soundManager.playSell();
-    const slime = state.slimes.find((item) => item.id === id);
-    if (!slime) return;
-    const price = evaluatePrice(slime);
-    state.currency += price;
-    state.slimes = state.slimes.filter((item) => item.id !== id);
-    showToast(`\u51fa\u552e\u6210\u529f\uff0c\u83b7\u5f97 \ud83d\udcb0${price} \u91d1\u5e01`);
-    // Track quest counters
-    QuestSystem.incrementCounter(state, 'daily_sells');
-    QuestSystem.incrementCounter(state, 'total_sells');
-    onboardingSystem.notifyEvent('sell');
-  },
-  onBatchCull: (ids: string[]) => {
-    soundManager.playCull();
-    state.slimes = state.slimes.filter((slime) => !ids.includes(slime.id));
-    showToast(`批量剔除 ${ids.length} 只史莱姆 🗑️`);
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
-  },
-  onBatchSell: (ids: string[]) => {
-    soundManager.playSell();
-    let total = 0;
-    for (const id of ids) {
-      const slime = state.slimes.find((s) => s.id === id);
-      if (slime) {
-        total += evaluatePrice(slime);
-        QuestSystem.incrementCounter(state, 'daily_sells');
-        QuestSystem.incrementCounter(state, 'total_sells');
-      }
-    }
-    state.currency += total;
-    state.slimes = state.slimes.filter((s) => !ids.includes(s.id));
-    showToast(`批量出售 ${ids.length} 只，获得 💰${total} 金币`);
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
-  },
-  onArchive: (id: string) => {
-    const result = archiveSlime(state, id);
-    if (result.success) {
-      soundManager.playArchive();
-      showToast('\u5c01\u5b58\u6210\u529f \ud83d\udce6');
-      // Track quest counters
-      QuestSystem.incrementCounter(state, 'daily_archives');
-      onboardingSystem.notifyEvent('archive');
-    } else {
-      showToast(`\u2716 ${result.reason ?? '\u5c01\u5b58\u5931\u8d25'}`);
-    }
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+  onOpenBackpack: () => {
+    soundManager.playUIClick();
+    soundManager.playPanelOpen();
+    ui.setActionsDisabled(true);
+    backpackUI.render(state);
+    backpackUI.show();
   },
   onOpenArchive: () => {
     soundManager.playUIClick();
@@ -697,6 +655,96 @@ archiveUI.bind({
   },
 });
 
+backpackUI.bind({
+  onSell: (id: string) => {
+    const slime = state.slimes.find((s) => s.id === id) || state.archivedSlimes.find((s) => s.id === id);
+    if (!slime) return;
+    soundManager.playSell();
+    const price = evaluatePrice(slime);
+    state.currency += price;
+    if (state.slimes.find((s) => s.id === id)) {
+      state.slimes = state.slimes.filter((s) => s.id !== id);
+      onboardingSystem.notifyEvent('sell');
+    } else {
+      removeArchivedSlime(state, id);
+    }
+    QuestSystem.incrementCounter(state, 'daily_sells');
+    QuestSystem.incrementCounter(state, 'total_sells');
+    showToast(`\u51fa\u552e\u6210\u529f\uff0c\u83b7\u5f97 \ud83d\udcb0${price} \u91d1\u5e01`);
+    backpackUI.render(state);
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+  },
+  onCull: (id: string) => {
+    soundManager.playCull();
+    state.slimes = state.slimes.filter((s) => s.id !== id);
+    showToast('\u5254\u9664\u6210\u529f \ud83d\uddd1\ufe0f');
+    onboardingSystem.notifyEvent('cull');
+    backpackUI.render(state);
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+  },
+  onArchive: (id: string) => {
+    const result = archiveSlime(state, id);
+    if (result.success) {
+      soundManager.playArchive();
+      showToast('\u5c01\u5b58\u6210\u529f \ud83d\udce6');
+      QuestSystem.incrementCounter(state, 'daily_archives');
+      onboardingSystem.notifyEvent('archive');
+    } else {
+      showToast(`\u2716 ${result.reason ?? '\u5c01\u5b58\u5931\u8d25'}`);
+    }
+    backpackUI.render(state);
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+  },
+  onUnarchive: (id: string) => {
+    const maxCap = FacilitySystem.getMaxCapacity(state);
+    if (state.slimes.length >= maxCap) {
+      showToast('\u2716 \u57f9\u517b\u573a\u5730\u5df2\u6ee1\uff0c\u8bf7\u5148\u5254\u9664\u6216\u51fa\u552e');
+      return;
+    }
+    unarchiveSlime(state, id);
+    backpackUI.render(state);
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+  },
+  onEquipAccessory: (slimeId: string, accessoryId: string) => {
+    AccessorySystem.equip(state, accessoryId, slimeId);
+    backpackUI.render(state);
+  },
+  onUnequipAccessory: (slimeId: string) => {
+    AccessorySystem.unequip(state, slimeId);
+    backpackUI.render(state);
+  },
+  onBatchSell: (ids: string[]) => {
+    soundManager.playSell();
+    let total = 0;
+    for (const id of ids) {
+      const slime = state.slimes.find((s) => s.id === id) || state.archivedSlimes.find((s) => s.id === id);
+      if (slime) {
+        total += evaluatePrice(slime);
+        QuestSystem.incrementCounter(state, 'daily_sells');
+        QuestSystem.incrementCounter(state, 'total_sells');
+      }
+    }
+    state.currency += total;
+    state.slimes = state.slimes.filter((s) => !ids.includes(s.id));
+    for (const id of ids) { removeArchivedSlime(state, id); }
+    showToast(`\u6279\u91cf\u51fa\u552e ${ids.length} \u53ea\uff0c\u83b7\u5f97 \ud83d\udcb0${total} \u91d1\u5e01`);
+    backpackUI.render(state);
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+  },
+  onBatchCull: (ids: string[]) => {
+    soundManager.playCull();
+    state.slimes = state.slimes.filter((s) => !ids.includes(s.id));
+    showToast(`\u6279\u91cf\u5254\u9664 ${ids.length} \u53ea\u53f2\u83b1\u59c6 \ud83d\uddd1\ufe0f`);
+    backpackUI.render(state);
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+  },
+  onBack: () => {
+    soundManager.playPanelClose();
+    backpackUI.hide();
+    ui.setActionsDisabled(false);
+  },
+});
+
 window.addEventListener('beforeunload', () => {
   stopAutoSave();
   saveManager.save(state);
@@ -708,5 +756,17 @@ initGM(() => state, (s) => { state = s; onboardingSystem.setState(s); }, {
   reset: () => onboardingSystem.reset(),
   goToStep: (stepId: string) => onboardingSystem.goToStep(stepId),
 });
+
+// Extend GM with backpack commands
+if (window.__GM) {
+  window.__GM.openBackpack = () => {
+    backpackUI.render(state);
+    backpackUI.show();
+  };
+  window.__GM.closeBackpack = () => {
+    backpackUI.hide();
+    ui.setActionsDisabled(false);
+  };
+}
 
 loop.start();
