@@ -114,6 +114,13 @@ const STEPS: StepDef[] = [
     id: 'step-teach-facility',
     text: '🏗 用金币升级设施来提升培养效率！\n\n推荐先升级 [场地扩展]，\n扩大容量意味着能同时培养更多史莱姆。\n\n点击 [设施] 按钮试试吧。',
     checkComplete: (_s, events) => events.has('facility-upgrade'),
+    onShow: (s) => {
+      // 保底金币：field-expansion lv1 升级费 = ceil(150 * 1 * 1.5) = 225
+      const minGoldNeeded = 225;
+      if (s.currency < minGoldNeeded) {
+        s.currency = minGoldNeeded;
+      }
+    },
   },
   {
     id: 'step-teach-shop',
