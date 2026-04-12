@@ -2974,3 +2974,122 @@ test.describe('M38 BackpackUI', () => {
   });
 
 });
+
+// =========================================================
+// Test M40: Battle Canvas Animation System
+// =========================================================
+
+/** Helper: navigate to battle panel via full UI flow */
+async function startBattleViaUI(page: Page) {
+  await page.goto('/');
+  await waitForGameReady(page);
+  await clearSave(page);
+  acceptDialogs(page);
+  await page.evaluate(() => {
+    const gm = window.__GM!;
+    gm.skipOnboarding();
+    const state = gm.getState();
+    for (const s of state.slimes) {
+      gm.setStats(s.id, { health: 999, attack: 999, defense: 999, speed: 999 });
+    }
+    for (const s of [...state.slimes]) {
+      gm.archiveSlime(s.id);
+    }
+  });
+  await page.waitForTimeout(200);
+  await page.locator('.ui-actions button', { hasText: '战斗' }).click();
+  await page.locator('.stage-card').first().click();
+  const slimeCards = page.locator('.team-slime-card');
+  const count = await slimeCards.count();
+  for (let i = 0; i < Math.min(count, 4); i++) {
+    await slimeCards.nth(i).click();
+  }
+  await page.locator('.confirm-btn', { hasText: '开始战斗' }).click();
+}
+
+test.describe('M40: Battle Canvas Animation', () => {
+  test('battle canvas element exists during combat', async ({ page }) => {
+    await startBattleViaUI(page);
+    const canvas = page.locator('.battle-canvas-container canvas');
+    await expect(canvas).toBeVisible({ timeout: 5000 });
+  });
+
+  test('battle canvas has correct dimensions', async ({ page }) => {
+    await startBattleViaUI(page);
+    const canvas = page.locator('.battle-canvas-container canvas');
+    await expect(canvas).toBeVisible({ timeout: 5000 });
+    const size = await canvas.evaluate((el: HTMLCanvasElement) => ({ w: el.width, h: el.height }));
+    expect(size.w).toBeGreaterThan(0);
+    expect(size.h).toBeGreaterThan(0);
+  });
+
+  test('battle skip button works with canvas animation', async ({ page }) => {
+    await startBattleViaUI(page);
+    await page.waitForTimeout(400);
+    await page.locator('.battle-controls button', { hasText: '跳过' }).click();
+    await expect(page.locator('.battle-result')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('battle canvas has rendered pixels after start', async ({ page }) => {
+    await startBattleViaUI(page);
+    await page.waitForTimeout(300);
+    const hasContent = await page.locator('.battle-canvas-container canvas').evaluate(
+      (el: HTMLCanvasElement) => {
+        const ctx = el.getContext('2d');
+        if (!ctx) return false;
+        const data = ctx.getImageData(0, 0, el.width, el.height).data;
+        for (let i = 0; i < data.length; i += 4) {
+          if ((data[i] ?? 0) > 0 || (data[i + 1] ?? 0) > 0 || (data[i + 2] ?? 0) > 0) return true;
+        }
+        return false;
+      },
+    );
+    expect(hasContent).toBe(true);
+  });
+
+  test('battle HP bars update after skip', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    acceptDialogs(page);
+    await page.evaluate(() => {
+      const gm = window.__GM!;
+      gm.skipOnboarding();
+      const state = gm.getState();
+      for (const s of [...state.slimes]) {
+        gm.archiveSlime(s.id);
+      }
+    });
+    await page.waitForTimeout(200);
+    await page.locator('.ui-actions button', { hasText: '战斗' }).click();
+    await page.locator('.stage-card').first().click();
+    const slimeCards2 = page.locator('.team-slime-card');
+    const count2 = await slimeCards2.count();
+    for (let i = 0; i < Math.min(count2, 4); i++) {
+      await slimeCards2.nth(i).click();
+    }
+    await page.locator('.confirm-btn', { hasText: '开始战斗' }).click();
+    await page.waitForTimeout(400);
+    await page.locator('.battle-controls button', { hasText: '跳过' }).click();
+    await expect(page.locator('.battle-result')).toBeVisible({ timeout: 5000 });
+    const hpWidths = await page.locator('.hp-bar-inner').evaluateAll((els: HTMLElement[]) =>
+      els.map((el) => parseFloat(el.style.width || '100')),
+    );
+    const anyChanged = hpWidths.some((w) => w < 100);
+    expect(anyChanged).toBe(true);
+  });
+
+  test('battle result shows victory or defeat text', async ({ page }) => {
+    await startBattleViaUI(page);
+    await page.waitForTimeout(300);
+    await page.locator('.battle-controls button', { hasText: '跳过' }).click();
+    await expect(page.locator('.battle-result')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.battle-result')).toContainText(/胜利|失败/);
+  });
+
+  test('battle result auto-completes after all animation plays', async ({ page }) => {
+    await startBattleViaUI(page);
+    await expect(page.locator('.battle-result')).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('.battle-result')).toContainText(/胜利|失败/);
+  });
+});

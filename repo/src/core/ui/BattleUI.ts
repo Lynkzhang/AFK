@@ -1,8 +1,10 @@
-import type { BattleResult, BattleLogEntry, BattleReward } from '../combat/CombatTypes';
+import type { BattleResult, BattleReward } from '../combat/CombatTypes';
 import type { Slime } from '../types';
 import { runBattle } from '../combat/CombatEngine';
 import { getStage } from '../combat/StageData';
 import { soundManager } from '../audio/SoundManager';
+import { BattleArena } from '../combat/BattleArena';
+import { BattleAnimPlayer } from '../combat/BattleAnimPlayer';
 
 export interface BattleUICallbacks {
   onFinish: (result: BattleResult) => void;
@@ -15,11 +17,13 @@ export class BattleUI {
   private playerUnitsEl: HTMLDivElement;
   private enemyUnitsEl: HTMLDivElement;
   private turnLabel: HTMLDivElement;
+  private canvasContainer: HTMLDivElement;
   private callbacks: BattleUICallbacks | null = null;
 
   private battleResult: BattleResult | null = null;
-  private currentLogIndex = 0;
-  private playTimer: ReturnType<typeof setInterval> | null = null;
+
+  private arena: BattleArena | null = null;
+  private animPlayer: BattleAnimPlayer | null = null;
 
   constructor() {
     this.root = document.createElement('div');
@@ -28,6 +32,10 @@ export class BattleUI {
     this.turnLabel = document.createElement('div');
     this.turnLabel.className = 'battle-turn-label';
     this.turnLabel.textContent = '回合 0';
+
+    // Canvas container
+    this.canvasContainer = document.createElement('div');
+    this.canvasContainer.className = 'battle-canvas-container';
 
     const unitsRow = document.createElement('div');
     unitsRow.className = 'battle-units-row';
@@ -49,13 +57,22 @@ export class BattleUI {
     skipBtn.onclick = () => this.skipToEnd();
     controls.appendChild(skipBtn);
 
+    // Keep log container hidden — canvas replaces visual log
     this.logContainer = document.createElement('div');
     this.logContainer.className = 'battle-log';
+    this.logContainer.style.display = 'none';
 
     this.resultContainer = document.createElement('div');
     this.resultContainer.className = 'battle-result hidden';
 
-    this.root.append(this.turnLabel, unitsRow, controls, this.logContainer, this.resultContainer);
+    this.root.append(
+      this.turnLabel,
+      this.canvasContainer,
+      unitsRow,
+      controls,
+      this.logContainer,
+      this.resultContainer,
+    );
   }
 
   bind(callbacks: BattleUICallbacks): void {
@@ -67,13 +84,56 @@ export class BattleUI {
     if (!stage) throw new Error(`Stage not found: ${stageId}`);
 
     this.battleResult = runBattle(playerSlimes, stage);
-    this.currentLogIndex = 0;
     this.logContainer.replaceChildren();
     this.resultContainer.classList.add('hidden');
     this.resultContainer.replaceChildren();
+    this.turnLabel.textContent = '回合 0';
 
+    // Destroy previous arena
+    if (this.arena) {
+      this.arena.destroy();
+      this.arena = null;
+    }
+    this.animPlayer = null;
+
+    // Build canvas arena
+    this.arena = new BattleArena();
+    this.canvasContainer.replaceChildren();
+    this.canvasContainer.appendChild(this.arena.getCanvas());
+
+    // Initialize sprites
+    const playerData = playerSlimes.map((s) => ({
+      name: s.name,
+      color: s.color,
+      maxHp: s.stats.health,
+    }));
+    const enemyData = stage.enemies.map((e) => ({
+      name: e.name,
+      color: '#cc4444',
+      maxHp: e.baseHp,
+    }));
+    this.arena.initUnits(playerData, enemyData);
+
+    // Render initial DOM HP bars
     this.renderInitialUnits(playerSlimes, stage.enemies.map((e) => ({ name: e.name, maxHp: e.baseHp })));
-    this.playLog();
+
+    // Setup anim player
+    this.animPlayer = new BattleAnimPlayer(this.arena);
+    this.animPlayer.loadLog(this.battleResult.log);
+    this.animPlayer.bind({
+      onTurnChange: (turn) => {
+        this.turnLabel.textContent = `回合 ${turn}`;
+        this.syncHpBars();
+        // Play attack sound roughly per turn change
+        soundManager.playAttack();
+      },
+      onComplete: () => {
+        this.showResult();
+      },
+    });
+
+    this.arena.start();
+    this.animPlayer.play();
   }
 
   private renderInitialUnits(players: Slime[], enemies: { name: string; maxHp: number }[]): void {
@@ -113,74 +173,41 @@ export class BattleUI {
     return bar;
   }
 
-  private playLog(): void {
-    if (this.playTimer) clearInterval(this.playTimer);
-    const log = this.battleResult?.log ?? [];
-    this.playTimer = setInterval(() => {
-      if (this.currentLogIndex >= log.length) {
-        if (this.playTimer) clearInterval(this.playTimer);
-        this.playTimer = null;
-        this.showResult();
-        return;
+  private syncHpBars(): void {
+    if (!this.arena) return;
+    for (const sprite of this.arena.getAllSprites()) {
+      const bar = this.root.querySelector<HTMLDivElement>(`.unit-bar[data-name="${CSS.escape(sprite.name)}"]`);
+      if (!bar) continue;
+      const hpInner = bar.querySelector<HTMLDivElement>('.hp-bar-inner');
+      const hpText = bar.querySelector<HTMLDivElement>('.hp-text');
+      if (hpInner) {
+        const pct = sprite.maxHp > 0 ? Math.max(0, sprite.currentHp / sprite.maxHp) * 100 : 0;
+        hpInner.style.width = `${pct}%`;
       }
-      const entry = log[this.currentLogIndex]!;
-      this.appendLogEntry(entry);
-      this.turnLabel.textContent = `回合 ${entry.turn}`;
-      this.currentLogIndex++;
-    }, 300);
+      if (hpText) {
+        hpText.textContent = `${Math.max(0, sprite.currentHp)}/${sprite.maxHp}`;
+      }
+    }
   }
 
   private skipToEnd(): void {
-    if (this.playTimer) clearInterval(this.playTimer);
-    this.playTimer = null;
-    const log = this.battleResult?.log ?? [];
-    while (this.currentLogIndex < log.length) {
-      this.appendLogEntry(log[this.currentLogIndex]!);
-      this.currentLogIndex++;
-    }
-    if (log.length > 0) {
-      this.turnLabel.textContent = `回合 ${log[log.length - 1]!.turn}`;
-    }
-    this.showResult();
-  }
-
-  private appendLogEntry(entry: BattleLogEntry): void {
-    // Play battle sounds
-    if (entry.detail === 'HEAL') {
-      soundManager.playHeal();
-    } else if (entry.detail === 'SHIELD' || entry.detail === 'DODGE') {
-      soundManager.playDefense();
-    } else if (entry.action !== 'DOT' && entry.action !== 'SKIP' && entry.action !== 'RAGE') {
-      soundManager.playAttack();
-    }
-
-    const line = document.createElement('div');
-    line.className = `log-entry log-${entry.detail.toLowerCase().replace(/[^a-z]/g, '')}`;
-    let text = `[回合${entry.turn}] ${entry.actorName}`;
-    if (entry.action === 'DOT') {
-      text += ` 受到持续伤害 ${entry.value}`;
-    } else if (entry.action === 'SKIP') {
-      text += ` 被控制，跳过行动 (${entry.detail})`;
-    } else if (entry.action === 'RAGE') {
-      text += ` 进入狂暴状态！${entry.detail}`;
-    } else if (entry.detail === 'DODGE') {
-      text += ` → ${entry.target} ${entry.action} MISS`;
-    } else if (entry.detail === 'HEAL') {
-      text += ` → ${entry.target} 治疗 +${entry.value}`;
-    } else if (entry.detail === 'SHIELD') {
-      text += ` 施放 ${entry.action}，护盾 ${entry.value}`;
+    if (this.animPlayer) {
+      this.animPlayer.skipAll();
     } else {
-      text += ` → ${entry.target} ${entry.action} ${entry.value}`;
-      if (entry.detail === 'CRIT') text += ' 暴击!';
+      this.showResult();
     }
-    line.textContent = text;
-    this.logContainer.appendChild(line);
-    this.logContainer.scrollTop = this.logContainer.scrollHeight;
+    // Final HP bar sync
+    this.syncHpBars();
   }
 
   private showResult(): void {
     if (!this.battleResult) return;
     const r = this.battleResult;
+
+    // Final sync
+    this.syncHpBars();
+    if (this.arena) this.arena.stop();
+
     this.resultContainer.classList.remove('hidden');
     this.resultContainer.replaceChildren();
 
@@ -219,10 +246,17 @@ export class BattleUI {
     return html;
   }
 
-  show(): void { this.root.style.display = 'flex'; }
+  show(): void {
+    this.root.style.display = 'flex';
+  }
+
   hide(): void {
     this.root.style.display = 'none';
-    if (this.playTimer) clearInterval(this.playTimer);
-    this.playTimer = null;
+    if (this.arena) {
+      this.arena.stop();
+      this.arena.destroy();
+      this.arena = null;
+    }
+    this.animPlayer = null;
   }
 }

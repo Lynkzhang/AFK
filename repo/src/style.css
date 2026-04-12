@@ -957,3 +957,17 @@ button:disabled {
   .backpack-content { grid-template-columns: 1fr; }
   .backpack-detail { display: none; }
 }
+
+/* ===== Battle Canvas Animation (M40) ===== */
+.battle-canvas-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  min-height: 200px;
+}
+.battle-canvas-container canvas {
+  border-radius: 12px;
+  max-width: 100%;
+  image-rendering: pixelated;
+}
