@@ -1,7 +1,18 @@
+/* ===== M43: Pixel Art Game UI Theme ===== */
+@keyframes panelSlideIn {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pixelFadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 :root {
-  font-family: 'Nunito', Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Courier New', Courier, monospace;
   color: #f0f3ff;
-  background: #141824;
+  background: linear-gradient(160deg, #0e1020 0%, #1a1030 40%, #0a1428 100%);
 }
 
 * {
@@ -28,7 +39,7 @@ body,
   height: 100%;
 }
 
-/* ===== UI Panel — warm cream card style ===== */
+/* ===== UI Panel — pixel art card style ===== */
 
 .ui-panel {
   position: absolute;
@@ -37,19 +48,67 @@ body,
   width: 320px;
   max-height: calc(100% - 32px);
   padding: 14px;
-  border-radius: 14px;
-  background: rgba(255, 250, 240, 0.88);
-  border: 1px solid rgba(200, 180, 150, 0.35);
+  border-radius: 0;
+  background: linear-gradient(180deg, #1e1828 0%, #18142a 60%, #1a1020 100%);
+  border: 2px solid #8a7060;
+  border-top: 3px solid #ffd700;
   backdrop-filter: blur(6px);
   overflow: hidden;
-  color: #333;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  color: #e8ddd0;
+  box-shadow: 4px 4px 0 #0a0810, inset 1px 1px 0 rgba(255,215,0,0.08);
+  animation: panelSlideIn 0.35s ease-out;
 }
 
 .ui-panel h1 {
   margin: 0 0 8px;
   font-size: 18px;
-  color: #4a3728;
+  color: #ffd700;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-shadow: 2px 2px 0 #3a2808;
+}
+
+/* Title & resource icons */
+.ui-title-icon {
+  width: 20px;
+  height: 20px;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+
+.ui-resource-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #c8b090;
+  padding: 2px 0;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.ui-resource-icon {
+  width: 14px;
+  height: 14px;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+
+/* Button group labels */
+.ui-btn-group-label {
+  width: 100%;
+  font-size: 9px;
+  font-weight: bold;
+  color: #ffd700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-top: 1px solid rgba(255,215,0,0.3);
+  padding-top: 4px;
+  margin-top: 2px;
+  font-family: 'Courier New', Courier, monospace;
 }
 
 .ui-actions,
@@ -85,8 +144,9 @@ body,
 .slime-actions button:hover,
 .pixel-btn:hover {
   background: #f0e4d4;
-  box-shadow: 3px 3px 0 #3a2818, inset 1px 1px 0 #fff8f0;
-  transform: translateY(-1px);
+  box-shadow: 3px 3px 0 #3a2818, inset 1px 1px 0 #fff8f0, 0 0 6px rgba(255,215,0,0.25);
+  transform: translateY(-2px);
+  filter: brightness(1.12);
 }
 
 .ui-actions button:active,
@@ -94,7 +154,8 @@ body,
 .slime-actions button:active,
 .pixel-btn:active {
   box-shadow: 1px 1px 0 #5a4030;
-  transform: translateY(1px);
+  transform: translateY(2px);
+  filter: brightness(0.9);
 }
 
 /* Pixel button variants */
@@ -153,8 +214,9 @@ body,
 .battle-controls button:hover,
 .shop-back-btn:hover {
   background: rgba(255,255,255,0.18);
-  box-shadow: 3px 3px 0 #1a1018, inset 1px 1px 0 rgba(255,255,255,0.25);
-  transform: translateY(-1px);
+  box-shadow: 3px 3px 0 #1a1018, inset 1px 1px 0 rgba(255,255,255,0.25), 0 0 8px rgba(255,215,0,0.2);
+  transform: translateY(-2px);
+  filter: brightness(1.1);
 }
 
 .full-hint {
@@ -183,11 +245,12 @@ body,
 }
 
 .slime-item {
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(200, 180, 150, 0.3);
-  border-radius: 4px;
+  background: rgba(30, 24, 40, 0.85);
+  border: 1px solid rgba(138, 112, 96, 0.4);
+  border-top: 2px solid rgba(255,215,0,0.2);
+  border-radius: 0;
   padding: 6px;
-  color: #444;
+  color: #e8ddd0;
 }
 
 /* #142: Selected slime highlight */
@@ -274,7 +337,19 @@ body,
   border-radius: 4px;
 }
 
-/* ===== Battle/Overlay UI Styles — keep dark for readability ===== */
+/* ===== Battle/Overlay UI Styles — unified pixel dark panels ===== */
+
+/* M43: Unified sub-panel pixel border style */
+.overlay-panel,
+.shop-panel,
+.facility-panel,
+.codex-panel,
+.arena-panel,
+.quest-panel {
+  border: 2px solid #8a7060;
+  border-top: 3px solid #ffd700;
+  box-shadow: 4px 4px 0 #0a0810;
+}
 
 .overlay-panel {
   position: absolute;
@@ -288,6 +363,7 @@ body,
   padding: 20px;
   overflow-y: auto;
   z-index: 100;
+  animation: pixelFadeIn 0.25s ease-out;
 }
 
 .panel-title {
@@ -323,14 +399,14 @@ body,
 .stage-card {
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 14px;
+  border-radius: 0;
   padding: 12px;
   cursor: pointer;
   text-align: center;
-  transition: border-color 0.2s, transform 0.15s;
+  transition: border-color 0.15s, transform 0.1s, box-shadow 0.1s;
 }
 
-.stage-card:hover { border-color: #ffd700; transform: scale(1.03); }
+.stage-card:hover { border-color: #ffd700; transform: translateY(-2px); box-shadow: 2px 2px 0 #0a0810; filter: brightness(1.1); }
 .stage-card.cleared { border-color: #56d364; }
 
 .stage-name { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
@@ -371,13 +447,13 @@ body,
 .team-slime-card {
   background: rgba(255,255,255,0.06);
   border: 2px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
+  border-radius: 0;
   padding: 10px;
   cursor: pointer;
-  transition: border-color 0.2s, transform 0.15s;
+  transition: border-color 0.15s, transform 0.1s;
 }
 
-.team-slime-card:hover { border-color: #4f8cff; transform: scale(1.02); }
+.team-slime-card:hover { border-color: #4f8cff; transform: translateY(-1px); filter: brightness(1.08); }
 .team-slime-card.selected { border-color: #4CAF50; background: rgba(76,175,80,0.15); }
 
 .team-slime-name { display: flex; align-items: center; gap: 8px; }
@@ -472,7 +548,8 @@ body,
 .archive-slime-card {
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
+  border-radius: 0;
+  border-top: 2px solid rgba(255,215,0,0.2);
   padding: 10px;
 }
 
@@ -500,23 +577,27 @@ body,
 
 .archive-action-btn.sell-btn { border-color: #ffd700; color: #ffd700; }
 
-/* Toast Messages */
+/* Toast Messages — pixel art style */
 .toast-message {
   position: fixed;
   bottom: 40px;
   left: 50%;
   transform: translateX(-50%) translateY(20px);
-  background: rgba(255, 250, 240, 0.95);
-  color: #4a3728;
-  padding: 10px 24px;
-  border-radius: 12px;
-  border: 1px solid rgba(200, 180, 150, 0.35);
-  font-size: 14px;
+  background: linear-gradient(180deg, #2a1e00 0%, #1a1400 100%);
+  color: #ffd700;
+  padding: 8px 20px;
+  border-radius: 0;
+  border: 2px solid #c8a020;
+  border-top: 3px solid #ffd700;
+  font-size: 13px;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
+  letter-spacing: 0.04em;
   z-index: 9999;
   opacity: 0;
   transition: opacity 0.3s, transform 0.3s;
   pointer-events: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 3px 3px 0 #0a0800, inset 1px 1px 0 rgba(255,215,0,0.15);
 }
 .toast-message.toast-show {
   opacity: 1;
@@ -760,6 +841,7 @@ button:disabled {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(10,14,26,0.95); display: flex; flex-direction: column;
   padding: 20px; overflow-y: auto; z-index: 100;
+  animation: pixelFadeIn 0.25s ease-out;
 }
 .shop-currency { font-size: 14px; color: #ffd700; margin-bottom: 12px; }
 .shop-item-list {
@@ -768,8 +850,11 @@ button:disabled {
 }
 .shop-card {
   background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 4px;
+  border-radius: 0; border-top: 2px solid rgba(255,215,0,0.2); padding: 10px;
+  display: flex; flex-direction: column; gap: 4px;
+  transition: border-color 0.15s, transform 0.1s;
 }
+.shop-card:hover { border-color: #ffd700; transform: translateY(-1px); filter: brightness(1.08); }
 .shop-card-name { font-size: 14px; font-weight: bold; color: #f0f3ff; }
 .shop-card-desc { font-size: 12px; color: #aab; }
 .shop-card-price { font-size: 13px; color: #ffd700; }
@@ -779,12 +864,15 @@ button:disabled {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(10,14,26,0.95); display: flex; flex-direction: column;
   padding: 20px; overflow-y: auto; z-index: 100;
+  animation: pixelFadeIn 0.25s ease-out;
 }
 .facility-cards { display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; }
 .facility-card {
   background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 12px; padding: 12px;
+  border-radius: 0; border-top: 2px solid rgba(255,215,0,0.2); padding: 12px;
+  transition: border-color 0.15s, transform 0.1s;
 }
+.facility-card:hover { border-color: #ffd700; transform: translateY(-1px); filter: brightness(1.05); }
 .facility-name { font-size: 15px; font-weight: bold; color: #f0f3ff; margin-bottom: 4px; }
 .facility-level { font-size: 13px; color: #ffd700; }
 .facility-cost { font-size: 12px; color: #aab; }
@@ -800,18 +888,19 @@ button:disabled {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(10,14,26,0.95); display: flex; flex-direction: column;
   padding: 20px; overflow-y: auto; z-index: 100;
+  animation: pixelFadeIn 0.25s ease-out;
 }
 .codex-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
 .codex-tab {
   cursor: pointer; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
-  color: #ccc; border-radius: 8px; padding: 6px 12px; font-size: 13px;
+  color: #ccc; border-radius: 0; padding: 6px 12px; font-size: 13px;
 }
 .codex-tab.active { background: rgba(255,215,0,0.2); border-color: #ffd700; color: #ffd700; }
 .codex-overall { font-size: 13px; color: #aab; margin-bottom: 8px; }
 .codex-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; flex: 1; }
 .codex-entry {
   background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px; padding: 8px; font-size: 13px; color: #ccd;
+  border-radius: 0; border-top: 2px solid rgba(255,215,0,0.15); padding: 8px; font-size: 13px; color: #ccd;
 }
 
 /* P0-1: Arena panel */
@@ -819,20 +908,23 @@ button:disabled {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(10,14,26,0.95); display: flex; flex-direction: column;
   padding: 20px; overflow-y: auto; z-index: 100;
+  animation: pixelFadeIn 0.25s ease-out;
 }
 .arena-list { display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; }
 .arena-card {
   background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 12px; padding: 12px;
+  border-radius: 0; border-top: 2px solid rgba(255,215,0,0.2); padding: 12px;
+  transition: border-color 0.15s, transform 0.1s;
 }
+.arena-card:hover { border-color: #ffd700; transform: translateY(-1px); filter: brightness(1.05); }
 .arena-name { font-size: 15px; font-weight: bold; color: #f0f3ff; }
 .arena-desc { font-size: 12px; color: #aab; margin-top: 2px; }
 .arena-effect { font-size: 12px; color: #c49bff; margin-top: 4px; }
 .arena-price { font-size: 13px; color: #ffd700; margin-top: 4px; }
 .arena-buy-btn, .arena-switch-btn {
   margin-top: 8px; cursor: pointer; background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2); color: #ccc; border-radius: 8px;
-  padding: 4px 12px; font-size: 13px; transition: background 0.2s;
+  border: 1px solid rgba(255,255,255,0.2); color: #ccc; border-radius: 0;
+  padding: 4px 12px; font-size: 13px; transition: background 0.15s, filter 0.1s;
 }
 .arena-switch-btn { border-color: #f0c040; color: #f0c040; }
 
@@ -845,6 +937,7 @@ button:disabled {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(10,14,26,0.95); display: flex; flex-direction: column;
   padding: 20px; overflow-y: auto; z-index: 100;
+  animation: pixelFadeIn 0.25s ease-out;
 }
 
 /* P2-3: Slime list custom scrollbar */
@@ -978,7 +1071,7 @@ button:disabled {
   flex-wrap: wrap;
   gap: 4px;
   padding: 6px 0 2px;
-  border-top: 1px solid #30363d;
+  border-top: 1px solid #ffd700;
   margin-top: 6px;
   max-height: 120px;
   overflow-y: auto;
@@ -987,14 +1080,20 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 4px;
-  background: #161b22;
-  border: 1px solid #30363d;
-  border-radius: 4px;
+  background: rgba(20, 16, 32, 0.9);
+  border: 1px solid #4a3830;
+  border-top: 2px solid rgba(255,215,0,0.2);
+  border-radius: 0;
   padding: 3px 6px;
   font-size: 11px;
   color: #c9d1d9;
   min-width: 80px;
   max-width: 120px;
+  transition: border-color 0.12s, transform 0.1s;
+}
+.ui-slime-card:hover {
+  border-color: #ffd700;
+  transform: translateY(-1px);
 }
 .ui-slime-swatch {
   width: 10px;

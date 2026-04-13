@@ -32,23 +32,57 @@ export class UIManager {
     this.root = document.createElement('div');
     this.root.className = 'ui-panel';
 
+    // Title with pixel slime icon
     const title = document.createElement('h1');
-    title.textContent = 'Slime Keeper';
+    const titleIcon = document.createElement('img');
+    titleIcon.src = '/assets/icon-slime.svg';
+    titleIcon.alt = 'slime';
+    titleIcon.className = 'ui-title-icon';
+    const titleText = document.createTextNode('Slime Keeper');
+    title.append(titleIcon, titleText);
 
+    // Resource bar: currency with coin icon
     const currency = document.createElement('div');
+    currency.className = 'ui-resource-row';
+    const coinImg = document.createElement('img');
+    coinImg.src = '/assets/icon-coin.svg';
+    coinImg.alt = 'gold';
+    coinImg.className = 'ui-resource-icon';
     currency.innerHTML = 'Currency: <span>0</span>';
+    currency.insertBefore(coinImg, currency.firstChild);
     this.currencyEl = currency.querySelector('span') as HTMLSpanElement;
 
+    // Slimes count with slime icon
     const slimeCount = document.createElement('div');
+    slimeCount.className = 'ui-resource-row';
+    const slimeImg = document.createElement('img');
+    slimeImg.src = '/assets/icon-slime.svg';
+    slimeImg.alt = 'slimes';
+    slimeImg.className = 'ui-resource-icon';
     slimeCount.innerHTML = 'Slimes: <span>0</span>';
+    slimeCount.insertBefore(slimeImg, slimeCount.firstChild);
     this.slimeCountEl = slimeCount.querySelector('span') as HTMLSpanElement;
 
+    // Countdown with timer icon
     const countdown = document.createElement('div');
+    countdown.className = 'ui-resource-row';
+    const timerImg = document.createElement('img');
+    timerImg.src = '/assets/icon-timer.svg';
+    timerImg.alt = 'timer';
+    timerImg.className = 'ui-resource-icon';
     countdown.innerHTML = '\u4e0b\u6b21\u5206\u88c2: <span>0.0s</span>';
+    countdown.insertBefore(timerImg, countdown.firstChild);
     this.countdownEl = countdown.querySelector('span') as HTMLSpanElement;
 
+    // Capacity with chest icon
     const capacity = document.createElement('div');
+    capacity.className = 'ui-resource-row';
+    const chestImg = document.createElement('img');
+    chestImg.src = '/assets/icon-chest.svg';
+    chestImg.alt = 'capacity';
+    chestImg.className = 'ui-resource-icon';
     capacity.innerHTML = '\u5bb9\u91cf: <span>0 / 12</span>';
+    capacity.insertBefore(chestImg, capacity.firstChild);
     this.capacityEl = capacity.querySelector('span') as HTMLSpanElement;
 
     this.fullHintEl = document.createElement('div');
@@ -58,12 +92,28 @@ export class UIManager {
     this.buffStatusEl = document.createElement('div');
     this.buffStatusEl.className = 'buff-status hidden';
 
+    // Actions container — all buttons in single .ui-actions div (preserves E2E count=11)
     const actions = document.createElement('div');
     actions.className = 'ui-actions';
+
+    // System group label
+    const sysLabel = document.createElement('div');
+    sysLabel.className = 'ui-btn-group-label';
+    sysLabel.textContent = '系统';
 
     const newBtn = this.makeButton('\u65b0\u6e38\u620f');
     const saveBtn = this.makeButton('\u4fdd\u5b58');
     const loadBtn = this.makeButton('\u52a0\u8f7d');
+
+    // Game group label
+    const gameLabel = document.createElement('div');
+    gameLabel.className = 'ui-btn-group-label';
+    const swordImg = document.createElement('img');
+    swordImg.src = '/assets/icon-sword.svg';
+    swordImg.alt = 'battle';
+    swordImg.className = 'ui-resource-icon';
+    gameLabel.append(swordImg, document.createTextNode('\u529f\u80fd'));
+
     const battleBtn = this.makeButton('\u2694 \u6218\u6597');
     const backpackBtn = this.makeButton('\ud83c\udf92 \u80cc\u5305');
     const archiveBtn = this.makeButton('\ud83d\udce6 \u5c01\u5b58\u5e93');
@@ -73,7 +123,7 @@ export class UIManager {
     const codexBtn = this.makeButton('\ud83d\udcd6 \u56fe\u9274');
     const arenaBtn = this.makeButton('\ud83c\udfd4 \u573a\u5730');
 
-    actions.append(newBtn, saveBtn, loadBtn, battleBtn, backpackBtn, archiveBtn, facilityBtn, shopBtn, questBtn, codexBtn, arenaBtn);
+    actions.append(sysLabel, newBtn, saveBtn, loadBtn, gameLabel, battleBtn, backpackBtn, archiveBtn, facilityBtn, shopBtn, questBtn, codexBtn, arenaBtn);
 
     // Bottom slime list
     this.slimeListEl = document.createElement('div');
@@ -189,7 +239,7 @@ export class UIManager {
       this.buffStatusEl.textContent = parts.join(' | ');
     }
 
-    // Update bottom slime list — show up to 8 most recent slimes
+    // Update bottom slime list — show all slimes (scrollable)
     this.slimeListEl.replaceChildren();
     if (state.slimes.length > 0) {
       const displayed = state.slimes;
