@@ -1,5 +1,6 @@
 import { Rarity } from '../types';
 import type { GameState, Slime } from '../types';
+import { calcEffectiveSplitTime } from '../systems/SplitFormula';
 
 // ---------------------------------------------------------------------------
 // Pixel art Canvas2DRenderer
@@ -143,6 +144,17 @@ export class Canvas2DRenderer {
   private elapsedTime = 0;
   private splitCountdown = Infinity;
   private animParams: AnimationParams = { ...DEFAULT_ANIM_PARAMS };
+  private facilityMultiplier = 1.0;
+  private fieldAccelActive = false;
+
+  // Walk state for random walk system
+  private walkStates = new Map<string, {
+    targetX: number;
+    targetZ: number;
+    waitTimer: number;
+    isMoving: boolean;
+  }>();
+  private lastElapsedTime = 0;
 
   constructor(container: HTMLElement) {
     this.canvas = document.createElement('canvas');
@@ -171,10 +183,59 @@ export class Canvas2DRenderer {
     return { ...this.animParams };
   }
 
-  update(state: GameState, elapsedTime: number, splitCountdown?: number): void {
+  update(state: GameState, elapsedTime: number, splitCountdown?: number, facilityMultiplier?: number, fieldAccelActive?: boolean): void {
     this.state = state;
     this.elapsedTime = elapsedTime;
     this.splitCountdown = splitCountdown ?? Infinity;
+    this.facilityMultiplier = facilityMultiplier ?? 1.0;
+    this.fieldAccelActive = fieldAccelActive ?? false;
+
+    // Random walk update
+    const dt = elapsedTime - this.lastElapsedTime;
+    this.lastElapsedTime = elapsedTime;
+
+    for (const slime of state.slimes) {
+      let ws = this.walkStates.get(slime.id);
+      if (!ws) {
+        ws = {
+          targetX: slime.position.x,
+          targetZ: slime.position.z,
+          waitTimer: 1 + Math.random() * 2,
+          isMoving: false,
+        };
+        this.walkStates.set(slime.id, ws);
+      }
+
+      const moveSpeed = 0.3 + slime.stats.speed * 0.02;
+
+      if (ws.isMoving) {
+        const dx = ws.targetX - slime.position.x;
+        const dz = ws.targetZ - slime.position.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist < 0.1) {
+          ws.isMoving = false;
+          ws.waitTimer = 1 + Math.random() * 2;
+        } else {
+          const step = moveSpeed * dt;
+          const ratio = Math.min(1, step / dist);
+          slime.position.x += dx * ratio;
+          slime.position.z += dz * ratio;
+        }
+      } else {
+        ws.waitTimer -= dt;
+        if (ws.waitTimer <= 0) {
+          ws.targetX = (Math.random() * 6) - 3;
+          ws.targetZ = (Math.random() * 6) - 3;
+          ws.isMoving = true;
+        }
+      }
+    }
+
+    // Clean up walk states for slimes that no longer exist
+    const slimeIds = new Set(state.slimes.map((s) => s.id));
+    for (const id of this.walkStates.keys()) {
+      if (!slimeIds.has(id)) this.walkStates.delete(id);
+    }
   }
 
   render(): void {
@@ -407,32 +468,27 @@ export class Canvas2DRenderer {
     const t = this.elapsedTime / 1000;
     const phase = this.hashPhase(slime.id);
 
-    // Drift offset — purely visual, does not modify position
-    // driftSpeed param scales the frequency (how fast the drift oscillates)
-    const driftX = Math.sin(t * 0.5 * this.animParams.driftSpeed + phase * 2.1) * 22;   // ±22px horizontal
-    const driftZ = Math.cos(t * 0.4 * this.animParams.driftSpeed + phase * 1.7) * 12;   // ±12px vertical
+    const x = mapped.x;
+    const z = mapped.z;
 
-    const x = mapped.x + driftX;
-    const z = mapped.z + driftZ;
+    // Use walkState to determine animation mode
+    const ws = this.walkStates.get(slime.id);
+    const isMoving = ws?.isMoving ?? false;
 
-    // 4-frame bounce logic
-    // bounceFreq param scales the bounce frequency
-    const bounceVal = Math.sin(t * 4.0 * this.animParams.bounceFreq + phase);
-    const isInBounce = bounceVal > 0;
-
+    // 4-frame bounce/idle logic based on movement
     let template: number[][];
-    if (isInBounce) {
+    let bounceOffset = 0;
+    if (isMoving) {
+      const bounceVal = Math.abs(Math.sin(t * 4.0 * this.animParams.bounceFreq + phase));
       const bounceFrameIndex = Math.min(3, Math.floor(bounceVal * 4));
       template = BOUNCE_FRAMES[bounceFrameIndex];
+      bounceOffset = Math.floor(-bounceVal * 16);
     } else {
       // breathScale param scales the breathing cycle speed
       const breathCycle = (Math.sin(t * 1.8 * this.animParams.breathScale + phase) + 1) / 2;
       const idleFrameIndex = Math.floor(breathCycle * 4) % 4;
       template = IDLE_FRAMES[idleFrameIndex];
     }
-
-    // Bounce offset (vertical)
-    const bounceOffset = isInBounce ? Math.floor(-bounceVal * 16) : 0;
 
     // Rarity-based scale: pixel block size
     const rarityScale = this.getRaritySizeScale(slime.rarity);
@@ -522,6 +578,35 @@ export class Canvas2DRenderer {
     // Legendary pixel stars
     if (slime.rarity === Rarity.Legendary) {
       this.drawPixelStars(drawX, drawY, finalPixelSize);
+    }
+
+    // Split progress bar — drawn below the slime sprite
+    {
+      const effectiveSplitTime = calcEffectiveSplitTime(slime, this.facilityMultiplier, this.fieldAccelActive);
+      const progress = Math.min(1, (slime.splitAccumulatedMs ?? 0) / effectiveSplitTime);
+      const barW = GRID * finalPixelSize;
+      const barH = 3;
+      const barX = Math.floor(x - barW / 2);
+      const barY = drawY + GRID * finalPixelSize + 2;
+
+      // Background
+      this.ctx.save();
+      this.ctx.globalAlpha = 1;
+      this.ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      this.ctx.fillRect(barX, barY, barW, barH);
+
+      // Fill color based on progress
+      let fillColor: string;
+      if (progress < 0.33) {
+        fillColor = '#4ade80';
+      } else if (progress < 0.66) {
+        fillColor = '#facc15';
+      } else {
+        fillColor = '#f97316';
+      }
+      this.ctx.fillStyle = fillColor;
+      this.ctx.fillRect(barX, barY, Math.floor(barW * progress), barH);
+      this.ctx.restore();
     }
   }
 

@@ -145,6 +145,7 @@ function createDefaultState(): GameState {
     activeBuffs: {
       mutationCatalystActive: false,
       rareEssenceActive: false,
+      splitFieldAcceleratorUntil: 0,
     },
   };
   QuestSystem.initQuests(s);
@@ -200,6 +201,15 @@ function migrateState(state: GameState): void {
   // Buff migration
   if (!s['activeBuffs'] || typeof s['activeBuffs'] !== 'object') {
     s['activeBuffs'] = { mutationCatalystActive: false, rareEssenceActive: false };
+  }
+  // Split system migration
+  if (state.activeBuffs && typeof (state.activeBuffs as Record<string, unknown>).splitFieldAcceleratorUntil === 'undefined') {
+    state.activeBuffs.splitFieldAcceleratorUntil = 0;
+  }
+  for (const slime of state.slimes) {
+    if (typeof slime.splitAccumulatedMs !== 'number') {
+      slime.splitAccumulatedMs = 0;
+    }
   }
 }
 
@@ -335,7 +345,7 @@ const loop = new GameLoop({
         showBuffToast('💎 稀有精华加持！稀有特性概率×3！');
       }
     }
-    scene.update(state, elapsedTime, breedingSystem.getTimeUntilNextSplit());
+    scene.update(state, elapsedTime, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getSplitInterval(state) / 10000, !!(state.activeBuffs.splitFieldAcceleratorUntil && state.activeBuffs.splitFieldAcceleratorUntil > Date.now()));
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
     // Sync derived quest counters each frame
     QuestSystem.syncDerivedCounters(state);
@@ -478,12 +488,15 @@ shopUI.bind({
     } else {
       ShopSystem.buyItem(state, shopItemId);
     }
+    if (shopItemId === 'shop-split-accelerator-field') {
+      showBuffToast('⚡ 培养场强化剂已激活！全场分裂速度×2，持续60秒！');
+    }
     shopUI.render(state);
     ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
   },
   onUseItem: (itemType: string, slimeId?: string) => {
     const targetId = slimeId ?? state.slimes[0]?.id;
-    ItemSystem.useItem(state, itemType as 'mutation-catalyst' | 'stat-booster' | 'rare-essence', targetId);
+    ItemSystem.useItem(state, itemType as 'mutation-catalyst' | 'stat-booster' | 'rare-essence' | 'split-accelerator', targetId);
     shopUI.render(state);
 
     // Show buff activation toast
@@ -491,6 +504,8 @@ shopUI.bind({
       showBuffToast('🧬 变异催化剂已激活！下次分裂变异概率×2');
     } else if (itemType === 'rare-essence' && state.activeBuffs.rareEssenceActive) {
       showBuffToast('💎 稀有精华已激活！下次分裂稀有特性概率×3');
+    } else if (itemType === 'split-accelerator') {
+      showBuffToast('⚡ 速分催化剂已使用！目标史莱姆即将分裂！');
     }
   },
   onBack: () => {

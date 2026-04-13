@@ -49,6 +49,7 @@ export interface Slime {
   color: string;
   equippedAccessoryId?: string;
   position: Position;
+  splitAccumulatedMs?: number;
 }
 
 export interface BreedingGround {
@@ -74,7 +75,7 @@ export interface StageProgress {
   stars: 0 | 1 | 2 | 3;
 }
 
-export type ItemType = 'mutation-catalyst' | 'stat-booster' | 'rare-essence';
+export type ItemType = 'mutation-catalyst' | 'stat-booster' | 'rare-essence' | 'split-accelerator';
 
 export interface Item {
   id: string;
@@ -226,5 +227,6 @@ export interface GameState {
   activeBuffs: {
     mutationCatalystActive: boolean;
     rareEssenceActive: boolean;
+    splitFieldAcceleratorUntil?: number;
   };
 }

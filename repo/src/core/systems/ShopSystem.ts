@@ -28,6 +28,22 @@ export const SHOP_ITEMS: ShopItem[] = [
     currencyType: 'crystal',
     itemType: 'rare-essence',
   },
+  {
+    id: 'shop-split-accelerator-single',
+    name: '速分催化剂',
+    description: '立即完成指定史莱姆的分裂倒计时',
+    price: 150,
+    currencyType: 'gold',
+    itemType: 'split-accelerator',
+  },
+  {
+    id: 'shop-split-accelerator-field',
+    name: '培养场强化剂',
+    description: '全场分裂速度×2，持续60秒',
+    price: 80,
+    currencyType: 'crystal',
+    itemType: 'split-accelerator',
+  },
 ];
 
 export class ShopSystem {
@@ -53,6 +69,14 @@ export class ShopSystem {
   }
 
   static buyItem(state: GameState, shopItemId: string): boolean {
+    // 培养场强化剂 — 直接激活buff，不加到道具栏
+    if (shopItemId === 'shop-split-accelerator-field') {
+      if (state.crystal < 80) return false;
+      state.crystal -= 80;
+      state.activeBuffs.splitFieldAcceleratorUntil = Date.now() + 60000;
+      return true;
+    }
+
     const shopItem = SHOP_ITEMS.find((si) => si.id === shopItemId);
     if (!shopItem) return false;
     if (!ShopSystem.canAfford(state, shopItem)) return false;

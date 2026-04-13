@@ -1,0 +1,32 @@
+
+/* ===== M47: UI interaction improvements (#233) ===== */
+
+/* Sub-panel open animation for all panel types */
+.shop-panel,
+.facility-panel,
+.codex-panel,
+.arena-panel,
+.quest-panel,
+.archive-panel,
+.backpack-panel,
+.battle-panel {
+  animation: panelOpen 0.22s ease-out both;
+}
+
+/* Unified card hover: brightness + lift */
+.stage-card:hover,
+.team-slime-card:hover,
+.ui-slime-card:hover,
+.archive-slime-card:hover,
+.quest-card:hover {
+  filter: brightness(1.08) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Confirm/cancel button group active feedback */
+.confirm-btn:active,
+.cancel-btn:active {
+  transform: scale(0.96) !important;
+  filter: brightness(0.88) !important;
+  transition: transform 0.06s, filter 0.06s !important;
+}

@@ -22,6 +22,11 @@ export const ITEM_DEFINITIONS: Record<ItemType, ItemDefinition> = {
     name: '稀有精华',
     description: '使用后下一次分裂增加稀有特性概率×3（一次性）',
   },
+  'split-accelerator': {
+    type: 'split-accelerator',
+    name: '速分催化剂',
+    description: '立即完成指定史莱姆的分裂倒计时',
+  },
 };
 
 export class ItemSystem {
@@ -78,6 +83,14 @@ export class ItemSystem {
         item.quantity -= 1;
         state.activeBuffs.rareEssenceActive = true;
         return '稀有精华已激活，下次分裂稀有特性概率×3';
+      }
+      case 'split-accelerator': {
+        if (!slimeId) return '需要指定目标史莱姆';
+        const slime = state.slimes.find((s) => s.id === slimeId);
+        if (!slime) return '找不到指定史莱姆';
+        slime.splitAccumulatedMs = 999999;
+        item.quantity -= 1;
+        return `速分催化剂已使用，${slime.name} 即将分裂`;
       }
       default:
         return '未知道具类型';
