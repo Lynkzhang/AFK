@@ -971,3 +971,56 @@ button:disabled {
   max-width: 100%;
   image-rendering: pixelated;
 }
+
+/* ===== UIManager Bottom Slime List (M41) ===== */
+.ui-slime-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 0 2px;
+  border-top: 1px solid #30363d;
+  margin-top: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+.ui-slime-card {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 11px;
+  color: #c9d1d9;
+  min-width: 80px;
+  max-width: 120px;
+}
+.ui-slime-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.2);
+  flex-shrink: 0;
+}
+.ui-slime-info {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+}
+.ui-slime-hp-outer {
+  width: 30px;
+  height: 3px;
+  background: #30363d;
+  border-radius: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.ui-slime-hp-inner {
+  height: 100%;
+  background: #44ee44;
+  border-radius: 2px;
+  transition: width 0.2s;
+}

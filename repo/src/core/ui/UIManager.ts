@@ -1,4 +1,4 @@
-import type { GameState } from '../types';
+import type { GameState, Slime } from '../types';
 
 interface UIHandlers {
   onNewGame: () => void;
@@ -14,7 +14,7 @@ interface UIHandlers {
   onOpenArena: () => void;
 }
 
-export type PriceEvaluatorFn = (slime: import('./UIManager').Slime) => number;
+export type PriceEvaluatorFn = (slime: Slime) => number;
 
 export class UIManager {
   readonly root: HTMLDivElement;
@@ -24,6 +24,9 @@ export class UIManager {
   private readonly capacityEl: HTMLSpanElement;
   private readonly fullHintEl: HTMLDivElement;
   private readonly buffStatusEl: HTMLDivElement;
+  /** Bottom slime list panel */
+  private readonly slimeListEl: HTMLDivElement;
+
   constructor() {
     this.root = document.createElement('div');
     this.root.className = 'ui-panel';
@@ -71,7 +74,11 @@ export class UIManager {
 
     actions.append(newBtn, saveBtn, loadBtn, battleBtn, backpackBtn, archiveBtn, facilityBtn, shopBtn, questBtn, codexBtn, arenaBtn);
 
-    this.root.append(title, currency, slimeCount, countdown, capacity, this.fullHintEl, this.buffStatusEl, actions);
+    // Bottom slime list
+    this.slimeListEl = document.createElement('div');
+    this.slimeListEl.className = 'ui-slime-list';
+
+    this.root.append(title, currency, slimeCount, countdown, capacity, this.fullHintEl, this.buffStatusEl, actions, this.slimeListEl);
 
     this.buttons = { newBtn, saveBtn, loadBtn, battleBtn, backpackBtn, archiveBtn, facilityBtn, shopBtn, questBtn, codexBtn, arenaBtn };
   }
@@ -116,6 +123,37 @@ export class UIManager {
     this.buttons.arenaBtn.onclick = handlers.onOpenArena;
   }
 
+  /** Render a compact slime card for the bottom list */
+  private renderSlimeCard(slime: Slime): HTMLDivElement {
+    const card = document.createElement('div');
+    card.className = 'ui-slime-card';
+    card.dataset['id'] = slime.id;
+
+    // Color swatch
+    const swatch = document.createElement('div');
+    swatch.className = 'ui-slime-swatch';
+    swatch.style.background = slime.color;
+
+    // Name + rarity
+    const info = document.createElement('div');
+    info.className = 'ui-slime-info';
+    info.textContent = slime.name;
+
+    // HP bar
+    const hpOuter = document.createElement('div');
+    hpOuter.className = 'ui-slime-hp-outer';
+    const hpInner = document.createElement('div');
+    hpInner.className = 'ui-slime-hp-inner';
+    const hpPct = slime.stats.health > 0
+      ? Math.max(0, Math.min(100, (slime.stats.health / slime.stats.health) * 100))
+      : 100;
+    hpInner.style.width = `${hpPct}%`;
+    hpOuter.appendChild(hpInner);
+
+    card.append(swatch, info, hpOuter);
+    return card;
+  }
+
   render(state: GameState, timeUntilSplit: number, maxCapacity: number): void {
     this.currencyEl.textContent = state.currency.toFixed(0);
     this.slimeCountEl.textContent = String(state.slimes.length);
@@ -131,6 +169,15 @@ export class UIManager {
       if (state.activeBuffs.mutationCatalystActive) parts.push('🧬 变异催化×2');
       if (state.activeBuffs.rareEssenceActive) parts.push('💎 稀有精华×3');
       this.buffStatusEl.textContent = parts.join(' | ');
+    }
+
+    // Update bottom slime list — show up to 8 most recent slimes
+    this.slimeListEl.replaceChildren();
+    if (state.slimes.length > 0) {
+      const displayed = state.slimes.slice(-8);
+      for (const slime of displayed) {
+        this.slimeListEl.appendChild(this.renderSlimeCard(slime));
+      }
     }
 
     // Progressive unlock
@@ -167,5 +214,4 @@ export class UIManager {
 }
 
 // Re-export Slime type for PriceEvaluatorFn
-import type { Slime } from '../types';
 export type { Slime };

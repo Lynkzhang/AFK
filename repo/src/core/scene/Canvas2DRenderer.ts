@@ -120,12 +120,29 @@ const BOUNCE_FRAMES: number[][][] = [
 
 const GRID = 10; // template size
 
+/** Configurable animation parameters for the renderer */
+export interface AnimationParams {
+  /** Multiplier for horizontal/vertical drift speed (default 1.0) */
+  driftSpeed: number;
+  /** Multiplier for bounce frequency (default 1.0) */
+  bounceFreq: number;
+  /** Multiplier for idle breathing animation amplitude (default 1.0) */
+  breathScale: number;
+}
+
+const DEFAULT_ANIM_PARAMS: AnimationParams = {
+  driftSpeed: 1.0,
+  bounceFreq: 1.0,
+  breathScale: 1.0,
+};
+
 export class Canvas2DRenderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private state: GameState | null = null;
   private elapsedTime = 0;
   private splitCountdown = Infinity;
+  private animParams: AnimationParams = { ...DEFAULT_ANIM_PARAMS };
 
   constructor(container: HTMLElement) {
     this.canvas = document.createElement('canvas');
@@ -142,6 +159,16 @@ export class Canvas2DRenderer {
 
     this.resize(container);
     window.addEventListener('resize', () => this.resize(container));
+  }
+
+  /** Set animation parameters. Pass partial object to update only some params. */
+  setAnimationParams(params: Partial<AnimationParams>): void {
+    this.animParams = { ...this.animParams, ...params };
+  }
+
+  /** Get current animation parameters (read-only snapshot). */
+  getAnimationParams(): AnimationParams {
+    return { ...this.animParams };
   }
 
   update(state: GameState, elapsedTime: number, splitCountdown?: number): void {
@@ -381,14 +408,16 @@ export class Canvas2DRenderer {
     const phase = this.hashPhase(slime.id);
 
     // Drift offset — purely visual, does not modify position
-    const driftX = Math.sin(t * 0.3 + phase * 2.1) * 12;   // ±12px horizontal
-    const driftZ = Math.cos(t * 0.25 + phase * 1.7) * 6;   // ±6px vertical
+    // driftSpeed param scales the frequency (how fast the drift oscillates)
+    const driftX = Math.sin(t * 0.3 * this.animParams.driftSpeed + phase * 2.1) * 12;   // ±12px horizontal
+    const driftZ = Math.cos(t * 0.25 * this.animParams.driftSpeed + phase * 1.7) * 6;   // ±6px vertical
 
     const x = mapped.x + driftX;
     const z = mapped.z + driftZ;
 
     // 4-frame bounce logic
-    const bounceVal = Math.sin(t * 3.2 + phase);
+    // bounceFreq param scales the bounce frequency
+    const bounceVal = Math.sin(t * 3.2 * this.animParams.bounceFreq + phase);
     const isInBounce = bounceVal > 0;
 
     let template: number[][];
@@ -396,7 +425,8 @@ export class Canvas2DRenderer {
       const bounceFrameIndex = Math.min(3, Math.floor(bounceVal * 4));
       template = BOUNCE_FRAMES[bounceFrameIndex];
     } else {
-      const breathCycle = (Math.sin(t * 1.8 + phase) + 1) / 2;
+      // breathScale param scales the breathing cycle speed
+      const breathCycle = (Math.sin(t * 1.8 * this.animParams.breathScale + phase) + 1) / 2;
       const idleFrameIndex = Math.floor(breathCycle * 4) % 4;
       template = IDLE_FRAMES[idleFrameIndex];
     }
