@@ -1024,3 +1024,13 @@ button:disabled {
   border-radius: 2px;
   transition: width 0.2s;
 }
+.ui-slime-rarity {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: bold;
+  color: #fff;
+  padding: 1px 4px;
+  border-radius: 3px;
+  line-height: 1;
+  flex-shrink: 0;
+}

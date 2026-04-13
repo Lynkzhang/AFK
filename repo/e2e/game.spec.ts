@@ -3112,6 +3112,9 @@ test.describe('M41: Quick Fixes', () => {
     const cards = slimeList.locator('.ui-slime-card');
     const count = await cards.count();
     expect(count).toBeGreaterThan(0);
+    // Each card should have a rarity tag
+    const rarityTags = await page.locator('.ui-slime-rarity').all();
+    expect(rarityTags.length).toBeGreaterThan(0);
   });
 
   test('Canvas2DRenderer setAnimationParams updates params without error', async ({ page }) => {

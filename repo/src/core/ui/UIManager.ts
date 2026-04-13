@@ -1,4 +1,5 @@
 import type { GameState, Slime } from '../types';
+import { Rarity } from '../types';
 
 interface UIHandlers {
   onNewGame: () => void;
@@ -139,6 +140,12 @@ export class UIManager {
     info.className = 'ui-slime-info';
     info.textContent = slime.name;
 
+    // Rarity tag
+    const rarityTag = document.createElement('span');
+    rarityTag.className = 'ui-slime-rarity';
+    rarityTag.textContent = slime.rarity.charAt(0);  // First letter: C/U/R/E/L
+    rarityTag.style.backgroundColor = this.getRarityColor(slime.rarity);
+
     // HP bar
     const hpOuter = document.createElement('div');
     hpOuter.className = 'ui-slime-hp-outer';
@@ -150,8 +157,19 @@ export class UIManager {
     hpInner.style.width = `${hpPct}%`;
     hpOuter.appendChild(hpInner);
 
-    card.append(swatch, info, hpOuter);
+    card.append(swatch, info, rarityTag, hpOuter);
     return card;
+  }
+
+  private getRarityColor(rarity: Rarity): string {
+    const map: Record<Rarity, string> = {
+      [Rarity.Common]: '#56d364',
+      [Rarity.Uncommon]: '#4f8cff',
+      [Rarity.Rare]: '#9b59ff',
+      [Rarity.Epic]: '#ff6b6b',
+      [Rarity.Legendary]: '#ffd700',
+    };
+    return map[rarity] ?? '#888';
   }
 
   render(state: GameState, timeUntilSplit: number, maxCapacity: number): void {
@@ -174,7 +192,7 @@ export class UIManager {
     // Update bottom slime list — show up to 8 most recent slimes
     this.slimeListEl.replaceChildren();
     if (state.slimes.length > 0) {
-      const displayed = state.slimes.slice(-8);
+      const displayed = state.slimes;
       for (const slime of displayed) {
         this.slimeListEl.appendChild(this.renderSlimeCard(slime));
       }

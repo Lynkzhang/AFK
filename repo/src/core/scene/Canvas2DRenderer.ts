@@ -409,15 +409,15 @@ export class Canvas2DRenderer {
 
     // Drift offset — purely visual, does not modify position
     // driftSpeed param scales the frequency (how fast the drift oscillates)
-    const driftX = Math.sin(t * 0.3 * this.animParams.driftSpeed + phase * 2.1) * 12;   // ±12px horizontal
-    const driftZ = Math.cos(t * 0.25 * this.animParams.driftSpeed + phase * 1.7) * 6;   // ±6px vertical
+    const driftX = Math.sin(t * 0.5 * this.animParams.driftSpeed + phase * 2.1) * 22;   // ±22px horizontal
+    const driftZ = Math.cos(t * 0.4 * this.animParams.driftSpeed + phase * 1.7) * 12;   // ±12px vertical
 
     const x = mapped.x + driftX;
     const z = mapped.z + driftZ;
 
     // 4-frame bounce logic
     // bounceFreq param scales the bounce frequency
-    const bounceVal = Math.sin(t * 3.2 * this.animParams.bounceFreq + phase);
+    const bounceVal = Math.sin(t * 4.0 * this.animParams.bounceFreq + phase);
     const isInBounce = bounceVal > 0;
 
     let template: number[][];
@@ -432,7 +432,7 @@ export class Canvas2DRenderer {
     }
 
     // Bounce offset (vertical)
-    const bounceOffset = isInBounce ? Math.floor(-bounceVal * 8) : 0;
+    const bounceOffset = isInBounce ? Math.floor(-bounceVal * 16) : 0;
 
     // Rarity-based scale: pixel block size
     const rarityScale = this.getRaritySizeScale(slime.rarity);
