@@ -1,21 +1,32 @@
 # kai workspace note
 
 ## Last updated
-After M44 completion (issue #221)
+After M46 completion (issues #228, #229, #230, #227)
 
 ## Current state
 - Branch: `main`
-- Latest commit: `dfe1820` — M44 complete
+- Latest commit: `e7f5a65` — M46 complete
 - tsc: 0 errors
 - E2E: 111/111 passing
 
-## M44 completed (#221)
-1. 12 pixel-art PNG icons generated to repo/public/assets/
-2. UIManager.ts title → '史莱姆进化', logo-slime.png as icon
-3. makeButton() accepts optional iconSrc, btn-icon class
-4. All 8 game buttons + 2 system buttons have PNG icons
-5. ShopUI/FacilityUI/QuestUI/CodexUI/ArenaUI/ArchiveUI/BackpackUI panel titles have icons
-6. style.css: .btn-icon added
-7. E2E: 'Slime Keeper' → '史莱姆进化'
-8. README: 66→111, updated project structure
-9. Cleaned: 7 .cjs, css_append.txt, qa_screenshots/, qa_lead_screenshots/ (84 files)
+## M46 completed
+1. **#228 — Asset path fix (23 hardcoded paths)**
+   - Added `const BASE = import.meta.env.BASE_URL;` to UIManager.ts + 7 other UI files
+   - All `/assets/xxx.png` → `${BASE}assets/xxx.png`
+   - Verified: zero remaining hardcoded paths
+
+2. **#229 — 17 pixel-art PNG icons regenerated**
+   - Used tools/generate-icons-v2.cjs (deleted after use)
+   - All 17 icons: 1500-2700 bytes each (all > 500 bytes)
+   - Pixel noise added to defeat PNG compression
+
+3. **#230 — UI polish**
+   - CSS: panelOpen, panelClose, resourcePulse, buttonPress animations
+   - overlay-panel uses panelOpen on appear
+   - pixel-btn/game-btn :active → scale(0.95) feedback
+   - Resource values pulse gold→white on change
+   - Unified card hover styles
+
+## Key patterns
+- Vite BASE_URL: use `import.meta.env.BASE_URL` not hardcoded `/assets/`
+- PNG file size: add pixel noise to defeat compression
