@@ -2641,7 +2641,13 @@ test.describe('M32 Sound System', () => {
     const beforeSplit = await page.evaluate(() => window.__GM!.getActiveBuffs());
     expect(beforeSplit.mutationCatalystActive).toBe(true);
 
-    // Wait for natural split (max 12s with 10s interval)
+    // Advance per-slime split accumulators so next split happens quickly
+    await page.evaluate(() => {
+      const st = window.__GM!.getState();
+      for (const sl of st.slimes) { sl.splitAccumulatedMs = 99999; }
+    });
+
+    // Wait for natural split (per-slime timer; accumulator pre-advanced above)
     const slimesBefore = await page.evaluate(() => window.__GM!.getState().slimes.length) as number;
     await page.waitForFunction(
       (count) => window.__GM!.getState().slimes.length > count,
@@ -2678,7 +2684,13 @@ test.describe('M32 Sound System', () => {
     const beforeSplit = await page.evaluate(() => window.__GM!.getActiveBuffs());
     expect(beforeSplit.rareEssenceActive).toBe(true);
 
-    // Wait for natural split
+    // Advance per-slime split accumulators so next split happens quickly
+    await page.evaluate(() => {
+      const st = window.__GM!.getState();
+      for (const sl of st.slimes) { sl.splitAccumulatedMs = 99999; }
+    });
+
+    // Wait for natural split (per-slime timer; accumulator pre-advanced above)
     const slimesBefore = await page.evaluate(() => window.__GM!.getState().slimes.length) as number;
     await page.waitForFunction(
       (count) => window.__GM!.getState().slimes.length > count,
