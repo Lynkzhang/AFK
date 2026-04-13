@@ -22,7 +22,12 @@ export class ArenaUI {
 
     const title = document.createElement('h2');
     title.className = 'panel-title';
-    title.textContent = '\ud83c\udfd4\ufe0f \u57f9\u517b\u573a\u5730';
+const arenaTitleIcon = document.createElement('img');
+    arenaTitleIcon.src = '/assets/icon-arena.png';
+    arenaTitleIcon.alt = '';
+    arenaTitleIcon.className = 'btn-icon';
+    arenaTitleIcon.onerror = () => { arenaTitleIcon.style.display = 'none'; };
+    title.append(arenaTitleIcon, document.createTextNode('\ud83c\udfd4\ufe0f \u57f9\u517b\u573a\u5730'));
 
     this.listEl = document.createElement('div');
     this.listEl.className = 'arena-list';

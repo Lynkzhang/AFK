@@ -49,7 +49,12 @@ export class QuestUI {
     this.root.replaceChildren();
 
     const title = document.createElement('h2');
-    title.textContent = '\u4efb\u52a1\u9762\u677f';
+const questTitleIcon = document.createElement('img');
+    questTitleIcon.src = '/assets/icon-quest.png';
+    questTitleIcon.alt = '';
+    questTitleIcon.className = 'btn-icon';
+    questTitleIcon.onerror = () => { questTitleIcon.style.display = 'none'; };
+    title.append(questTitleIcon, document.createTextNode('\u4efb\u52a1\u9762\u677f'));
     this.root.appendChild(title);
 
     // Tab bar

@@ -28,7 +28,12 @@ export class ArchiveUI {
     backBtn.onclick = () => this.callbacks?.onBack();
 
     const title = document.createElement('h2');
-    title.textContent = '封存库';
+const archiveTitleIcon = document.createElement('img');
+    archiveTitleIcon.src = '/assets/icon-archive.png';
+    archiveTitleIcon.alt = '';
+    archiveTitleIcon.className = 'btn-icon';
+    archiveTitleIcon.onerror = () => { archiveTitleIcon.style.display = 'none'; };
+    title.append(archiveTitleIcon, document.createTextNode('封存库'));
     title.className = 'panel-title';
 
     this.countEl = document.createElement('span');

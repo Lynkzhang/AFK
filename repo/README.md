@@ -66,7 +66,7 @@ npm run preview
 
 ## 测试
 
-项目使用 Playwright 进行 E2E 测试（共 66 个用例）。
+项目使用 Playwright 进行 E2E 测试（共 111 个用例）。
 
 ```bash
 # 安装浏览器（首次需要）
@@ -94,7 +94,7 @@ repo/
 ├── public/                 # 静态资源（图标等）
 ├── screenshots/            # 游戏截图
 ├── e2e/                    # E2E 测试用例
-│   └── game.spec.ts        # 66 个端到端测试
+│   └── game.spec.ts        # 111 个端到端测试
 └── src/
     ├── main.ts             # 应用入口，初始化各系统
     ├── style.css           # 全局样式
@@ -124,15 +124,21 @@ repo/
         │   ├── FacilitySystem.ts   # 设施升级
         │   ├── ShopSystem.ts       # 商店系统
         │   ├── ItemSystem.ts       # 道具系统
+        │   ├── BuffSystem.ts       # Buff/增益系统
         │   └── GameLoop.ts         # 主循环
         └── ui/             # UI 组件
-            ├── UIManager.ts        # 主界面管理
-            ├── BattleUI.ts         # 战斗界面
+            ├── UIManager.ts        # 主界面管理（史莱姆进化）
+            ├── BattleUI.ts         # 战斗界面（Canvas 动画）
+            ├── BackpackUI.ts       # 背包界面（双列布局/筛选/排序）
             ├── StageSelectUI.ts    # 章节/关卡选择
             ├── TeamSelectUI.ts     # 出战编队
             ├── ArchiveUI.ts        # 封存库界面
             ├── FacilityUI.ts       # 设施升级界面
-            └── ShopUI.ts           # 商店界面
+            ├── ShopUI.ts           # 商店界面
+            ├── QuestUI.ts          # 任务系统界面
+            ├── CodexUI.ts          # 图鉴界面
+            ├── ArenaUI.ts          # 竞技场界面
+            └── audio-control.ts    # 音频控制
 ```
 
 ## GM 命令（开发者模式）

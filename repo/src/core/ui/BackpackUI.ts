@@ -58,7 +58,12 @@ export class BackpackUI {
 
     const title = document.createElement('h2');
     title.className = 'backpack-title';
-    title.textContent = '🎒 背包';
+const backpackTitleIcon = document.createElement('img');
+    backpackTitleIcon.src = '/assets/icon-backpack.png';
+    backpackTitleIcon.alt = '';
+    backpackTitleIcon.className = 'btn-icon';
+    backpackTitleIcon.onerror = () => { backpackTitleIcon.style.display = 'none'; };
+    title.append(backpackTitleIcon, document.createTextNode('🎒 背包'));
 
     const closeBtn = document.createElement('button');
     closeBtn.className = 'backpack-close-btn pixel-btn';

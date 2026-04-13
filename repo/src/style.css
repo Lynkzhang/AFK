@@ -1133,3 +1133,10 @@ button:disabled {
   line-height: 1;
   flex-shrink: 0;
 }
+.btn-icon {
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+  margin-right: 4px;
+  image-rendering: pixelated;
+}

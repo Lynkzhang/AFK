@@ -18,7 +18,12 @@ export class FacilityUI {
     this.root.className = 'facility-panel';
 
     this.titleEl = document.createElement('h2');
-    this.titleEl.textContent = '设施管理';
+    const facilityTitleIcon = document.createElement('img');
+    facilityTitleIcon.src = '/assets/icon-facility.png';
+    facilityTitleIcon.alt = '';
+    facilityTitleIcon.className = 'btn-icon';
+    facilityTitleIcon.onerror = () => { facilityTitleIcon.style.display = 'none'; };
+    this.titleEl.append(facilityTitleIcon, document.createTextNode('设施管理'));
 
     this.cardsContainer = document.createElement('div');
     this.cardsContainer.className = 'facility-cards';

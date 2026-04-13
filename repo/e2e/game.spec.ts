@@ -1,5 +1,5 @@
 /**
- * E2E Tests for Slime Keeper
+ * E2E Tests for 史莱姆进化
  *
  * Covers:
  * 1. Page load & UI elements
@@ -90,7 +90,7 @@ test.describe('Page Load', () => {
     await page.waitForTimeout(200);
 
     // Title
-    await expect(page.locator('.ui-panel h1')).toHaveText('Slime Keeper');
+    await expect(page.locator('.ui-panel h1')).toHaveText('史莱姆进化');
 
     // Currency display
     await expect(page.locator('.ui-panel').locator('text=Currency:')).toBeVisible();

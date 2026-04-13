@@ -37,7 +37,12 @@ export class CodexUI {
 
     // Title + overall completion
     const title = document.createElement('h2');
-    title.textContent = '\u56fe\u9274';
+const codexTitleIcon = document.createElement('img');
+    codexTitleIcon.src = '/assets/icon-codex.png';
+    codexTitleIcon.alt = '';
+    codexTitleIcon.className = 'btn-icon';
+    codexTitleIcon.onerror = () => { codexTitleIcon.style.display = 'none'; };
+    title.append(codexTitleIcon, document.createTextNode('\u56fe\u9274'));
     this.root.appendChild(title);
 
     const overallEl = document.createElement('div');

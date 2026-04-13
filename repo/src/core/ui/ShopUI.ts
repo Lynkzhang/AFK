@@ -33,7 +33,12 @@ export class ShopUI {
     this.root.replaceChildren();
 
     const title = document.createElement('h2');
-    title.textContent = '\ud83d\uded2 \u5546\u5e97';
+const shopTitleIcon = document.createElement('img');
+    shopTitleIcon.src = '/assets/icon-shop.png';
+    shopTitleIcon.alt = '';
+    shopTitleIcon.className = 'btn-icon';
+    shopTitleIcon.onerror = () => { shopTitleIcon.style.display = 'none'; };
+    title.append(shopTitleIcon, document.createTextNode('\ud83d\uded2 \u5546\u5e97'));
     this.root.appendChild(title);
 
     // Currency display

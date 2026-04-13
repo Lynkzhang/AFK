@@ -32,13 +32,14 @@ export class UIManager {
     this.root = document.createElement('div');
     this.root.className = 'ui-panel';
 
-    // Title with pixel slime icon
+    // Title with pixel slime logo
     const title = document.createElement('h1');
     const titleIcon = document.createElement('img');
-    titleIcon.src = '/assets/icon-slime.svg';
+    titleIcon.src = '/assets/logo-slime.png';
     titleIcon.alt = 'slime';
     titleIcon.className = 'ui-title-icon';
-    const titleText = document.createTextNode('Slime Keeper');
+    titleIcon.onerror = () => { titleIcon.style.display = 'none'; };
+    const titleText = document.createTextNode('史莱姆进化');
     title.append(titleIcon, titleText);
 
     // Resource bar: currency with coin icon
@@ -101,8 +102,8 @@ export class UIManager {
     sysLabel.className = 'ui-btn-group-label';
     sysLabel.textContent = '系统';
 
-    const newBtn = this.makeButton('\u65b0\u6e38\u620f');
-    const saveBtn = this.makeButton('\u4fdd\u5b58');
+    const newBtn = this.makeButton('\u65b0\u6e38\u620f', '/assets/icon-newgame.png');
+    const saveBtn = this.makeButton('\u4fdd\u5b58', '/assets/icon-save.png');
     const loadBtn = this.makeButton('\u52a0\u8f7d');
 
     // Game group label
@@ -114,14 +115,14 @@ export class UIManager {
     swordImg.className = 'ui-resource-icon';
     gameLabel.append(swordImg, document.createTextNode('\u529f\u80fd'));
 
-    const battleBtn = this.makeButton('\u2694 \u6218\u6597');
-    const backpackBtn = this.makeButton('\ud83c\udf92 \u80cc\u5305');
-    const archiveBtn = this.makeButton('\ud83d\udce6 \u5c01\u5b58\u5e93');
-    const facilityBtn = this.makeButton('\ud83c\udfd7 \u8bbe\u65bd');
-    const shopBtn = this.makeButton('\ud83d\uded2 \u5546\u5e97');
-    const questBtn = this.makeButton('\ud83d\udcdc \u4efb\u52a1');
-    const codexBtn = this.makeButton('\ud83d\udcd6 \u56fe\u9274');
-    const arenaBtn = this.makeButton('\ud83c\udfd4 \u573a\u5730');
+    const battleBtn = this.makeButton('\u2694 \u6218\u6597', '/assets/icon-battle.png');
+    const backpackBtn = this.makeButton('\ud83c\udf92 \u80cc\u5305', '/assets/icon-backpack.png');
+    const archiveBtn = this.makeButton('\ud83d\udce6 \u5c01\u5b58\u5e93', '/assets/icon-archive.png');
+    const facilityBtn = this.makeButton('\ud83c\udfd7 \u8bbe\u65bd', '/assets/icon-facility.png');
+    const shopBtn = this.makeButton('\ud83d\uded2 \u5546\u5e97', '/assets/icon-shop.png');
+    const questBtn = this.makeButton('\ud83d\udcdc \u4efb\u52a1', '/assets/icon-quest.png');
+    const codexBtn = this.makeButton('\ud83d\udcd6 \u56fe\u9274', '/assets/icon-codex.png');
+    const arenaBtn = this.makeButton('\ud83c\udfd4 \u573a\u5730', '/assets/icon-arena.png');
 
     actions.append(sysLabel, newBtn, saveBtn, loadBtn, gameLabel, battleBtn, backpackBtn, archiveBtn, facilityBtn, shopBtn, questBtn, codexBtn, arenaBtn);
 
@@ -148,10 +149,18 @@ export class UIManager {
     arenaBtn: HTMLButtonElement;
   };
 
-  private makeButton(label: string): HTMLButtonElement {
+  private makeButton(label: string, iconSrc?: string): HTMLButtonElement {
     const btn = document.createElement('button');
-    btn.textContent = label;
     btn.className = 'pixel-btn';
+    if (iconSrc) {
+      const icon = document.createElement('img');
+      icon.src = iconSrc;
+      icon.alt = '';
+      icon.className = 'btn-icon';
+      icon.onerror = () => { icon.style.display = 'none'; };
+      btn.appendChild(icon);
+    }
+    btn.appendChild(document.createTextNode(label));
     return btn;
   }
 
