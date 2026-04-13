@@ -1,4 +1,5 @@
 import type { GameState, Slime } from '../types';
+import { Rarity, RARITY_NAME_CN } from '../types';
 
 export interface TeamSelectCallbacks {
   onConfirm: (selectedSlimeIds: string[]) => void;
@@ -72,12 +73,12 @@ export class TeamSelectUI {
 
     const nameRow = document.createElement('div');
     nameRow.className = 'team-slime-name';
-    nameRow.innerHTML = `<strong>${slime.name}</strong> <span class="rarity-tag" style="background:${this.rarityColor(slime.rarity)}">${slime.rarity}</span>`;
+    nameRow.innerHTML = `<strong>${slime.name}</strong> <span class="rarity-tag" style="background:${this.rarityColor(slime.rarity)}">${RARITY_NAME_CN[slime.rarity as Rarity] ?? slime.rarity}</span>`;
 
     const statsRow = document.createElement('div');
     statsRow.className = 'team-slime-stats';
     const s = slime.stats;
-    statsRow.textContent = `HP:${s.health} ATK:${s.attack} DEF:${s.defense} SPD:${s.speed}`;
+    statsRow.textContent = `生命:${s.health} 攻击:${s.attack} 防御:${s.defense} 速度:${s.speed}`;
 
     const skillsRow = document.createElement('div');
     skillsRow.className = 'team-slime-skills';

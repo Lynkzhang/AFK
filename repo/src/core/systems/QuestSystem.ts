@@ -7,8 +7,8 @@ import { ItemSystem } from './ItemSystem';
 const DAILY_QUESTS: QuestTemplate[] = [
   {
     id: 'daily-split-3',
-    name: 'Daily Splitter',
-    description: 'Trigger 3 slime splits today',
+    name: '每日分裂者',
+    description: '今日触发3次史莱姆分裂',
     category: 'daily',
     conditionKey: 'daily_splits',
     targetValue: 3,
@@ -16,8 +16,8 @@ const DAILY_QUESTS: QuestTemplate[] = [
   },
   {
     id: 'daily-sell-2',
-    name: 'Daily Seller',
-    description: 'Sell 2 slimes today',
+    name: '每日商人',
+    description: '今日出售2只史莱姆',
     category: 'daily',
     conditionKey: 'daily_sells',
     targetValue: 2,
@@ -25,8 +25,8 @@ const DAILY_QUESTS: QuestTemplate[] = [
   },
   {
     id: 'daily-battle-1',
-    name: 'Daily Fighter',
-    description: 'Win 1 battle today',
+    name: '每日战士',
+    description: '今日赢得1场战斗',
     category: 'daily',
     conditionKey: 'daily_battles_won',
     targetValue: 1,
@@ -34,8 +34,8 @@ const DAILY_QUESTS: QuestTemplate[] = [
   },
   {
     id: 'daily-archive-1',
-    name: 'Daily Archivist',
-    description: 'Archive 1 slime today',
+    name: '每日收藏家',
+    description: '今日封存1只史莱姆',
     category: 'daily',
     conditionKey: 'daily_archives',
     targetValue: 1,
@@ -43,8 +43,8 @@ const DAILY_QUESTS: QuestTemplate[] = [
   },
   {
     id: 'daily-upgrade-1',
-    name: 'Daily Builder',
-    description: 'Upgrade a facility once today',
+    name: '每日建设者',
+    description: '今日升级1次设施',
     category: 'daily',
     conditionKey: 'daily_upgrades',
     targetValue: 1,
@@ -55,8 +55,8 @@ const DAILY_QUESTS: QuestTemplate[] = [
 const ACHIEVEMENT_QUESTS: QuestTemplate[] = [
   {
     id: 'ach-total-splits-50',
-    name: 'Prolific Breeder',
-    description: 'Trigger 50 splits in total',
+    name: '多产培育师',
+    description: '累计触发50次分裂',
     category: 'achievement',
     conditionKey: 'total_splits',
     targetValue: 50,
@@ -64,8 +64,8 @@ const ACHIEVEMENT_QUESTS: QuestTemplate[] = [
   },
   {
     id: 'ach-total-sells-20',
-    name: 'Merchant',
-    description: 'Sell 20 slimes in total',
+    name: '商业大亨',
+    description: '累计出售20只史莱姆',
     category: 'achievement',
     conditionKey: 'total_sells',
     targetValue: 20,
@@ -73,8 +73,8 @@ const ACHIEVEMENT_QUESTS: QuestTemplate[] = [
   },
   {
     id: 'ach-battles-won-10',
-    name: 'Warrior',
-    description: 'Win 10 battles in total',
+    name: '英勇战士',
+    description: '累计赢得10场战斗',
     category: 'achievement',
     conditionKey: 'total_battles_won',
     targetValue: 10,
@@ -82,8 +82,8 @@ const ACHIEVEMENT_QUESTS: QuestTemplate[] = [
   },
   {
     id: 'ach-rare-slime-5',
-    name: 'Rare Collector',
-    description: 'Own 5 rare or higher slimes at once',
+    name: '稀有收藏家',
+    description: '同时拥有5只稀有或更高品质的史莱姆',
     category: 'achievement',
     conditionKey: 'rare_slime_count',
     targetValue: 5,
@@ -91,8 +91,8 @@ const ACHIEVEMENT_QUESTS: QuestTemplate[] = [
   },
   {
     id: 'ach-chapter-2',
-    name: 'Explorer',
-    description: 'Unlock Chapter 2',
+    name: '探索者',
+    description: '解锁第2章',
     category: 'achievement',
     conditionKey: 'chapters_unlocked',
     targetValue: 2,
@@ -103,8 +103,8 @@ const ACHIEVEMENT_QUESTS: QuestTemplate[] = [
 const BOUNTY_QUESTS: QuestTemplate[] = [
   {
     id: 'bounty-rare-submit',
-    name: 'Rare Specimen',
-    description: 'Submit a Rare or higher rarity slime',
+    name: '稀有标本',
+    description: '提交一只稀有或更高品质的史莱姆',
     category: 'bounty',
     conditionKey: 'bounty_submit',
     targetValue: 1,
@@ -113,8 +113,8 @@ const BOUNTY_QUESTS: QuestTemplate[] = [
   },
   {
     id: 'bounty-strong-submit',
-    name: 'Power Specimen',
-    description: 'Submit a slime with total stats >= 100',
+    name: '强力标本',
+    description: '提交一只属性总和≥100的史莱姆',
     category: 'bounty',
     conditionKey: 'bounty_submit',
     targetValue: 1,
@@ -123,8 +123,8 @@ const BOUNTY_QUESTS: QuestTemplate[] = [
   },
   {
     id: 'bounty-epic-submit',
-    name: 'Epic Specimen',
-    description: 'Submit an Epic or higher rarity slime',
+    name: '史诗标本',
+    description: '提交一只史诗或更高品质的史莱姆',
     category: 'bounty',
     conditionKey: 'bounty_submit',
     targetValue: 1,

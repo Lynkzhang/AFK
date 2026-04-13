@@ -1,5 +1,5 @@
 const BASE = import.meta.env.BASE_URL;
-import { Rarity } from '../types';
+import { Rarity, RARITY_LABEL_CN, RARITY_NAME_CN } from '../types';
 import type { GameState, Slime } from '../types';
 import { AccessorySystem } from '../systems/AccessorySystem';
 
@@ -103,11 +103,11 @@ const backpackTitleIcon = document.createElement('img');
 
     const filterDefs: Array<{ label: string; value: string }> = [
       { label: '全部', value: 'all' },
-      { label: 'C', value: Rarity.Common },
-      { label: 'U', value: Rarity.Uncommon },
-      { label: 'R', value: Rarity.Rare },
-      { label: 'E', value: Rarity.Epic },
-      { label: 'L', value: Rarity.Legendary },
+      { label: '普', value: Rarity.Common },
+      { label: '优', value: Rarity.Uncommon },
+      { label: '稀', value: Rarity.Rare },
+      { label: '史', value: Rarity.Epic },
+      { label: '传', value: Rarity.Legendary },
     ];
     for (const { label, value } of filterDefs) {
       const btn = document.createElement('button');
@@ -401,8 +401,8 @@ const backpackTitleIcon = document.createElement('img');
     const rarityTag = document.createElement('span');
     rarityTag.className = 'rarity-tag backpack-rarity-tag';
     rarityTag.style.backgroundColor = this.getRarityColor(slime.rarity);
-    rarityTag.textContent = slime.rarity.charAt(0).toUpperCase();
-    rarityTag.title = slime.rarity;
+    rarityTag.textContent = RARITY_LABEL_CN[slime.rarity] ?? slime.rarity.charAt(0);
+    rarityTag.title = RARITY_NAME_CN[slime.rarity] ?? slime.rarity;
 
     cardHeader.append(checkbox, colorDot, nameEl, rarityTag);
 
@@ -410,7 +410,7 @@ const backpackTitleIcon = document.createElement('img');
     const s = slime.stats;
     const statsEl = document.createElement('div');
     statsEl.className = 'backpack-card-stats';
-    statsEl.textContent = `HP:${s.health} ATK:${s.attack} DEF:${s.defense} SPD:${s.speed}`;
+    statsEl.textContent = `生命:${s.health} 攻击:${s.attack} 防御:${s.defense} 速度:${s.speed}`;
 
     // Extras
     const extrasEl = document.createElement('div');
@@ -468,7 +468,7 @@ const backpackTitleIcon = document.createElement('img');
 
     const nameRow = document.createElement('div');
     nameRow.className = 'backpack-detail-name';
-    nameRow.innerHTML = `<strong>${slime.name}</strong> <span class="rarity-tag" style="background:${this.getRarityColor(slime.rarity)}">${slime.rarity}</span>`;
+    nameRow.innerHTML = `<strong>${slime.name}</strong> <span class="rarity-tag" style="background:${this.getRarityColor(slime.rarity)}">${RARITY_NAME_CN[slime.rarity] ?? slime.rarity}</span>`;
 
     const colorRow = document.createElement('div');
     colorRow.className = 'backpack-detail-color';
@@ -487,11 +487,11 @@ const backpackTitleIcon = document.createElement('img');
     const statsSection = document.createElement('div');
     statsSection.className = 'backpack-detail-stats';
     const statDefs: Array<{ label: string; value: number; max: number }> = [
-      { label: 'HP', value: s.health, max: 100 },
-      { label: 'ATK', value: s.attack, max: 50 },
-      { label: 'DEF', value: s.defense, max: 50 },
-      { label: 'SPD', value: s.speed, max: 30 },
-      { label: 'MUT', value: Math.round((s.mut ?? 0) * 100), max: 100 },
+      { label: '生命', value: s.health, max: 100 },
+      { label: '攻击', value: s.attack, max: 50 },
+      { label: '防御', value: s.defense, max: 50 },
+      { label: '速度', value: s.speed, max: 30 },
+      { label: '变异', value: Math.round((s.mut ?? 0) * 100), max: 100 },
     ];
     for (const { label, value, max } of statDefs) {
       const row = document.createElement('div');
@@ -507,7 +507,7 @@ const backpackTitleIcon = document.createElement('img');
       barOuter.appendChild(barInner);
       const valEl = document.createElement('span');
       valEl.className = 'backpack-stat-value';
-      valEl.textContent = String(label === 'MUT' ? `${value}%` : value);
+      valEl.textContent = String(label === '变异' ? `${value}%` : value);
       row.append(labelEl, barOuter, valEl);
       statsSection.appendChild(row);
     }
@@ -528,7 +528,7 @@ const backpackTitleIcon = document.createElement('img');
       for (const trait of slime.traits) {
         const traitRow = document.createElement('div');
         traitRow.className = 'backpack-detail-trait';
-        traitRow.innerHTML = `<span class="rarity-tag" style="background:${this.getRarityColor(trait.rarity)}">${trait.rarity.charAt(0)}</span> <strong>${trait.name}</strong> — ${trait.description}`;
+        traitRow.innerHTML = `<span class="rarity-tag" style="background:${this.getRarityColor(trait.rarity)}">${RARITY_LABEL_CN[trait.rarity] ?? trait.rarity.charAt(0)}</span> <strong>${trait.name}</strong> — ${trait.description}`;
         traitsSection.appendChild(traitRow);
       }
     }

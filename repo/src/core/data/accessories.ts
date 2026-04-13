@@ -79,7 +79,7 @@ export const ACCESSORY_TEMPLATES: AccessoryTemplate[] = [
     rarity: Rarity.Legendary,
     effect: {
       statBonuses: { attack: 8, defense: 4, speed: 2, health: 10 },
-      description: '全属性提升：ATK+8 DEF+4 SPD+2 HP+10',
+      description: '全属性提升：攻击+8 防御+4 速度+2 生命+10',
     },
   },
 ];

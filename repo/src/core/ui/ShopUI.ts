@@ -1,5 +1,6 @@
 const BASE = import.meta.env.BASE_URL;
 import type { GameState, ShopItem, Item } from '../types';
+import { RARITY_NAME_CN } from '../types';
 import { SHOP_ITEMS, ShopSystem } from '../systems/ShopSystem';
 import { ACCESSORY_TEMPLATES } from '../data/accessories';
 
@@ -75,7 +76,7 @@ const shopTitleIcon = document.createElement('img');
       card.className = 'shop-card';
       const nameEl = document.createElement('div');
       nameEl.className = 'shop-card-name';
-      nameEl.textContent = `${template.name} [${template.rarity}]`;
+      nameEl.textContent = `${template.name} [${RARITY_NAME_CN[template.rarity] ?? template.rarity}]`;
       const descEl = document.createElement('div');
       descEl.className = 'shop-card-desc';
       descEl.textContent = template.effect.description;

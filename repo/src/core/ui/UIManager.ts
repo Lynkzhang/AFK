@@ -1,5 +1,5 @@
 import type { GameState, Slime } from '../types';
-import { Rarity } from '../types';
+import { Rarity, RARITY_LABEL_CN } from '../types';
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -59,7 +59,7 @@ export class UIManager {
     coinImg.src = `${BASE}assets/icon-coin.png`;
     coinImg.alt = 'gold';
     coinImg.className = 'ui-resource-icon';
-    currency.innerHTML = 'Currency: <span>0</span>';
+    currency.innerHTML = '金币: <span>0</span>';
     currency.insertBefore(coinImg, currency.firstChild);
     this.currencyEl = currency.querySelector('span') as HTMLSpanElement;
 
@@ -70,7 +70,7 @@ export class UIManager {
     slimeImg.src = `${BASE}assets/icon-slime.png`;
     slimeImg.alt = 'slimes';
     slimeImg.className = 'ui-resource-icon';
-    slimeCount.innerHTML = 'Slimes: <span>0</span>';
+    slimeCount.innerHTML = '史莱姆: <span>0</span>';
     slimeCount.insertBefore(slimeImg, slimeCount.firstChild);
     this.slimeCountEl = slimeCount.querySelector('span') as HTMLSpanElement;
 
@@ -217,7 +217,7 @@ export class UIManager {
     // Rarity tag
     const rarityTag = document.createElement('span');
     rarityTag.className = 'ui-slime-rarity';
-    rarityTag.textContent = slime.rarity.charAt(0);  // First letter: C/U/R/E/L
+    rarityTag.textContent = RARITY_LABEL_CN[slime.rarity as Rarity] ?? slime.rarity.charAt(0);
     rarityTag.style.backgroundColor = this.getRarityColor(slime.rarity);
 
     // HP bar

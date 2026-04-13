@@ -123,7 +123,7 @@ function createDefaultState(): GameState {
   const s: GameState = {
     slimes: [createStarterSlime(), createSecondSlime()],
     breedingGrounds: [
-      { id: 'bg-1', name: 'Starter Pen', level: 1, capacity: 4, slimes: [], facilityLevel: 1 },
+      { id: 'bg-1', name: '初始围栏', level: 1, capacity: 4, slimes: [], facilityLevel: 1 },
     ],
     facilities: DEFAULT_FACILITIES.map((f) => ({ ...f })),
     currency: 50,

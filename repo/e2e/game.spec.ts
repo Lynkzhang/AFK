@@ -93,10 +93,10 @@ test.describe('Page Load', () => {
     await expect(page.locator('.ui-panel h1')).toHaveText('史莱姆进化');
 
     // Currency display
-    await expect(page.locator('.ui-panel').locator('text=Currency:')).toBeVisible();
+    await expect(page.locator('.ui-panel').locator('text=金币:')).toBeVisible();
 
     // Slime count
-    await expect(page.locator('.ui-panel').locator('text=Slimes:')).toBeVisible();
+    await expect(page.locator('.ui-panel').locator('text=史莱姆:')).toBeVisible();
 
     // Buttons – 新游戏, 保存, 加载, 战斗, 封存库, 设施, 商店, 任务, 图鉴, 场地
     const buttons = page.locator('.ui-actions button');

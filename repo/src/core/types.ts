@@ -230,3 +230,27 @@ export interface GameState {
     splitFieldAcceleratorUntil?: number;
   };
 }
+
+export const RARITY_LABEL_CN: Record<Rarity, string> = {
+  [Rarity.Common]: '普',
+  [Rarity.Uncommon]: '优',
+  [Rarity.Rare]: '稀',
+  [Rarity.Epic]: '史',
+  [Rarity.Legendary]: '传',
+};
+
+export const RARITY_NAME_CN: Record<Rarity, string> = {
+  [Rarity.Common]: '普通',
+  [Rarity.Uncommon]: '优秀',
+  [Rarity.Rare]: '稀有',
+  [Rarity.Epic]: '史诗',
+  [Rarity.Legendary]: '传说',
+};
+
+export const STAT_NAME_CN: Record<string, string> = {
+  health: '生命',
+  attack: '攻击',
+  defense: '防御',
+  speed: '速度',
+  mut: '变异',
+};

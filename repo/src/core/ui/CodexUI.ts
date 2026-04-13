@@ -1,4 +1,5 @@
 const BASE = import.meta.env.BASE_URL;
+import { Rarity, RARITY_NAME_CN } from '../types';
 import type { GameState } from '../types';
 import { CodexSystem } from '../systems/CodexSystem';
 
@@ -86,7 +87,7 @@ const codexTitleIcon = document.createElement('img');
     } else if (this.activeTab === 'trait') {
       for (const t of info.allTraits) {
         const unlocked = info.codex.unlockedTraits.includes(t.id);
-        const label = unlocked ? `${t.name} (${t.rarity})` : '???';
+        const label = unlocked ? `${t.name} (${RARITY_NAME_CN[t.rarity as Rarity] ?? t.rarity})` : '???';
         const entry = this.createEntry(label, unlocked);
         entry.dataset['traitId'] = t.id;
         listEl.appendChild(entry);

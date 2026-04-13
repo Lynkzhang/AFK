@@ -1,5 +1,6 @@
 const BASE = import.meta.env.BASE_URL;
 import type { GameState, ArenaId } from '../types';
+import { STAT_NAME_CN } from '../types';
 
 export interface ArenaCallbacks {
   onBuy: (arenaId: ArenaId) => void;
@@ -69,7 +70,7 @@ const arenaTitleIcon = document.createElement('img');
       const bonusParts: string[] = [];
       for (const [stat, val] of Object.entries(arena.statBonus)) {
         if (typeof val === 'number') {
-          bonusParts.push(`${stat} +${(val * 100).toFixed(0)}%`);
+          bonusParts.push(`${STAT_NAME_CN[stat] ?? stat} +${(val * 100).toFixed(0)}%`);
         }
       }
       if (bonusParts.length > 0) {
