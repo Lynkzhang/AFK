@@ -441,7 +441,7 @@ const backpackTitleIcon = document.createElement('img');
     const price = this.priceEvaluator ? this.priceEvaluator(slime) : 0;
     const footerEl = document.createElement('div');
     footerEl.className = 'backpack-card-footer';
-    footerEl.textContent = `Gen.${slime.generation} | 💰${price}`;
+    footerEl.textContent = `第${slime.generation}代 | 💰${price}`;
 
     card.append(cardHeader, statsEl, extrasEl, footerEl);
 

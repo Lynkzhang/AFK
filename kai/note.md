@@ -1,34 +1,37 @@
 # kai workspace note
 
 ## Last updated
-After M47 Round — issues #232 (char-grid icons) and #233 (UI interaction)
+After 全文本中文化 task (commit ba8fc93)
 
 ## Current state
 - Branch: `main`
-- Latest commit: `7d0fe84` — char-grid icons + UI animation improvements
+- Latest commit: `ba8fc93` — 全文本中文化
 - tsc: 0 errors
-- E2E: 111/111 passing
+- E2E: 115/115 passing
 - Build: success
 
-## M47 completed
-**#232 — Rewrite icon generation with character grids**
-- Completely rewrote `repo/tools/generate-clean-icons.cjs`
-- New architecture: `renderGrid(iconDef)` reads 32x32 char grid + palette dict
-- Removed all draw* functions, sp, rect, circle, line, thickLine, etc.
-- All 17 icons: 4196 bytes each (>400 bytes requirement ✓)
-- All icons: transparent background (300-800+ transparent pixels each)
-- Used `zlib.deflateSync(raw, { level: 0 })` = no compression = larger files
-- Each icon has 15 palette colors defined + transparent
-
-**#233 — UI interaction improvements**  
-- Added to `repo/src/style.css`:
-  - Sub-panel open animation for `.shop-panel`, `.facility-panel`, `.codex-panel`, `.arena-panel`, `.quest-panel`, `.archive-panel`, `.backpack-panel`, `.battle-panel` using `panelOpen 0.22s ease-out both`
-  - Unified card hover: `.stage-card:hover, .team-slime-card:hover, .ui-slime-card:hover, .archive-slime-card:hover, .quest-card:hover` → `filter: brightness(1.08); transform: translateY(-1px)`
-  - Confirm/cancel button active: `transform: scale(0.96)` + brightness feedback
+## 全文本中文化 completed
+**Modified files:**
+- `src/core/types.ts` — added RARITY_LABEL_CN, RARITY_NAME_CN, STAT_NAME_CN constants
+- `src/core/systems/QuestSystem.ts` — all quest names/descriptions translated
+- `src/core/ui/UIManager.ts` — top bar: Currency→金币, Slimes→史莱姆; rarity tag uses RARITY_LABEL_CN
+- `src/core/ui/BackpackUI.ts` — filter C/U/R/E/L→普/优/稀/史/传; card stats HP/ATK/DEF/SPD→中文; Gen.X→第X代; detail rarity full name; trait rarity tag
+- `src/core/ui/ArchiveUI.ts` — stats and rarity label translated
+- `src/core/ui/TeamSelectUI.ts` — stats and rarity label translated
+- `src/core/ui/ShopUI.ts` — accessory rarity name translated
+- `src/core/ui/CodexUI.ts` — trait rarity name translated
+- `src/core/ui/ArenaUI.ts` — stat bonus names translated via STAT_NAME_CN
+- `src/core/data/accessories.ts` — 王者之冠 description ATK/DEF/SPD/HP→中文
+- `src/main.ts` — Starter Pen→初始围栏
+- `e2e/game.spec.ts` — text=Currency:→金币:, text=Slimes:→史莱姆:
 
 ## Key patterns
-- Vite BASE_URL: use `import.meta.env.BASE_URL` not hardcoded `/assets/`
-- PNG generation: pure Node.js zlib, CRC32 table, no external libs
-- To ensure PNG > 400 bytes: use `zlib.deflateSync(raw, { level: 0 })` (no compression)
-- The workspace path is `kai/` under the repo root (not `/workspace/kai/`)
-- Write tool path `/workspace/kai/` actually maps to `kai/` in the repo
+- Rarity enum values (Common, Uncommon, etc.) kept as-is (internal logic)
+- CSS class names, data attributes, quest/arena/trait IDs: kept as-is
+- RARITY_LABEL_CN maps to 普/优/稀/史/传 (single char for badges)
+- RARITY_NAME_CN maps to 普通/优秀/稀有/史诗/传说 (full name for display)
+- STAT_NAME_CN maps health/attack/defense/speed/mut to Chinese
+
+## Workspace path note
+The workspace path is `kai/` under the repo root (not `/workspace/kai/`)
+Write tool path `/workspace/kai/` actually maps to `kai/` in the repo
