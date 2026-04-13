@@ -1,3 +1,4 @@
+const BASE = import.meta.env.BASE_URL;
 import type { GameState, ShopItem, Item } from '../types';
 import { SHOP_ITEMS, ShopSystem } from '../systems/ShopSystem';
 import { ACCESSORY_TEMPLATES } from '../data/accessories';
@@ -34,7 +35,7 @@ export class ShopUI {
 
     const title = document.createElement('h2');
 const shopTitleIcon = document.createElement('img');
-    shopTitleIcon.src = '/assets/icon-shop.png';
+    shopTitleIcon.src = `${BASE}assets/icon-shop.png`;
     shopTitleIcon.alt = '';
     shopTitleIcon.className = 'btn-icon';
     shopTitleIcon.onerror = () => { shopTitleIcon.style.display = 'none'; };

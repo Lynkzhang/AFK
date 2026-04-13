@@ -1,3 +1,4 @@
+const BASE = import.meta.env.BASE_URL;
 import { Rarity } from '../types';
 import type { GameState, Slime } from '../types';
 import { AccessorySystem } from '../systems/AccessorySystem';
@@ -59,7 +60,7 @@ export class BackpackUI {
     const title = document.createElement('h2');
     title.className = 'backpack-title';
 const backpackTitleIcon = document.createElement('img');
-    backpackTitleIcon.src = '/assets/icon-backpack.png';
+    backpackTitleIcon.src = `${BASE}assets/icon-backpack.png`;
     backpackTitleIcon.alt = '';
     backpackTitleIcon.className = 'btn-icon';
     backpackTitleIcon.onerror = () => { backpackTitleIcon.style.display = 'none'; };

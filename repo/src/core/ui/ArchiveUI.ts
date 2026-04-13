@@ -1,3 +1,4 @@
+const BASE = import.meta.env.BASE_URL;
 import { Rarity } from '../types';
 import type { GameState, Slime } from '../types';
 import { AccessorySystem } from '../systems/AccessorySystem';
@@ -29,7 +30,7 @@ export class ArchiveUI {
 
     const title = document.createElement('h2');
 const archiveTitleIcon = document.createElement('img');
-    archiveTitleIcon.src = '/assets/icon-archive.png';
+    archiveTitleIcon.src = `${BASE}assets/icon-archive.png`;
     archiveTitleIcon.alt = '';
     archiveTitleIcon.className = 'btn-icon';
     archiveTitleIcon.onerror = () => { archiveTitleIcon.style.display = 'none'; };

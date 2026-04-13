@@ -1,3 +1,4 @@
+const BASE = import.meta.env.BASE_URL;
 import type { GameState, QuestCategory, Slime } from '../types';
 import { Rarity } from '../types';
 import { QuestSystem } from '../systems/QuestSystem';
@@ -50,7 +51,7 @@ export class QuestUI {
 
     const title = document.createElement('h2');
 const questTitleIcon = document.createElement('img');
-    questTitleIcon.src = '/assets/icon-quest.png';
+    questTitleIcon.src = `${BASE}assets/icon-quest.png`;
     questTitleIcon.alt = '';
     questTitleIcon.className = 'btn-icon';
     questTitleIcon.onerror = () => { questTitleIcon.style.display = 'none'; };

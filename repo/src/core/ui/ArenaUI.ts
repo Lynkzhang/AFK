@@ -1,3 +1,4 @@
+const BASE = import.meta.env.BASE_URL;
 import type { GameState, ArenaId } from '../types';
 
 export interface ArenaCallbacks {
@@ -23,7 +24,7 @@ export class ArenaUI {
     const title = document.createElement('h2');
     title.className = 'panel-title';
 const arenaTitleIcon = document.createElement('img');
-    arenaTitleIcon.src = '/assets/icon-arena.png';
+    arenaTitleIcon.src = `${BASE}assets/icon-arena.png`;
     arenaTitleIcon.alt = '';
     arenaTitleIcon.className = 'btn-icon';
     arenaTitleIcon.onerror = () => { arenaTitleIcon.style.display = 'none'; };

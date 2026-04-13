@@ -1,3 +1,4 @@
+const BASE = import.meta.env.BASE_URL;
 import type { GameState } from '../types';
 import { CodexSystem } from '../systems/CodexSystem';
 
@@ -38,7 +39,7 @@ export class CodexUI {
     // Title + overall completion
     const title = document.createElement('h2');
 const codexTitleIcon = document.createElement('img');
-    codexTitleIcon.src = '/assets/icon-codex.png';
+    codexTitleIcon.src = `${BASE}assets/icon-codex.png`;
     codexTitleIcon.alt = '';
     codexTitleIcon.className = 'btn-icon';
     codexTitleIcon.onerror = () => { codexTitleIcon.style.display = 'none'; };

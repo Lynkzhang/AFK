@@ -9,6 +9,29 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ===== M46: UI Polish additions ===== */
+@keyframes panelOpen {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes panelClose {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(20px) scale(0.95); }
+}
+
+@keyframes resourcePulse {
+  0%   { color: #ffd700; transform: scale(1.25); }
+  50%  { color: #ffffff; transform: scale(1.1); }
+  100% { color: inherit; transform: scale(1); }
+}
+
+@keyframes buttonPress {
+  0%   { transform: scale(1); filter: brightness(1); }
+  40%  { transform: scale(0.94); filter: brightness(0.85); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
 :root {
   font-family: 'Courier New', Courier, monospace;
   color: #f0f3ff;
@@ -1139,4 +1162,84 @@ button:disabled {
   vertical-align: middle;
   margin-right: 4px;
   image-rendering: pixelated;
+}
+
+/* ===== M46: Panel open animation for overlay sub-panels ===== */
+.overlay-panel {
+  animation: panelOpen 0.22s ease-out both;
+}
+
+/* ===== M46: Button press feedback ===== */
+.pixel-btn:active,
+.game-btn:active,
+button.pixel-btn:active {
+  transform: scale(0.95) !important;
+  filter: brightness(0.85) !important;
+  transition: transform 0.06s, filter 0.06s !important;
+}
+
+/* Button hover transition for smoothness */
+.pixel-btn,
+.game-btn {
+  transition: transform 0.1s ease, filter 0.1s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+/* ===== M46: Resource value pulse animation ===== */
+.resource-pulse {
+  animation: resourcePulse 0.4s ease-out both;
+}
+
+/* ===== M46: Visual consistency for all sub-panels ===== */
+/* Unified panel title style */
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: bold;
+  color: #ffd700;
+  text-shadow: 0 0 8px rgba(255,215,0,0.5);
+  border-bottom: 2px solid rgba(255,215,0,0.3);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.panel-title .btn-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Unified card / list-item style across all sub-panels */
+.archive-item,
+.backpack-item,
+.shop-item,
+.facility-item,
+.quest-item,
+.codex-item,
+.arena-item {
+  border: 1px solid rgba(255,215,0,0.2);
+  border-radius: 0;
+  background: rgba(20,16,40,0.7);
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+
+.archive-item:hover,
+.backpack-item:hover,
+.shop-item:hover,
+.facility-item:hover,
+.quest-item:hover,
+.codex-item:hover,
+.arena-item:hover {
+  border-color: rgba(255,215,0,0.6);
+  background: rgba(30,24,56,0.9);
+  transform: translateX(2px);
+}
+
+/* Unified back-button style */
+.back-btn {
+  transition: background 0.12s, color 0.12s, transform 0.1s;
+}
+.back-btn:active {
+  transform: scale(0.95);
+  filter: brightness(0.85);
 }

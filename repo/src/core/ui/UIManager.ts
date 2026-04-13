@@ -1,6 +1,8 @@
 import type { GameState, Slime } from '../types';
 import { Rarity } from '../types';
 
+const BASE = import.meta.env.BASE_URL;
+
 interface UIHandlers {
   onNewGame: () => void;
   onSave: () => void;
@@ -35,7 +37,7 @@ export class UIManager {
     // Title with pixel slime logo
     const title = document.createElement('h1');
     const titleIcon = document.createElement('img');
-    titleIcon.src = '/assets/logo-slime.png';
+    titleIcon.src = `${BASE}assets/logo-slime.png`;
     titleIcon.alt = 'slime';
     titleIcon.className = 'ui-title-icon';
     titleIcon.onerror = () => { titleIcon.style.display = 'none'; };
@@ -46,7 +48,7 @@ export class UIManager {
     const currency = document.createElement('div');
     currency.className = 'ui-resource-row';
     const coinImg = document.createElement('img');
-    coinImg.src = '/assets/icon-coin.png';
+    coinImg.src = `${BASE}assets/icon-coin.png`;
     coinImg.alt = 'gold';
     coinImg.className = 'ui-resource-icon';
     currency.innerHTML = 'Currency: <span>0</span>';
@@ -57,7 +59,7 @@ export class UIManager {
     const slimeCount = document.createElement('div');
     slimeCount.className = 'ui-resource-row';
     const slimeImg = document.createElement('img');
-    slimeImg.src = '/assets/icon-slime.png';
+    slimeImg.src = `${BASE}assets/icon-slime.png`;
     slimeImg.alt = 'slimes';
     slimeImg.className = 'ui-resource-icon';
     slimeCount.innerHTML = 'Slimes: <span>0</span>';
@@ -68,7 +70,7 @@ export class UIManager {
     const countdown = document.createElement('div');
     countdown.className = 'ui-resource-row';
     const timerImg = document.createElement('img');
-    timerImg.src = '/assets/icon-timer.png';
+    timerImg.src = `${BASE}assets/icon-timer.png`;
     timerImg.alt = 'timer';
     timerImg.className = 'ui-resource-icon';
     countdown.innerHTML = '\u4e0b\u6b21\u5206\u88c2: <span>0.0s</span>';
@@ -79,7 +81,7 @@ export class UIManager {
     const capacity = document.createElement('div');
     capacity.className = 'ui-resource-row';
     const chestImg = document.createElement('img');
-    chestImg.src = '/assets/icon-chest.png';
+    chestImg.src = `${BASE}assets/icon-chest.png`;
     chestImg.alt = 'capacity';
     chestImg.className = 'ui-resource-icon';
     capacity.innerHTML = '\u5bb9\u91cf: <span>0 / 12</span>';
@@ -102,27 +104,27 @@ export class UIManager {
     sysLabel.className = 'ui-btn-group-label';
     sysLabel.textContent = '系统';
 
-    const newBtn = this.makeButton('\u65b0\u6e38\u620f', '/assets/icon-newgame.png');
-    const saveBtn = this.makeButton('\u4fdd\u5b58', '/assets/icon-save.png');
+    const newBtn = this.makeButton('\u65b0\u6e38\u620f', `${BASE}assets/icon-newgame.png`);
+    const saveBtn = this.makeButton('\u4fdd\u5b58', `${BASE}assets/icon-save.png`);
     const loadBtn = this.makeButton('\u52a0\u8f7d');
 
     // Game group label
     const gameLabel = document.createElement('div');
     gameLabel.className = 'ui-btn-group-label';
     const swordImg = document.createElement('img');
-    swordImg.src = '/assets/icon-sword.png';
+    swordImg.src = `${BASE}assets/icon-sword.png`;
     swordImg.alt = 'battle';
     swordImg.className = 'ui-resource-icon';
     gameLabel.append(swordImg, document.createTextNode('\u529f\u80fd'));
 
-    const battleBtn = this.makeButton('\u2694 \u6218\u6597', '/assets/icon-battle.png');
-    const backpackBtn = this.makeButton('\ud83c\udf92 \u80cc\u5305', '/assets/icon-backpack.png');
-    const archiveBtn = this.makeButton('\ud83d\udce6 \u5c01\u5b58\u5e93', '/assets/icon-archive.png');
-    const facilityBtn = this.makeButton('\ud83c\udfd7 \u8bbe\u65bd', '/assets/icon-facility.png');
-    const shopBtn = this.makeButton('\ud83d\uded2 \u5546\u5e97', '/assets/icon-shop.png');
-    const questBtn = this.makeButton('\ud83d\udcdc \u4efb\u52a1', '/assets/icon-quest.png');
-    const codexBtn = this.makeButton('\ud83d\udcd6 \u56fe\u9274', '/assets/icon-codex.png');
-    const arenaBtn = this.makeButton('\ud83c\udfd4 \u573a\u5730', '/assets/icon-arena.png');
+    const battleBtn = this.makeButton('\u2694 \u6218\u6597', `${BASE}assets/icon-battle.png`);
+    const backpackBtn = this.makeButton('\ud83c\udf92 \u80cc\u5305', `${BASE}assets/icon-backpack.png`);
+    const archiveBtn = this.makeButton('\ud83d\udce6 \u5c01\u5b58\u5e93', `${BASE}assets/icon-archive.png`);
+    const facilityBtn = this.makeButton('\ud83c\udfd7 \u8bbe\u65bd', `${BASE}assets/icon-facility.png`);
+    const shopBtn = this.makeButton('\ud83d\uded2 \u5546\u5e97', `${BASE}assets/icon-shop.png`);
+    const questBtn = this.makeButton('\ud83d\udcdc \u4efb\u52a1', `${BASE}assets/icon-quest.png`);
+    const codexBtn = this.makeButton('\ud83d\udcd6 \u56fe\u9274', `${BASE}assets/icon-codex.png`);
+    const arenaBtn = this.makeButton('\ud83c\udfd4 \u573a\u5730', `${BASE}assets/icon-arena.png`);
 
     actions.append(sysLabel, newBtn, saveBtn, loadBtn, gameLabel, battleBtn, backpackBtn, archiveBtn, facilityBtn, shopBtn, questBtn, codexBtn, arenaBtn);
 
@@ -232,8 +234,29 @@ export class UIManager {
   }
 
   render(state: GameState, timeUntilSplit: number, maxCapacity: number): void {
+    const prevCurrency = parseFloat(this.currencyEl.textContent || '0');
+    const prevSlimes = parseInt(this.slimeCountEl.textContent || '0', 10);
+
     this.currencyEl.textContent = state.currency.toFixed(0);
     this.slimeCountEl.textContent = String(state.slimes.length);
+
+    // Pulse animation on resource change
+    if (Math.abs(state.currency - prevCurrency) > 0.5) {
+      this.currencyEl.classList.remove('resource-pulse');
+      void this.currencyEl.offsetWidth; // reflow to restart animation
+      this.currencyEl.classList.add('resource-pulse');
+      this.currencyEl.addEventListener('animationend', () => {
+        this.currencyEl.classList.remove('resource-pulse');
+      }, { once: true });
+    }
+    if (state.slimes.length !== prevSlimes) {
+      this.slimeCountEl.classList.remove('resource-pulse');
+      void this.slimeCountEl.offsetWidth;
+      this.slimeCountEl.classList.add('resource-pulse');
+      this.slimeCountEl.addEventListener('animationend', () => {
+        this.slimeCountEl.classList.remove('resource-pulse');
+      }, { once: true });
+    }
     this.countdownEl.textContent = `${(Math.max(timeUntilSplit, 0) / 1000).toFixed(1)}s`;
     this.capacityEl.textContent = `${state.slimes.length} / ${maxCapacity}`;
     this.fullHintEl.classList.toggle('hidden', state.slimes.length < maxCapacity);

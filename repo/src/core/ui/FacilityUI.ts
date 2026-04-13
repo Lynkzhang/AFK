@@ -1,3 +1,4 @@
+const BASE = import.meta.env.BASE_URL;
 import type { GameState, Facility } from '../types';
 import { FacilitySystem } from '../systems/FacilitySystem';
 
@@ -19,7 +20,7 @@ export class FacilityUI {
 
     this.titleEl = document.createElement('h2');
     const facilityTitleIcon = document.createElement('img');
-    facilityTitleIcon.src = '/assets/icon-facility.png';
+    facilityTitleIcon.src = `${BASE}assets/icon-facility.png`;
     facilityTitleIcon.alt = '';
     facilityTitleIcon.className = 'btn-icon';
     facilityTitleIcon.onerror = () => { facilityTitleIcon.style.display = 'none'; };
