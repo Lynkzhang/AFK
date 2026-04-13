@@ -31,3 +31,14 @@ knowledge/
 # Playwright
 test-results/
 playwright-report/
+
+# Debug screenshots
+*.screenshot.png
+qa_screenshots*/
+# Temp files
+nul
+*.backup.*
+*_backup.*
+GMCommands_backup.ts
+css_addon.txt
+deployed-site.png

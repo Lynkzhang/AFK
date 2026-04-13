@@ -46,7 +46,7 @@ export class UIManager {
     const currency = document.createElement('div');
     currency.className = 'ui-resource-row';
     const coinImg = document.createElement('img');
-    coinImg.src = '/assets/icon-coin.svg';
+    coinImg.src = '/assets/icon-coin.png';
     coinImg.alt = 'gold';
     coinImg.className = 'ui-resource-icon';
     currency.innerHTML = 'Currency: <span>0</span>';
@@ -57,7 +57,7 @@ export class UIManager {
     const slimeCount = document.createElement('div');
     slimeCount.className = 'ui-resource-row';
     const slimeImg = document.createElement('img');
-    slimeImg.src = '/assets/icon-slime.svg';
+    slimeImg.src = '/assets/icon-slime.png';
     slimeImg.alt = 'slimes';
     slimeImg.className = 'ui-resource-icon';
     slimeCount.innerHTML = 'Slimes: <span>0</span>';
@@ -68,7 +68,7 @@ export class UIManager {
     const countdown = document.createElement('div');
     countdown.className = 'ui-resource-row';
     const timerImg = document.createElement('img');
-    timerImg.src = '/assets/icon-timer.svg';
+    timerImg.src = '/assets/icon-timer.png';
     timerImg.alt = 'timer';
     timerImg.className = 'ui-resource-icon';
     countdown.innerHTML = '\u4e0b\u6b21\u5206\u88c2: <span>0.0s</span>';
@@ -79,7 +79,7 @@ export class UIManager {
     const capacity = document.createElement('div');
     capacity.className = 'ui-resource-row';
     const chestImg = document.createElement('img');
-    chestImg.src = '/assets/icon-chest.svg';
+    chestImg.src = '/assets/icon-chest.png';
     chestImg.alt = 'capacity';
     chestImg.className = 'ui-resource-icon';
     capacity.innerHTML = '\u5bb9\u91cf: <span>0 / 12</span>';
@@ -110,7 +110,7 @@ export class UIManager {
     const gameLabel = document.createElement('div');
     gameLabel.className = 'ui-btn-group-label';
     const swordImg = document.createElement('img');
-    swordImg.src = '/assets/icon-sword.svg';
+    swordImg.src = '/assets/icon-sword.png';
     swordImg.alt = 'battle';
     swordImg.className = 'ui-resource-icon';
     gameLabel.append(swordImg, document.createTextNode('\u529f\u80fd'));
