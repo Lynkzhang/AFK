@@ -458,6 +458,37 @@ ui.bind({
   },
 });
 
+ui.bindQuickActions({
+  onQuickView: function(id) {
+    soundManager.playUIClick();
+    soundManager.playPanelOpen();
+    ui.setActionsDisabled(true);
+    backpackUI.render(state);
+    backpackUI.viewSlime(id);
+  },
+  onQuickSell: function(id) {
+    var slime = state.slimes.find(function(s) { return s.id === id; });
+    if (!slime) return;
+    soundManager.playSell();
+    var price = evaluatePrice(slime);
+    state.currency += price;
+    state.slimes = state.slimes.filter(function(s) { return s.id !== id; });
+    QuestSystem.incrementCounter(state, 'daily_sells');
+    QuestSystem.incrementCounter(state, 'total_sells');
+    onboardingSystem.notifyEvent('sell');
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+  },
+  onQuickArchive: function(id) {
+    var result = archiveSlime(state, id);
+    if (result.success) {
+      soundManager.playArchive();
+      QuestSystem.incrementCounter(state, 'daily_archives');
+      onboardingSystem.notifyEvent('archive');
+    }
+    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+  },
+});
+
 facilityUI.bind({
   onUpgrade: (id: string) => {
     const facility = state.facilities.find((f) => f.id === id);

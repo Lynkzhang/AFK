@@ -1111,8 +1111,9 @@ button:disabled {
   font-size: 11px;
   color: #c9d1d9;
   min-width: 80px;
-  max-width: 120px;
+  max-width: 200px;
   transition: border-color 0.12s, transform 0.1s;
+  flex-wrap: wrap;
 }
 .ui-slime-card:hover {
   border-color: #ffd700;
@@ -1155,6 +1156,41 @@ button:disabled {
   border-radius: 3px;
   line-height: 1;
   flex-shrink: 0;
+}
+/* M48: Quick action buttons on slime cards */
+.ui-slime-quick-actions {
+  display: flex;
+  gap: 2px;
+  width: 100%;
+  margin-top: 3px;
+}
+.ui-slime-quick-btn {
+  flex: 1;
+  font-size: 9px;
+  padding: 1px 2px;
+  border: 1px solid #4a3830;
+  background: rgba(30, 20, 40, 0.9);
+  color: #c9d1d9;
+  cursor: pointer;
+  border-radius: 0;
+  transition: background 0.1s, color 0.1s;
+  line-height: 1.4;
+  font-family: inherit;
+}
+.ui-slime-quick-btn:hover {
+  border-color: #ffd700;
+}
+.ui-slime-quick-view:hover {
+  background: rgba(79, 140, 255, 0.25);
+  color: #7aadff;
+}
+.ui-slime-quick-sell:hover {
+  background: rgba(255, 215, 0, 0.2);
+  color: #ffd700;
+}
+.ui-slime-quick-archive:hover {
+  background: rgba(155, 89, 255, 0.2);
+  color: #b388ff;
 }
 .btn-icon {
   width: 16px;

@@ -17,6 +17,12 @@ interface UIHandlers {
   onOpenArena: () => void;
 }
 
+interface QuickActionHandlers {
+  onQuickView: (id: string) => void;
+  onQuickSell: (id: string) => void;
+  onQuickArchive: (id: string) => void;
+}
+
 export type PriceEvaluatorFn = (slime: Slime) => number;
 
 export class UIManager {
@@ -29,6 +35,8 @@ export class UIManager {
   private readonly buffStatusEl: HTMLDivElement;
   /** Bottom slime list panel */
   private readonly slimeListEl: HTMLDivElement;
+  /** Quick action callbacks for slime cards */
+  private quickHandlers: QuickActionHandlers | null = null;
 
   constructor() {
     this.root = document.createElement('div');
@@ -185,6 +193,11 @@ export class UIManager {
     this.buttons.arenaBtn.onclick = handlers.onOpenArena;
   }
 
+  /** Bind quick-action handlers for slime cards (查看/出售/封存) */
+  bindQuickActions(handlers: QuickActionHandlers): void {
+    this.quickHandlers = handlers;
+  }
+
   /** Render a compact slime card for the bottom list */
   private renderSlimeCard(slime: Slime): HTMLDivElement {
     const card = document.createElement('div');
@@ -218,7 +231,39 @@ export class UIManager {
     hpInner.style.width = `${hpPct}%`;
     hpOuter.appendChild(hpInner);
 
-    card.append(swatch, info, rarityTag, hpOuter);
+    // Quick action buttons: 查看 / 出售 / 封存
+    const quickActions = document.createElement('div');
+    quickActions.className = 'ui-slime-quick-actions';
+
+    const viewBtn = document.createElement('button');
+    viewBtn.className = 'ui-slime-quick-btn ui-slime-quick-view';
+    viewBtn.textContent = '查看';
+    viewBtn.title = '在背包中查看详情';
+    viewBtn.onclick = (e) => {
+      e.stopPropagation();
+      this.quickHandlers?.onQuickView(slime.id);
+    };
+
+    const sellBtn = document.createElement('button');
+    sellBtn.className = 'ui-slime-quick-btn ui-slime-quick-sell';
+    sellBtn.textContent = '出售';
+    sellBtn.title = '直接出售该史莱姆';
+    sellBtn.onclick = (e) => {
+      e.stopPropagation();
+      this.quickHandlers?.onQuickSell(slime.id);
+    };
+
+    const archiveBtn = document.createElement('button');
+    archiveBtn.className = 'ui-slime-quick-btn ui-slime-quick-archive';
+    archiveBtn.textContent = '封存';
+    archiveBtn.title = '封存该史莱姆';
+    archiveBtn.onclick = (e) => {
+      e.stopPropagation();
+      this.quickHandlers?.onQuickArchive(slime.id);
+    };
+
+    quickActions.append(viewBtn, sellBtn, archiveBtn);
+    card.append(swatch, info, rarityTag, hpOuter, quickActions);
     return card;
   }
 

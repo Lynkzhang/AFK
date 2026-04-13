@@ -292,6 +292,18 @@ const backpackTitleIcon = document.createElement('img');
   getSelectedIds(): string[] { return [...this.selectedIds]; }
   getSelectedSlimeId(): string | null { return this.selectedSlimeId; }
 
+  /** Open backpack and immediately show detail for given slime id (M48 quick view) */
+  viewSlime(id: string): void {
+    this.selectedSlimeId = id;
+    this.show();
+    if (this.currentState) {
+      const slime = this.findSlime(id);
+      if (slime) {
+        this.renderDetail(slime);
+      }
+    }
+  }
+
   // ------- Private methods -------
 
   private switchTab(tab: BackpackTab): void {

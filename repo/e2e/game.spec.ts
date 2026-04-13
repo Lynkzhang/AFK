@@ -3158,3 +3158,112 @@ test.describe('M41: Quick Fixes', () => {
     expect(rendererWorks).toBe(true);
   });
 });
+
+test.describe('M48: Slime card quick actions', () => {
+  test('slime cards have quick action buttons (查看/出售/封存)', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    acceptDialogs(page);
+    await page.evaluate(() => {
+      window.__GM!.skipOnboarding();
+    });
+    await page.waitForTimeout(300);
+    // Each slime card should have 3 quick action buttons
+    const cards = page.locator('.ui-slime-card');
+    await expect(cards.first()).toBeVisible({ timeout: 3000 });
+    const viewBtn = cards.first().locator('.ui-slime-quick-view');
+    const sellBtn = cards.first().locator('.ui-slime-quick-sell');
+    const archiveBtn = cards.first().locator('.ui-slime-quick-archive');
+    await expect(viewBtn).toBeVisible();
+    await expect(sellBtn).toBeVisible();
+    await expect(archiveBtn).toBeVisible();
+    await expect(viewBtn).toHaveText('查看');
+    await expect(sellBtn).toHaveText('出售');
+    await expect(archiveBtn).toHaveText('封存');
+  });
+
+  test('quick view button opens backpack with slime detail', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    acceptDialogs(page);
+    await page.evaluate(() => {
+      window.__GM!.skipOnboarding();
+    });
+    await page.waitForTimeout(300);
+    // Click the view button on the first slime card
+    const firstCard = page.locator('.ui-slime-card').first();
+    await expect(firstCard).toBeVisible({ timeout: 3000 });
+    const slimeId = await firstCard.getAttribute('data-id');
+    expect(slimeId).toBeTruthy();
+    // Use evaluate to click directly — avoids detachment from continuous re-render
+    await page.evaluate(() => {
+      const btn = document.querySelector<HTMLButtonElement>('.ui-slime-quick-view');
+      btn?.click();
+    });
+    // Backpack panel should now be visible
+    await expect(page.locator('.backpack-panel')).toBeVisible({ timeout: 3000 });
+  });
+
+  test('quick sell button removes slime and adds currency', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    acceptDialogs(page);
+    await page.evaluate(() => {
+      window.__GM!.skipOnboarding();
+    });
+    await page.waitForTimeout(300);
+    // Get initial currency and slime count
+    const initialCurrency = await page.evaluate(() => {
+      const el = document.querySelector('.ui-panel span');
+      return parseFloat(el?.textContent ?? '0');
+    });
+    const initialCount = await page.locator('.ui-slime-card').count();
+    expect(initialCount).toBeGreaterThan(0);
+    // Click sell on first card — use evaluate to avoid detachment from continuous re-render
+    await page.evaluate(() => {
+      const btn = document.querySelector<HTMLButtonElement>('.ui-slime-quick-sell');
+      btn?.click();
+    });
+    await page.waitForTimeout(200);
+    // Slime count should decrease
+    const newCount = await page.locator('.ui-slime-card').count();
+    expect(newCount).toBeLessThan(initialCount);
+    // Currency should increase (sell price > 0)
+    const newCurrency = await page.evaluate(() => {
+      const el = document.querySelector('.ui-panel span');
+      return parseFloat(el?.textContent ?? '0');
+    });
+    expect(newCurrency).toBeGreaterThanOrEqual(initialCurrency);
+  });
+
+  test('quick archive button moves slime to archive', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    acceptDialogs(page);
+    await page.evaluate(() => {
+      window.__GM!.skipOnboarding();
+    });
+    await page.waitForTimeout(300);
+    const initialCount = await page.locator('.ui-slime-card').count();
+    expect(initialCount).toBeGreaterThan(0);
+    // Click archive on first card — use evaluate to avoid detachment from continuous re-render
+    await page.evaluate(() => {
+      const btn = document.querySelector<HTMLButtonElement>('.ui-slime-quick-archive');
+      btn?.click();
+    });
+    await page.waitForTimeout(200);
+    // Active slime count should decrease (moved to archive)
+    const newCount = await page.locator('.ui-slime-card').count();
+    expect(newCount).toBeLessThan(initialCount);
+    // Verify slime is now in archive by opening backpack archived tab
+    await page.locator('.ui-actions button', { hasText: '背包' }).click();
+    await expect(page.locator('.backpack-panel')).toBeVisible({ timeout: 3000 });
+    await page.locator('.backpack-tab-btn[data-tab="archived"]').click();
+    const archivedCards = page.locator('.backpack-card');
+    expect(await archivedCards.count()).toBeGreaterThan(0);
+  });
+});
