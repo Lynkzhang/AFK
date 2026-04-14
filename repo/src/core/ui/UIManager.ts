@@ -29,7 +29,6 @@ export class UIManager {
   readonly root: HTMLDivElement;
   private readonly currencyEl: HTMLSpanElement;
   private readonly slimeCountEl: HTMLSpanElement;
-  private readonly countdownEl: HTMLSpanElement;
   private readonly capacityEl: HTMLSpanElement;
   private readonly fullHintEl: HTMLDivElement;
   private readonly buffStatusEl: HTMLDivElement;
@@ -73,17 +72,6 @@ export class UIManager {
     slimeCount.innerHTML = '史莱姆: <span>0</span>';
     slimeCount.insertBefore(slimeImg, slimeCount.firstChild);
     this.slimeCountEl = slimeCount.querySelector('span') as HTMLSpanElement;
-
-    // Countdown with timer icon
-    const countdown = document.createElement('div');
-    countdown.className = 'ui-resource-row';
-    const timerImg = document.createElement('img');
-    timerImg.src = `${BASE}assets/icon-timer.png`;
-    timerImg.alt = 'timer';
-    timerImg.className = 'ui-resource-icon';
-    countdown.innerHTML = '\u4e0b\u6b21\u5206\u88c2: <span>0.0s</span>';
-    countdown.insertBefore(timerImg, countdown.firstChild);
-    this.countdownEl = countdown.querySelector('span') as HTMLSpanElement;
 
     // Capacity with chest icon
     const capacity = document.createElement('div');
@@ -140,9 +128,26 @@ export class UIManager {
     this.slimeListEl = document.createElement('div');
     this.slimeListEl.className = 'ui-slime-list';
 
-    this.root.append(title, currency, slimeCount, countdown, capacity, this.fullHintEl, this.buffStatusEl, actions, this.slimeListEl);
+    this.root.append(title, currency, slimeCount, capacity, this.fullHintEl, this.buffStatusEl, actions, this.slimeListEl);
 
     this.buttons = { newBtn, saveBtn, loadBtn, battleBtn, backpackBtn, archiveBtn, facilityBtn, shopBtn, questBtn, codexBtn, arenaBtn };
+
+    // Event delegation for slime card quick actions (survives replaceChildren)
+    this.slimeListEl.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (!target.classList.contains('ui-slime-quick-btn')) return;
+      e.stopPropagation();
+      const card = target.closest('.ui-slime-card') as HTMLElement | null;
+      const id = card?.dataset['id'];
+      if (!id) return;
+      if (target.classList.contains('ui-slime-quick-view')) {
+        this.quickHandlers?.onQuickView(id);
+      } else if (target.classList.contains('ui-slime-quick-sell')) {
+        this.quickHandlers?.onQuickSell(id);
+      } else if (target.classList.contains('ui-slime-quick-archive')) {
+        this.quickHandlers?.onQuickArchive(id);
+      }
+    });
   }
 
   private readonly buttons: {
@@ -239,28 +244,16 @@ export class UIManager {
     viewBtn.className = 'ui-slime-quick-btn ui-slime-quick-view';
     viewBtn.textContent = '查看';
     viewBtn.title = '在背包中查看详情';
-    viewBtn.onclick = (e) => {
-      e.stopPropagation();
-      this.quickHandlers?.onQuickView(slime.id);
-    };
 
     const sellBtn = document.createElement('button');
     sellBtn.className = 'ui-slime-quick-btn ui-slime-quick-sell';
     sellBtn.textContent = '出售';
     sellBtn.title = '直接出售该史莱姆';
-    sellBtn.onclick = (e) => {
-      e.stopPropagation();
-      this.quickHandlers?.onQuickSell(slime.id);
-    };
 
     const archiveBtn = document.createElement('button');
     archiveBtn.className = 'ui-slime-quick-btn ui-slime-quick-archive';
     archiveBtn.textContent = '封存';
     archiveBtn.title = '封存该史莱姆';
-    archiveBtn.onclick = (e) => {
-      e.stopPropagation();
-      this.quickHandlers?.onQuickArchive(slime.id);
-    };
 
     quickActions.append(viewBtn, sellBtn, archiveBtn);
     card.append(swatch, info, rarityTag, hpOuter, quickActions);
@@ -278,7 +271,7 @@ export class UIManager {
     return map[rarity] ?? '#888';
   }
 
-  render(state: GameState, timeUntilSplit: number, maxCapacity: number): void {
+  render(state: GameState, maxCapacity: number): void {
     const prevCurrency = parseFloat(this.currencyEl.textContent || '0');
     const prevSlimes = parseInt(this.slimeCountEl.textContent || '0', 10);
 
@@ -302,7 +295,6 @@ export class UIManager {
         this.slimeCountEl.classList.remove('resource-pulse');
       }, { once: true });
     }
-    this.countdownEl.textContent = `${(Math.max(timeUntilSplit, 0) / 1000).toFixed(1)}s`;
     this.capacityEl.textContent = `${state.slimes.length} / ${maxCapacity}`;
     this.fullHintEl.classList.toggle('hidden', state.slimes.length < maxCapacity);
 

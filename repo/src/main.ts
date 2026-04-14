@@ -346,7 +346,7 @@ const loop = new GameLoop({
       }
     }
     scene.update(state, elapsedTime, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getSplitInterval(state) / 10000, !!(state.activeBuffs.splitFieldAcceleratorUntil && state.activeBuffs.splitFieldAcceleratorUntil > Date.now()));
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+    ui.render(state, FacilitySystem.getMaxCapacity(state));
     // Sync derived quest counters each frame
     QuestSystem.syncDerivedCounters(state);
     // Auto-record codex entries from current slimes
@@ -368,7 +368,7 @@ ui.bind({
     }
     state = createDefaultState();
     onboardingSystem = new OnboardingSystem(state, onboardingUI);
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+    ui.render(state, FacilitySystem.getMaxCapacity(state));
   },
   onSave: () => {
     soundManager.playUIClick();
@@ -391,7 +391,7 @@ ui.bind({
       state = loaded;
       migrateState(state);
       onboardingSystem = new OnboardingSystem(state, onboardingUI);
-      ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+      ui.render(state, FacilitySystem.getMaxCapacity(state));
       showToast('\u52a0\u8f7d\u6210\u529f \u2713');
     } else {
       showToast('\u65e0\u5b58\u6863\u53ef\u52a0\u8f7d');
@@ -476,7 +476,7 @@ ui.bindQuickActions({
     QuestSystem.incrementCounter(state, 'daily_sells');
     QuestSystem.incrementCounter(state, 'total_sells');
     onboardingSystem.notifyEvent('sell');
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+    ui.render(state, FacilitySystem.getMaxCapacity(state));
   },
   onQuickArchive: function(id) {
     var result = archiveSlime(state, id);
@@ -485,7 +485,7 @@ ui.bindQuickActions({
       QuestSystem.incrementCounter(state, 'daily_archives');
       onboardingSystem.notifyEvent('archive');
     }
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+    ui.render(state, FacilitySystem.getMaxCapacity(state));
   },
 });
 
@@ -498,7 +498,7 @@ facilityUI.bind({
     QuestSystem.incrementCounter(state, 'daily_upgrades');
     onboardingSystem.notifyEvent('facility-upgrade');
     facilityUI.render(state);
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+    ui.render(state, FacilitySystem.getMaxCapacity(state));
     if (ok) {
       soundManager.playAchievement();
       const newLevel = facility ? facility.level : oldLevel;
@@ -523,7 +523,7 @@ shopUI.bind({
       showBuffToast('⚡ 培养场强化剂已激活！全场分裂速度×2，持续60秒！');
     }
     shopUI.render(state);
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+    ui.render(state, FacilitySystem.getMaxCapacity(state));
   },
   onUseItem: (itemType: string, slimeId?: string) => {
     const targetId = slimeId ?? state.slimes[0]?.id;
@@ -551,12 +551,12 @@ questUI.bind({
     soundManager.playRewardClaim();
     QuestSystem.claimQuest(state, questId);
     questUI.render(state);
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+    ui.render(state, FacilitySystem.getMaxCapacity(state));
   },
   onSubmitBounty: (questId: string, slimeId: string) => {
     QuestSystem.submitBounty(state, questId, slimeId);
     questUI.render(state);
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+    ui.render(state, FacilitySystem.getMaxCapacity(state));
   },
   onBack: () => {
     soundManager.playPanelClose();
@@ -580,7 +580,7 @@ arenaUI.bind({
       showToast('\u2716 \u8d27\u5e01\u4e0d\u8db3');
     }
     arenaUI.render(state);
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+    ui.render(state, FacilitySystem.getMaxCapacity(state));
   },
   onSwitch: (arenaId) => {
     ArenaSystem.switchArena(state, arenaId);
@@ -659,7 +659,7 @@ battleUI.bind({
       soundManager.playDefeat();
     }
     onboardingSystem.notifyEvent('battle-complete');
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+    ui.render(state, FacilitySystem.getMaxCapacity(state));
   },
 });
 
@@ -672,7 +672,7 @@ archiveUI.bind({
     }
     unarchiveSlime(state, slimeId);
     archiveUI.render(state);
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+    ui.render(state, FacilitySystem.getMaxCapacity(state));
   },
   onSell: (slimeId: string) => {
     const slime = state.archivedSlimes.find((s) => s.id === slimeId);
@@ -683,7 +683,7 @@ archiveUI.bind({
       QuestSystem.incrementCounter(state, 'daily_sells');
       QuestSystem.incrementCounter(state, 'total_sells');
       archiveUI.render(state);
-      ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+      ui.render(state, FacilitySystem.getMaxCapacity(state));
     }
   },
   onEquipAccessory: (slimeId: string, accessoryId: string) => {
@@ -718,7 +718,7 @@ backpackUI.bind({
     QuestSystem.incrementCounter(state, 'total_sells');
     showToast(`\u51fa\u552e\u6210\u529f\uff0c\u83b7\u5f97 \ud83d\udcb0${price} \u91d1\u5e01`);
     backpackUI.render(state);
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+    ui.render(state, FacilitySystem.getMaxCapacity(state));
   },
   onCull: (id: string) => {
     soundManager.playCull();
@@ -726,7 +726,7 @@ backpackUI.bind({
     showToast('\u5254\u9664\u6210\u529f \ud83d\uddd1\ufe0f');
     onboardingSystem.notifyEvent('cull');
     backpackUI.render(state);
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+    ui.render(state, FacilitySystem.getMaxCapacity(state));
   },
   onArchive: (id: string) => {
     const result = archiveSlime(state, id);
@@ -739,7 +739,7 @@ backpackUI.bind({
       showToast(`\u2716 ${result.reason ?? '\u5c01\u5b58\u5931\u8d25'}`);
     }
     backpackUI.render(state);
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+    ui.render(state, FacilitySystem.getMaxCapacity(state));
   },
   onUnarchive: (id: string) => {
     const maxCap = FacilitySystem.getMaxCapacity(state);
@@ -749,7 +749,7 @@ backpackUI.bind({
     }
     unarchiveSlime(state, id);
     backpackUI.render(state);
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+    ui.render(state, FacilitySystem.getMaxCapacity(state));
   },
   onEquipAccessory: (slimeId: string, accessoryId: string) => {
     AccessorySystem.equip(state, accessoryId, slimeId);
@@ -775,14 +775,14 @@ backpackUI.bind({
     for (const id of ids) { removeArchivedSlime(state, id); }
     showToast(`\u6279\u91cf\u51fa\u552e ${ids.length} \u53ea\uff0c\u83b7\u5f97 \ud83d\udcb0${total} \u91d1\u5e01`);
     backpackUI.render(state);
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+    ui.render(state, FacilitySystem.getMaxCapacity(state));
   },
   onBatchCull: (ids: string[]) => {
     soundManager.playCull();
     state.slimes = state.slimes.filter((s) => !ids.includes(s.id));
     showToast(`\u6279\u91cf\u5254\u9664 ${ids.length} \u53ea\u53f2\u83b1\u59c6 \ud83d\uddd1\ufe0f`);
     backpackUI.render(state);
-    ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+    ui.render(state, FacilitySystem.getMaxCapacity(state));
   },
   onBack: () => {
     soundManager.playPanelClose();
@@ -796,7 +796,7 @@ window.addEventListener('beforeunload', () => {
   saveManager.save(state);
 });
 
-ui.render(state, breedingSystem.getTimeUntilNextSplit(), FacilitySystem.getMaxCapacity(state));
+ui.render(state, FacilitySystem.getMaxCapacity(state));
 initGM(() => state, (s) => { state = s; onboardingSystem.setState(s); }, {
   skip: () => onboardingSystem.skip(),
   reset: () => onboardingSystem.reset(),

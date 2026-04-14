@@ -68,7 +68,7 @@ body,
   position: absolute;
   top: 16px;
   left: 16px;
-  width: 320px;
+  width: 420px;
   max-height: calc(100% - 32px);
   padding: 14px;
   border-radius: 0;
@@ -123,7 +123,7 @@ body,
 /* Button group labels */
 .ui-btn-group-label {
   width: 100%;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: bold;
   color: #ffd700;
   letter-spacing: 0.12em;
@@ -1096,7 +1096,7 @@ button:disabled {
   padding: 6px 0 2px;
   border-top: 1px solid #ffd700;
   margin-top: 6px;
-  max-height: 120px;
+  max-height: 200px;
   overflow-y: auto;
 }
 .ui-slime-card {
@@ -1108,7 +1108,7 @@ button:disabled {
   border-top: 2px solid rgba(255,215,0,0.2);
   border-radius: 0;
   padding: 3px 6px;
-  font-size: 11px;
+  font-size: 13px;
   color: #c9d1d9;
   min-width: 80px;
   max-width: 200px;
@@ -1131,7 +1131,7 @@ button:disabled {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 10px;
+  font-size: 12px;
 }
 .ui-slime-hp-outer {
   width: 30px;
@@ -1149,7 +1149,7 @@ button:disabled {
 }
 .ui-slime-rarity {
   display: inline-block;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: bold;
   color: #fff;
   padding: 1px 4px;
@@ -1166,7 +1166,7 @@ button:disabled {
 }
 .ui-slime-quick-btn {
   flex: 1;
-  font-size: 9px;
+  font-size: 12px;
   padding: 1px 2px;
   border: 1px solid #4a3830;
   background: rgba(30, 20, 40, 0.9);

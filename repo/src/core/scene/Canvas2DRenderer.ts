@@ -595,16 +595,8 @@ export class Canvas2DRenderer {
       this.ctx.fillStyle = 'rgba(0,0,0,0.3)';
       this.ctx.fillRect(barX, barY, barW, barH);
 
-      // Fill color based on progress
-      let fillColor: string;
-      if (progress < 0.33) {
-        fillColor = '#4ade80';
-      } else if (progress < 0.66) {
-        fillColor = '#facc15';
-      } else {
-        fillColor = '#f97316';
-      }
-      this.ctx.fillStyle = fillColor;
+      // Fill — single uniform color (cyan-green)
+      this.ctx.fillStyle = '#4ade80';
       this.ctx.fillRect(barX, barY, Math.floor(barW * progress), barH);
       this.ctx.restore();
     }
