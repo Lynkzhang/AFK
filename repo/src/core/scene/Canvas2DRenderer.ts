@@ -142,7 +142,6 @@ export class Canvas2DRenderer {
   private ctx: CanvasRenderingContext2D;
   private state: GameState | null = null;
   private elapsedTime = 0;
-  private splitCountdown = Infinity;
   private animParams: AnimationParams = { ...DEFAULT_ANIM_PARAMS };
   private facilityMultiplier = 1.0;
   private fieldAccelActive = false;
@@ -183,10 +182,9 @@ export class Canvas2DRenderer {
     return { ...this.animParams };
   }
 
-  update(state: GameState, elapsedTime: number, splitCountdown?: number, facilityMultiplier?: number, fieldAccelActive?: boolean): void {
+  update(state: GameState, elapsedTime: number, facilityMultiplier?: number, fieldAccelActive?: boolean): void {
     this.state = state;
     this.elapsedTime = elapsedTime;
-    this.splitCountdown = splitCountdown ?? Infinity;
     this.facilityMultiplier = facilityMultiplier ?? 1.0;
     this.fieldAccelActive = fieldAccelActive ?? false;
 
@@ -494,18 +492,22 @@ export class Canvas2DRenderer {
     const rarityScale = this.getRaritySizeScale(slime.rarity);
     const pixelSize = Math.max(2, Math.floor(4 * rarityScale));
 
-    // --- Pre-split animation: last 3 seconds ---
+    // --- Pre-split animation: last 3 seconds (per-slime) ---
     let preSplitScale = 1;
     let preSplitGlow = false;
     let splitFlicker = false;
-    if (this.splitCountdown <= 3000 && this.splitCountdown > 0) {
-      const progress = 1 - this.splitCountdown / 3000; // 0→1
-      // Pulsing scale: grows with a sine wobble
-      preSplitScale = 1 + 0.15 * progress + 0.05 * Math.sin(t * 8);
-      preSplitGlow = true;
-      // Last 1 second: fast flicker
-      if (this.splitCountdown <= 1000) {
-        splitFlicker = true;
+    {
+      const effectiveSplitTime = calcEffectiveSplitTime(slime, this.facilityMultiplier, this.fieldAccelActive);
+      const slimeCountdown = effectiveSplitTime - (slime.splitAccumulatedMs ?? 0);
+      if (slimeCountdown <= 3000 && slimeCountdown > 0) {
+        const progress = 1 - slimeCountdown / 3000; // 0→1
+        // Pulsing scale: grows with a sine wobble
+        preSplitScale = 1 + 0.15 * progress + 0.05 * Math.sin(t * 8);
+        preSplitGlow = true;
+        // Last 1 second: fast flicker
+        if (slimeCountdown <= 1000) {
+          splitFlicker = true;
+        }
       }
     }
 

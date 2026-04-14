@@ -22,7 +22,6 @@ export interface BreedingConfig {
 export class BreedingSystem {
   private readonly config: BreedingConfig;
   private readonly engine = new MutationEngine();
-  private cachedMinTimeUntilSplit = Infinity;
 
   constructor(config?: Partial<BreedingConfig>) {
     this.config = { splitIntervalMs: 10000, maxCapacity: 12, ...config };
@@ -33,7 +32,6 @@ export class BreedingSystem {
     const maxCapacity = dynamicConfig?.maxCapacity ?? this.config.maxCapacity;
 
     if (state.slimes.length >= maxCapacity) {
-      this.cachedMinTimeUntilSplit = Infinity;
       return { didSplit: false, wasMutation: false };
     }
 
@@ -42,8 +40,6 @@ export class BreedingSystem {
     const deltaMs = deltaTime * 1000;
 
     let splitParentIndex = -1;
-    let minRemaining = Infinity;
-
     for (let i = 0; i < state.slimes.length; i++) {
       const slime = state.slimes[i];
       slime.splitAccumulatedMs = (slime.splitAccumulatedMs ?? 0) + deltaMs;
@@ -51,11 +47,6 @@ export class BreedingSystem {
       if (slime.splitAccumulatedMs >= effectiveSplitTime) {
         if (splitParentIndex === -1) {
           splitParentIndex = i;
-        }
-      } else {
-        const remaining = effectiveSplitTime - slime.splitAccumulatedMs;
-        if (remaining < minRemaining) {
-          minRemaining = remaining;
         }
       }
     }
@@ -108,9 +99,6 @@ export class BreedingSystem {
         state.activeBuffs.rareEssenceActive = false;
       }
 
-      // Update cached min time
-      this.cachedMinTimeUntilSplit = 0;
-
       const wasMutation = offspring.rarity !== parent.rarity;
       return {
         didSplit: true,
@@ -122,12 +110,7 @@ export class BreedingSystem {
       };
     }
 
-    this.cachedMinTimeUntilSplit = minRemaining;
     return { didSplit: false, wasMutation: false };
-  }
-
-  getTimeUntilNextSplit(): number {
-    return Math.max(0, this.cachedMinTimeUntilSplit);
   }
 
   getMaxCapacity(): number {
