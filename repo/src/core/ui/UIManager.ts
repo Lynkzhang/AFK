@@ -21,6 +21,7 @@ interface QuickActionHandlers {
   onQuickView: (id: string) => void;
   onQuickSell: (id: string) => void;
   onQuickArchive: (id: string) => void;
+  onQuickCull: (id: string) => void;
 }
 
 export type PriceEvaluatorFn = (slime: Slime) => number;
@@ -36,6 +37,8 @@ export class UIManager {
   private readonly slimeListEl: HTMLDivElement;
   /** Quick action callbacks for slime cards */
   private quickHandlers: QuickActionHandlers | null = null;
+  /** 上次渲染的 slime 列表签名，用于脏检查 */
+  private lastSlimeListSignature: string = '';
 
   constructor() {
     this.root = document.createElement('div');
@@ -146,6 +149,8 @@ export class UIManager {
         this.quickHandlers?.onQuickSell(id);
       } else if (target.classList.contains('ui-slime-quick-archive')) {
         this.quickHandlers?.onQuickArchive(id);
+      } else if (target.classList.contains('ui-slime-quick-cull')) {
+        this.quickHandlers?.onQuickCull(id);
       }
     });
   }
@@ -255,7 +260,12 @@ export class UIManager {
     archiveBtn.textContent = '封存';
     archiveBtn.title = '封存该史莱姆';
 
-    quickActions.append(viewBtn, sellBtn, archiveBtn);
+    const cullBtn = document.createElement('button');
+    cullBtn.className = 'ui-slime-quick-btn ui-slime-quick-cull';
+    cullBtn.textContent = '剔除';
+    cullBtn.title = '永久删除该史莱姆（不可撤销）';
+
+    quickActions.append(viewBtn, sellBtn, archiveBtn, cullBtn);
     card.append(swatch, info, rarityTag, hpOuter, quickActions);
     return card;
   }
@@ -269,6 +279,10 @@ export class UIManager {
       [Rarity.Legendary]: '#ffd700',
     };
     return map[rarity] ?? '#888';
+  }
+
+  private computeSlimeSignature(slimes: Slime[]): string {
+    return slimes.map(s => `${s.id}:${s.rarity}:${s.color}`).join('|');
   }
 
   render(state: GameState, maxCapacity: number): void {
@@ -308,11 +322,12 @@ export class UIManager {
       this.buffStatusEl.textContent = parts.join(' | ');
     }
 
-    // Update bottom slime list — show all slimes (scrollable)
-    this.slimeListEl.replaceChildren();
-    if (state.slimes.length > 0) {
-      const displayed = state.slimes;
-      for (const slime of displayed) {
+    // Update bottom slime list — dirty-check to avoid per-frame DOM rebuild
+    const newSig = this.computeSlimeSignature(state.slimes);
+    if (newSig !== this.lastSlimeListSignature) {
+      this.lastSlimeListSignature = newSig;
+      this.slimeListEl.replaceChildren();
+      for (const slime of state.slimes) {
         this.slimeListEl.appendChild(this.renderSlimeCard(slime));
       }
     }

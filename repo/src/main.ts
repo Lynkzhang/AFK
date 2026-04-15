@@ -487,6 +487,15 @@ ui.bindQuickActions({
     }
     ui.render(state, FacilitySystem.getMaxCapacity(state));
   },
+  onQuickCull: function(id) {
+    var slime = state.slimes.find(function(s) { return s.id === id; });
+    if (!slime) return;
+    if (!confirm('确定要剔除 ' + slime.name + ' 吗？此操作不可撤销。')) return;
+    state.slimes = state.slimes.filter(function(s) { return s.id !== id; });
+    QuestSystem.incrementCounter(state, 'daily_culls');
+    onboardingSystem.notifyEvent('cull');
+    ui.render(state, FacilitySystem.getMaxCapacity(state));
+  },
 });
 
 facilityUI.bind({

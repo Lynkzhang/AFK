@@ -50,6 +50,7 @@ export class QuestUI {
     this.root.replaceChildren();
 
     const title = document.createElement('h2');
+    title.className = 'panel-title';
 const questTitleIcon = document.createElement('img');
     questTitleIcon.src = `${BASE}assets/icon-quest.png`;
     questTitleIcon.alt = '';
