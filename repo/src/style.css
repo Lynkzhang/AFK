@@ -1534,3 +1534,62 @@ button.pixel-btn:active {
   vertical-align: middle;
   cursor: pointer;
 }
+
+/* ===== M55: Visual Upgrades ===== */
+
+/* #273: Button hover enhanced glow */
+.pixel-btn:hover,
+.game-btn:hover {
+  filter: brightness(1.15) drop-shadow(0 0 6px rgba(255,215,0,0.4));
+}
+
+/* #273: Panel closing animation */
+.panel-closing {
+  animation: panelClose 0.2s ease-in forwards;
+}
+
+/* #273: Card stagger entrance */
+@keyframes cardStaggerIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.card-stagger {
+  animation: cardStaggerIn 0.2s ease-out both;
+}
+
+/* #273: Resource flyout number */
+@keyframes resourceFlyout {
+  0%   { opacity: 1; transform: translateY(0); }
+  80%  { opacity: 0.8; transform: translateY(-24px); }
+  100% { opacity: 0; transform: translateY(-32px); }
+}
+.resource-flyout {
+  position: absolute;
+  pointer-events: none;
+  font-size: 14px;
+  font-weight: bold;
+  font-family: 'Courier New', Courier, monospace;
+  color: #ffd700;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+  animation: resourceFlyout 0.9s ease-out forwards;
+  z-index: 9999;
+}
+.resource-flyout.negative {
+  color: #ff6060;
+}
+
+/* #273: Epic/Legendary rarity shine overlay */
+@keyframes rarityShine {
+  from { background-position: -100% 0; }
+  to   { background-position: 200% 0; }
+}
+.rarity-shine {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: rarityShine 2s linear infinite;
+}
+
+/* #273: HP bar dynamic coloring */
+.hp-bar-inner.hp-high   { background: #4CAF50 !important; }
+.hp-bar-inner.hp-medium { background: #f0c040 !important; }
+.hp-bar-inner.hp-low    { background: #e84040 !important; }

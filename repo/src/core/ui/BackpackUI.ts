@@ -279,11 +279,18 @@ const backpackTitleIcon = document.createElement('img');
   }
 
   hide(): void {
-    this.root.style.display = 'none';
-    if (this.keydownHandler) {
-      document.removeEventListener('keydown', this.keydownHandler);
-      this.keydownHandler = null;
-    }
+    // #273: panel close animation
+    this.root.style.animation = 'panelClose 0.2s ease-in forwards';
+    const cleanup = () => {
+      this.root.style.display = 'none';
+      this.root.style.animation = '';
+      if (this.keydownHandler) {
+        document.removeEventListener('keydown', this.keydownHandler);
+        this.keydownHandler = null;
+      }
+    };
+    this.root.addEventListener('animationend', cleanup, { once: true });
+    setTimeout(() => { if (this.root.style.display !== 'none') cleanup(); }, 300);
   }
 
   // GM helpers

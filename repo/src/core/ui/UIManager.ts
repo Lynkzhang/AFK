@@ -41,6 +41,8 @@ export class UIManager {
   private lastSlimeListSignature: string = '';
   /** 当前 onboarding unlock 状态，null 表示全部解锁 */
   private currentUnlocks: import('../types').FeatureUnlocks | null = null;
+  /** #273: last known currency for flyout calculation */
+  private lastCurrency: number = 0;
 
   constructor() {
     this.root = document.createElement('div');
@@ -318,7 +320,10 @@ export class UIManager {
       this.currencyEl.addEventListener('animationend', () => {
         this.currencyEl.classList.remove('resource-pulse');
       }, { once: true });
+      // #273: resource flyout number
+      this.spawnCurrencyFlyout(state.currency - this.lastCurrency);
     }
+    this.lastCurrency = state.currency;
     if (state.slimes.length !== prevSlimes) {
       this.slimeCountEl.classList.remove('resource-pulse');
       void this.slimeCountEl.offsetWidth;
@@ -352,8 +357,12 @@ export class UIManager {
     if (newSig !== this.lastSlimeListSignature) {
       this.lastSlimeListSignature = newSig;
       this.slimeListEl.replaceChildren();
-      for (const slime of state.slimes) {
-        this.slimeListEl.appendChild(this.renderSlimeCard(slime));
+      for (let idx = 0; idx < state.slimes.length; idx++) {
+        const card = this.renderSlimeCard(state.slimes[idx]);
+        // #273: card stagger entrance animation
+        card.classList.add('card-stagger');
+        (card as HTMLElement).style.animationDelay = `${idx * 30}ms`;
+        this.slimeListEl.appendChild(card);
       }
     }
 
@@ -387,6 +396,21 @@ export class UIManager {
       btn.style.opacity = disabled ? '0.4' : '';
       btn.style.pointerEvents = disabled ? 'none' : '';
     });
+  }
+
+  /** #273: Spawn a flying currency change number near the coin display */
+  private spawnCurrencyFlyout(delta: number): void {
+    if (Math.abs(delta) < 0.5) return;
+    const rect = this.currencyEl.getBoundingClientRect();
+    const rootRect = this.root.getBoundingClientRect();
+    const flyout = document.createElement('span');
+    flyout.className = 'resource-flyout' + (delta < 0 ? ' negative' : '');
+    flyout.textContent = (delta > 0 ? '+' : '') + Math.round(delta).toString();
+    flyout.style.left = `${rect.left - rootRect.left + rect.width + 4}px`;
+    flyout.style.top = `${rect.top - rootRect.top}px`;
+    this.root.appendChild(flyout);
+    flyout.addEventListener('animationend', () => flyout.remove(), { once: true });
+    setTimeout(() => flyout.remove(), 1200);
   }
 }
 

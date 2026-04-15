@@ -163,6 +163,12 @@ const archiveTitleIcon = document.createElement('img');
     this.root.style.display = 'flex';
   }
   hide(): void {
-    this.root.style.display = 'none';
+    // #273: panel close animation
+    this.root.style.animation = 'panelClose 0.2s ease-in forwards';
+    this.root.addEventListener('animationend', () => {
+      this.root.style.display = 'none';
+      this.root.style.animation = '';
+    }, { once: true });
+    setTimeout(() => { if (this.root.style.display !== 'none') { this.root.style.display = 'none'; this.root.style.animation = ''; } }, 300);
   }
 }
