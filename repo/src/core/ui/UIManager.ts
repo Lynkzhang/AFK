@@ -37,7 +37,7 @@ export class UIManager {
   private readonly slimeListEl: HTMLDivElement;
   /** Quick action callbacks for slime cards */
   private quickHandlers: QuickActionHandlers | null = null;
-  /** ä¸æ¬¡æ¸²æç slime åè¡¨ç­¾åï¼ç¨äºèæ£æ¥ */
+  /** 上次渲染的 slime 列表签名，用于脏检查 */
   private lastSlimeListSignature: string = '';
 
   constructor() {
@@ -51,7 +51,7 @@ export class UIManager {
     titleIcon.alt = 'slime';
     titleIcon.className = 'ui-title-icon';
     titleIcon.onerror = () => { titleIcon.style.display = 'none'; };
-    const titleText = document.createTextNode('å²è±å§è¿å');
+    const titleText = document.createTextNode('史莱姆进化');
     title.append(titleIcon, titleText);
 
     // Resource bar: currency with coin icon
@@ -61,7 +61,7 @@ export class UIManager {
     coinImg.src = `${BASE}assets/icon-coin.png`;
     coinImg.alt = 'gold';
     coinImg.className = 'ui-resource-icon';
-    currency.innerHTML = 'éå¸: <span>0</span>';
+    currency.innerHTML = '金币: <span>0</span>';
     currency.insertBefore(coinImg, currency.firstChild);
     this.currencyEl = currency.querySelector('span') as HTMLSpanElement;
 
@@ -72,7 +72,7 @@ export class UIManager {
     slimeImg.src = `${BASE}assets/icon-slime.png`;
     slimeImg.alt = 'slimes';
     slimeImg.className = 'ui-resource-icon';
-    slimeCount.innerHTML = 'å²è±å§: <span>0</span>';
+    slimeCount.innerHTML = '史莱姆: <span>0</span>';
     slimeCount.insertBefore(slimeImg, slimeCount.firstChild);
     this.slimeCountEl = slimeCount.querySelector('span') as HTMLSpanElement;
 
@@ -94,14 +94,14 @@ export class UIManager {
     this.buffStatusEl = document.createElement('div');
     this.buffStatusEl.className = 'buff-status hidden';
 
-    // Actions container â all buttons in single .ui-actions div (preserves E2E count=11)
+    // Actions container — all buttons in single .ui-actions div (preserves E2E count=11)
     const actions = document.createElement('div');
     actions.className = 'ui-actions';
 
     // System group label
     const sysLabel = document.createElement('div');
     sysLabel.className = 'ui-btn-group-label';
-    sysLabel.textContent = 'ç³»ç»';
+    sysLabel.textContent = '系统';
 
     const newBtn = this.makeButton('\u65b0\u6e38\u620f', `${BASE}assets/icon-newgame.png`);
     const saveBtn = this.makeButton('\u4fdd\u5b58', `${BASE}assets/icon-save.png`);
@@ -203,7 +203,7 @@ export class UIManager {
     this.buttons.arenaBtn.onclick = handlers.onOpenArena;
   }
 
-  /** Bind quick-action handlers for slime cards (æ¥ç/åºå®/å°å­) */
+  /** Bind quick-action handlers for slime cards (查看/出售/封存) */
   bindQuickActions(handlers: QuickActionHandlers): void {
     this.quickHandlers = handlers;
   }
@@ -243,33 +243,33 @@ export class UIManager {
 
     // Stat total display
     const statTotal = slime.stats.health + slime.stats.attack + slime.stats.defense + slime.stats.speed;
-    const totalEl = document.createElement("div");
-    totalEl.className = "ui-slime-stat-total";
+    const totalEl = document.createElement('div');
+    totalEl.className = 'ui-slime-stat-total';
     totalEl.textContent = `综合: ${statTotal}`;
 
-    // Quick action buttons: æ¥ç / åºå® / å°å­
+    // Quick action buttons: 查看 / 出售 / 封存
     const quickActions = document.createElement('div');
     quickActions.className = 'ui-slime-quick-actions';
 
     const viewBtn = document.createElement('button');
     viewBtn.className = 'ui-slime-quick-btn ui-slime-quick-view';
-    viewBtn.textContent = 'æ¥ç';
-    viewBtn.title = 'å¨èåä¸­æ¥çè¯¦æ';
+    viewBtn.textContent = '查看';
+    viewBtn.title = '在背包中查看详情';
 
     const sellBtn = document.createElement('button');
     sellBtn.className = 'ui-slime-quick-btn ui-slime-quick-sell';
-    sellBtn.textContent = 'åºå®';
-    sellBtn.title = 'ç´æ¥åºå®è¯¥å²è±å§';
+    sellBtn.textContent = '出售';
+    sellBtn.title = '直接出售该史莱姆';
 
     const archiveBtn = document.createElement('button');
     archiveBtn.className = 'ui-slime-quick-btn ui-slime-quick-archive';
-    archiveBtn.textContent = 'å°å­';
-    archiveBtn.title = 'å°å­è¯¥å²è±å§';
+    archiveBtn.textContent = '封存';
+    archiveBtn.title = '封存该史莱姆';
 
     const cullBtn = document.createElement('button');
     cullBtn.className = 'ui-slime-quick-btn ui-slime-quick-cull';
-    cullBtn.textContent = 'åé¤';
-    cullBtn.title = 'æ°¸ä¹å é¤è¯¥å²è±å§ï¼ä¸å¯æ¤éï¼';
+    cullBtn.textContent = '剔除';
+    cullBtn.title = '永久删除该史莱姆（不可撤销）';
 
     quickActions.append(viewBtn, sellBtn, archiveBtn, cullBtn);
     card.append(swatch, info, rarityTag, hpOuter, totalEl, quickActions);
@@ -323,12 +323,12 @@ export class UIManager {
     this.buffStatusEl.classList.toggle('hidden', !hasBuff);
     if (hasBuff) {
       const parts: string[] = [];
-      if (state.activeBuffs.mutationCatalystActive) parts.push('ð§¬ åå¼å¬åÃ2');
-      if (state.activeBuffs.rareEssenceActive) parts.push('ð ç¨æç²¾åÃ3');
+      if (state.activeBuffs.mutationCatalystActive) parts.push('🧬 变异催化×2');
+      if (state.activeBuffs.rareEssenceActive) parts.push('💎 稀有精华×3');
       this.buffStatusEl.textContent = parts.join(' | ');
     }
 
-    // Update bottom slime list â dirty-check to avoid per-frame DOM rebuild
+    // Update bottom slime list — dirty-check to avoid per-frame DOM rebuild
     const newSig = this.computeSlimeSignature(state.slimes);
     if (newSig !== this.lastSlimeListSignature) {
       this.lastSlimeListSignature = newSig;
