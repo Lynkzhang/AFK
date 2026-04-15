@@ -1,5 +1,5 @@
 const BASE = import.meta.env.BASE_URL;
-import { Rarity, RARITY_LABEL_CN, RARITY_NAME_CN } from '../types';
+import { Rarity, RARITY_LABEL_CN, RARITY_NAME_CN, STAT_CAPS } from '../types';
 import type { GameState, Slime } from '../types';
 import { AccessorySystem } from '../systems/AccessorySystem';
 
@@ -12,6 +12,7 @@ export interface BackpackCallbacks {
   onUnequipAccessory: (slimeId: string) => void;
   onBatchSell: (ids: string[]) => void;
   onBatchCull: (ids: string[]) => void;
+  onRename: (id: string, newName: string) => void;
   onBack: () => void;
 }
 
@@ -468,7 +469,23 @@ const backpackTitleIcon = document.createElement('img');
 
     const nameRow = document.createElement('div');
     nameRow.className = 'backpack-detail-name';
-    nameRow.innerHTML = `<strong>${slime.name}</strong> <span class="rarity-tag" style="background:${this.getRarityColor(slime.rarity)}">${RARITY_NAME_CN[slime.rarity] ?? slime.rarity}</span>`;
+    const nameStrong = document.createElement('strong');
+    nameStrong.textContent = slime.name;
+    const renameBtn = document.createElement('button');
+    renameBtn.className = 'backpack-rename-btn pixel-btn';
+    renameBtn.textContent = '✏ 改名';
+    renameBtn.title = '给史莱姆改名';
+    renameBtn.onclick = () => {
+      const newName = prompt('输入新名字（1-12个字符）:', slime.name);
+      if (newName && newName.trim().length > 0 && newName.trim().length <= 12) {
+        this.callbacks?.onRename(slime.id, newName.trim());
+      }
+    };
+    const raritySpan = document.createElement('span');
+    raritySpan.className = 'rarity-tag';
+    raritySpan.style.background = this.getRarityColor(slime.rarity);
+    raritySpan.textContent = RARITY_NAME_CN[slime.rarity] ?? slime.rarity;
+    nameRow.append(nameStrong, renameBtn, raritySpan);
 
     const colorRow = document.createElement('div');
     colorRow.className = 'backpack-detail-color';
@@ -486,12 +503,13 @@ const backpackTitleIcon = document.createElement('img');
     // Stats with bars
     const statsSection = document.createElement('div');
     statsSection.className = 'backpack-detail-stats';
+    const caps = STAT_CAPS[slime.rarity];
     const statDefs: Array<{ label: string; value: number; max: number }> = [
-      { label: '生命', value: s.health, max: 100 },
-      { label: '攻击', value: s.attack, max: 50 },
-      { label: '防御', value: s.defense, max: 50 },
-      { label: '速度', value: s.speed, max: 30 },
-      { label: '变异', value: Math.round((s.mut ?? 0) * 100), max: 100 },
+      { label: '生命', value: s.health, max: caps.health },
+      { label: '攻击', value: s.attack, max: caps.attack },
+      { label: '防御', value: s.defense, max: caps.defense },
+      { label: '速度', value: s.speed, max: caps.speed },
+      { label: '变异', value: Math.round((s.mut ?? 0) * 100), max: Math.round(caps.mut * 100) },
     ];
     for (const { label, value, max } of statDefs) {
       const row = document.createElement('div');

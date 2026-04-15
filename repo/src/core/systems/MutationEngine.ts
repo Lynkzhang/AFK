@@ -1,4 +1,4 @@
-import { Rarity } from '../types';
+import { Rarity, STAT_CAPS } from '../types';
 import type { Stats, Trait, Skill, Slime, MutationModifiers, Accessory } from '../types';
 import { ALL_TRAITS } from '../data/traits';
 import { ALL_SKILLS } from '../data/skills';
@@ -12,7 +12,13 @@ export class MutationEngine {
   mutateStats(parentStats: Stats, modifiers?: MutationModifiers): Stats {
     const mutateValue = (base: number, statKey: keyof Stats): number => {
       const bonus = modifiers?.statBonuses[statKey] ?? 0;
-      const ratio = 0.8 + Math.random() * 0.4 + bonus;
+      // Regression-to-mean: the closer to the Legendary cap, the more pull-back
+      const legCap = STAT_CAPS[Rarity.Legendary][statKey];
+      const ratio_base = 0.8 + Math.random() * 0.4 + bonus; // original [0.8, 1.2] + bonus
+      // Regression factor: at 0% of cap → 1.0 (no regression), at 100% → 0.7 (strong pull-back)
+      const capRatio = Math.min(1, base / legCap);
+      const regression = 1 - capRatio * 0.3;
+      const ratio = ratio_base * regression;
       return Math.max(1, Math.round(base * ratio));
     };
 
@@ -81,10 +87,10 @@ export class MutationEngine {
   determineRarity(stats: Stats): Rarity {
     const total = stats.health + stats.attack + stats.defense + stats.speed + stats.mut;
 
-    if (total < 30) return Rarity.Common;
-    if (total < 50) return Rarity.Uncommon;
-    if (total < 70) return Rarity.Rare;
-    if (total < 90) return Rarity.Epic;
+    if (total < 40) return Rarity.Common;
+    if (total < 80) return Rarity.Uncommon;
+    if (total < 140) return Rarity.Rare;
+    if (total < 220) return Rarity.Epic;
     return Rarity.Legendary;
   }
 
@@ -110,6 +116,15 @@ export class MutationEngine {
     const traits = this.mutateTraits(parent.traits, modifiers, buffs);
     const skills = this.mutateSkills(parent.skills, modifiers, buffs);
     const rarity = this.determineRarity(stats);
+    // Clamp stats by rarity caps
+    const caps = STAT_CAPS[rarity];
+    const clampedStats: Stats = {
+      health: Math.min(stats.health, caps.health),
+      attack: Math.min(stats.attack, caps.attack),
+      defense: Math.min(stats.defense, caps.defense),
+      speed: Math.min(stats.speed, caps.speed),
+      mut: Math.min(stats.mut, caps.mut),
+    };
     const color = this.generateColor(rarity);
 
     // Accessory inheritance logic
@@ -126,7 +141,7 @@ export class MutationEngine {
     return {
       id: `slime-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       name: `${parent.name} Jr.`,
-      stats,
+      stats: clampedStats,
       traits,
       skills,
       rarity,

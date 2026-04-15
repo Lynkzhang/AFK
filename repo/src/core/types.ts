@@ -254,3 +254,12 @@ export const STAT_NAME_CN: Record<string, string> = {
   speed: '速度',
   mut: '变异',
 };
+
+/** Per-rarity stat caps — single stat maximum by rarity */
+export const STAT_CAPS: Record<Rarity, Record<keyof Stats, number>> = {
+  [Rarity.Common]:    { health: 30, attack: 12, defense: 12, speed: 10, mut: 0.20 },
+  [Rarity.Uncommon]:  { health: 50, attack: 20, defense: 20, speed: 16, mut: 0.35 },
+  [Rarity.Rare]:      { health: 80, attack: 32, defense: 32, speed: 24, mut: 0.55 },
+  [Rarity.Epic]:      { health: 120, attack: 48, defense: 48, speed: 36, mut: 0.75 },
+  [Rarity.Legendary]: { health: 180, attack: 70, defense: 70, speed: 50, mut: 1.0 },
+};

@@ -793,6 +793,14 @@ backpackUI.bind({
     backpackUI.render(state);
     ui.render(state, FacilitySystem.getMaxCapacity(state));
   },
+  onRename: (id: string, newName: string) => {
+    const slime = state.slimes.find(s => s.id === id) ?? state.archivedSlimes.find(s => s.id === id);
+    if (slime) {
+      slime.name = newName;
+      backpackUI.render(state);
+      ui.render(state, FacilitySystem.getMaxCapacity(state));
+    }
+  },
   onBack: () => {
     soundManager.playPanelClose();
     backpackUI.hide();

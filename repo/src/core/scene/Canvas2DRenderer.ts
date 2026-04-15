@@ -218,12 +218,15 @@ export class Canvas2DRenderer {
           const ratio = Math.min(1, step / dist);
           slime.position.x += dx * ratio;
           slime.position.z += dz * ratio;
+          // Clamp position to safe walk bounds
+          slime.position.x = Math.max(-2.5, Math.min(2.5, slime.position.x));
+          slime.position.z = Math.max(-0.5, Math.min(2.5, slime.position.z));
         }
       } else {
         ws.waitTimer -= dt;
         if (ws.waitTimer <= 0) {
-          ws.targetX = (Math.random() * 6) - 3;
-          ws.targetZ = (Math.random() * 6) - 3;
+          ws.targetX = (Math.random() * 5) - 2.5;
+          ws.targetZ = (Math.random() * 3) - 0.5;
           ws.isMoving = true;
         }
       }

@@ -1517,3 +1517,20 @@ button.pixel-btn:active {
   color: #5a6a7a;
   font-size: 13px;
 }
+
+/* M53: stat total display in quick card */
+.ui-slime-stat-total {
+  font-size: 11px;
+  color: #c8a020;
+  margin-top: 2px;
+  font-weight: bold;
+}
+
+/* M53: rename button in backpack detail */
+.backpack-rename-btn {
+  font-size: 11px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+  cursor: pointer;
+}
