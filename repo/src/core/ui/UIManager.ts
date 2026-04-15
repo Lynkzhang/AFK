@@ -39,6 +39,8 @@ export class UIManager {
   private quickHandlers: QuickActionHandlers | null = null;
   /** 上次渲染的 slime 列表签名，用于脏检查 */
   private lastSlimeListSignature: string = '';
+  /** 当前 onboarding unlock 状态，null 表示全部解锁 */
+  private currentUnlocks: import('../types').FeatureUnlocks | null = null;
 
   constructor() {
     this.root = document.createElement('div');
@@ -256,22 +258,32 @@ export class UIManager {
     viewBtn.textContent = '查看';
     viewBtn.title = '在背包中查看详情';
 
-    const sellBtn = document.createElement('button');
-    sellBtn.className = 'ui-slime-quick-btn ui-slime-quick-sell';
-    sellBtn.textContent = '出售';
-    sellBtn.title = '直接出售该史莱姆';
+    // 查看按钮始终可见
+    quickActions.append(viewBtn);
 
-    const archiveBtn = document.createElement('button');
-    archiveBtn.className = 'ui-slime-quick-btn ui-slime-quick-archive';
-    archiveBtn.textContent = '封存';
-    archiveBtn.title = '封存该史莱姆';
-
-    const cullBtn = document.createElement('button');
-    cullBtn.className = 'ui-slime-quick-btn ui-slime-quick-cull';
-    cullBtn.textContent = '剔除';
-    cullBtn.title = '永久删除该史莱姆（不可撤销）';
-
-    quickActions.append(viewBtn, sellBtn, archiveBtn, cullBtn);
+    // 出售/封存/剔除按钮仅在对应功能已解锁时显示
+    const u = this.currentUnlocks;
+    if (!u || u.sell) {
+      const sellBtn = document.createElement('button');
+      sellBtn.className = 'ui-slime-quick-btn ui-slime-quick-sell';
+      sellBtn.textContent = '出售';
+      sellBtn.title = '直接出售该史莱姆';
+      quickActions.appendChild(sellBtn);
+    }
+    if (!u || u.archive) {
+      const archiveBtn = document.createElement('button');
+      archiveBtn.className = 'ui-slime-quick-btn ui-slime-quick-archive';
+      archiveBtn.textContent = '封存';
+      archiveBtn.title = '封存该史莱姆';
+      quickActions.appendChild(archiveBtn);
+    }
+    if (!u || u.cull) {
+      const cullBtn = document.createElement('button');
+      cullBtn.className = 'ui-slime-quick-btn ui-slime-quick-cull';
+      cullBtn.textContent = '剔除';
+      cullBtn.title = '永久删除该史莱姆（不可撤销）';
+      quickActions.appendChild(cullBtn);
+    }
     card.append(swatch, info, rarityTag, hpOuter, totalEl, quickActions);
     return card;
   }
@@ -328,8 +340,15 @@ export class UIManager {
       this.buffStatusEl.textContent = parts.join(' | ');
     }
 
+    // Cache onboarding unlock state for renderSlimeCard
+    const onbUnlocks = state.onboarding?.unlocks;
+    this.currentUnlocks = (onbUnlocks && state.onboarding?.currentStep !== null) ? onbUnlocks : null;
+
     // Update bottom slime list — dirty-check to avoid per-frame DOM rebuild
-    const newSig = this.computeSlimeSignature(state.slimes);
+    const unlockSuffix = this.currentUnlocks
+      ? `|u:${this.currentUnlocks.sell}:${this.currentUnlocks.archive}:${this.currentUnlocks.cull}`
+      : '|u:all';
+    const newSig = this.computeSlimeSignature(state.slimes) + unlockSuffix;
     if (newSig !== this.lastSlimeListSignature) {
       this.lastSlimeListSignature = newSig;
       this.slimeListEl.replaceChildren();
