@@ -224,8 +224,9 @@ export class Canvas2DRenderer {
     this.ctx.imageSmoothingEnabled = false;
 
     this.container = container;
-    this.resize(container);
-    window.addEventListener('resize', () => this.resize(container));
+    window.addEventListener('resize', () => this.resize());
+    // 强制初始化尺寸，避免首帧空白
+    this.resize();
   }
 
   /** Set animation parameters. Pass partial object to update only some params. */
@@ -241,7 +242,7 @@ export class Canvas2DRenderer {
   update(state: GameState, elapsedTime: number, facilityMultiplier?: number, fieldAccelActive?: boolean): void {
     // 确保首帧 canvas 尺寸正确
     if (this.canvas.width <= 1 || this.canvas.height <= 1) {
-      this.resize(this.container);
+      this.resize();
     }
     this.state = state;
     this.elapsedTime = elapsedTime;
@@ -312,8 +313,8 @@ export class Canvas2DRenderer {
     }
   }
 
-  private resize(container: HTMLElement): void {
-    const rect = container.getBoundingClientRect();
+  private resize(): void {
+    const rect = this.container.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     this.canvas.width = Math.max(1, Math.floor(rect.width * dpr));
     this.canvas.height = Math.max(1, Math.floor(rect.height * dpr));
