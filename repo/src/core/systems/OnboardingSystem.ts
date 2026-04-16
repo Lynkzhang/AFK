@@ -80,7 +80,7 @@ const STEPS: StepDef[] = [
   },
   {
     id: 'step-teach-archive',
-    text: '📦 发现了不错的史莱姆？把它封存起来！\n\n封存的史莱姆不会被剔除，也不再分裂。\n但它们可以参加战斗！\n\n选一只你最满意的，点击 [封存]。',
+    text: '📦 发现了不错的史莱姆？把它封存起来！\n\n封存的史莱姆会暂停分裂。\n但它们可以参加战斗！\n\n选一只你最满意的，点击 [封存]。',
     checkComplete: (_s, events) => events.has('archive'),
     onShow: (s) => { s.onboarding.unlocks.archive = true; },
   },

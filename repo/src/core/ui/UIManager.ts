@@ -258,7 +258,7 @@ export class UIManager {
     // 查看按钮始终可见
     quickActions.append(viewBtn);
 
-    // 出售/封存/剔除按钮仅在对应功能已解锁时显示
+    // 出售/封存按钮仅在对应功能已解锁时显示
     const u = this.currentUnlocks;
     if (!u || u.sell) {
       const sellBtn = document.createElement('button');
