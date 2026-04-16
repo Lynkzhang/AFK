@@ -345,7 +345,7 @@ const loop = new GameLoop({
         showBuffToast('💎 稀有精华加持！稀有特性概率×3！');
       }
     }
-    scene.update(state, elapsedTime, FacilitySystem.getSplitInterval(state) / 10000, !!(state.activeBuffs.splitFieldAcceleratorUntil && state.activeBuffs.splitFieldAcceleratorUntil > Date.now()));
+    scene.update(state, elapsedTime, effectiveSplitInterval / 10000, !!(state.activeBuffs.splitFieldAcceleratorUntil && state.activeBuffs.splitFieldAcceleratorUntil > Date.now()));
     ui.render(state, FacilitySystem.getMaxCapacity(state));
     // Sync derived quest counters each frame
     QuestSystem.syncDerivedCounters(state);
