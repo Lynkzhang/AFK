@@ -145,6 +145,7 @@ export class Canvas2DRenderer {
   private animParams: AnimationParams = { ...DEFAULT_ANIM_PARAMS };
   private facilityMultiplier = 1.0;
   private fieldAccelActive = false;
+  private container!: HTMLElement;
 
   // Walk state for random walk system
   private walkStates = new Map<string, {
@@ -168,6 +169,7 @@ export class Canvas2DRenderer {
     this.ctx = ctx;
     this.ctx.imageSmoothingEnabled = false;
 
+    this.container = container;
     this.resize(container);
     window.addEventListener('resize', () => this.resize(container));
   }
@@ -183,6 +185,10 @@ export class Canvas2DRenderer {
   }
 
   update(state: GameState, elapsedTime: number, facilityMultiplier?: number, fieldAccelActive?: boolean): void {
+    // 确保首帧 canvas 尺寸正确
+    if (this.canvas.width <= 1 || this.canvas.height <= 1) {
+      this.resize(this.container);
+    }
     this.state = state;
     this.elapsedTime = elapsedTime;
     this.facilityMultiplier = facilityMultiplier ?? 1.0;
