@@ -49,6 +49,32 @@ export const DEFAULT_ARENAS: Arena[] = [
       rarityWeightBonus: 0.30,
     },
   },
+  {
+    id: 'storm-peaks',
+    name: '雷鸣高峰',
+    description: '高空雷暴不断翻涌，促使史莱姆行动更迅捷。',
+    price: 800,
+    currencyType: 'gold',
+    owned: false,
+    statBonus: { speed: 0.18 },
+    mutationBias: {
+      preferTraitIds: ['swift-gel', 'feral-rush'],
+      preferSkillTypes: ['attack'],
+    },
+  },
+  {
+    id: 'shadow-swamp',
+    name: '幽影沼泽',
+    description: '阴湿沼气弥漫的秘境，更容易孕育奇诡而稀有的异变。',
+    price: 350,
+    currencyType: 'crystal',
+    owned: false,
+    statBonus: { mut: 0.12, defense: 0.08 },
+    mutationBias: {
+      preferTraitIds: ['toxin-blood', 'adaptive-membrane'],
+      rarityWeightBonus: 0.15,
+    },
+  },
 ];
 
 export const ARENA_MAP = new Map<ArenaId, Arena>(

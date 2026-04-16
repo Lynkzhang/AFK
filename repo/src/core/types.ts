@@ -160,7 +160,7 @@ export interface AccessoryTemplate {
   shopCurrency?: 'gold' | 'crystal';
 }
 
-export type ArenaId = 'grassland' | 'fire-land' | 'ice-cave' | 'mystic-forest';
+export type ArenaId = 'grassland' | 'fire-land' | 'ice-cave' | 'mystic-forest' | 'storm-peaks' | 'shadow-swamp';
 
 export interface Arena {
   id: ArenaId;

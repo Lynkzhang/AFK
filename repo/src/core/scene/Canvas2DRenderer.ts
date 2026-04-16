@@ -45,6 +45,20 @@ const ARENA_THEMES: Record<string, ArenaTheme> = {
     cloudLight: '#8080ff',
     cloudShadow: '#503080',
   },
+  'storm-peaks': {
+    skyColors: ['#050a18', '#0a1630', '#10224a', '#163264', '#20467e', '#2c5e98', '#3a78b2', '#5394cc'],
+    groundColors: ['#5c6672', '#6b7682', '#4c5662', '#3f4852'],
+    groundEdge: '#8ea0b6',
+    cloudLight: '#d8e8ff',
+    cloudShadow: '#7a8fb0',
+  },
+  'shadow-swamp': {
+    skyColors: ['#07110c', '#0d1f16', '#153022', '#1e4331', '#2a5a45', '#356f58', '#447e67', '#5a9179'],
+    groundColors: ['#3b3528', '#4a4330', '#2e2a1f', '#5a533d'],
+    groundEdge: '#7c8a52',
+    cloudLight: '#b9d6a0',
+    cloudShadow: '#5e6f47',
+  },
 };
 
 /** 10x10 slime IDLE frames — 4-frame breathing cycle */

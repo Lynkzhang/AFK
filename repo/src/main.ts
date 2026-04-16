@@ -3,7 +3,7 @@ import { SaveManager } from './core/save/SaveManager';
 import { Canvas2DRenderer } from './core/scene/Canvas2DRenderer';
 import { BreedingSystem } from './core/systems/BreedingSystem';
 import { GameLoop } from './core/systems/GameLoop';
-import type { GameState } from './core/types';
+import type { Arena, ArenaId, GameState } from './core/types';
 import { Rarity } from './core/types';
 import { UIManager } from './core/ui/UIManager';
 import { BackpackUI } from './core/ui/BackpackUI';
@@ -188,11 +188,35 @@ function migrateState(state: GameState): void {
   // Scan existing slimes to populate codex from old saves
   CodexSystem.recordFromState(state);
   // Arena migration
+  const defaultArenaMap = new Map(DEFAULT_ARENAS.map((arena) => [arena.id, arena]));
   if (!Array.isArray(s['arenas'])) {
     s['arenas'] = DEFAULT_ARENAS.map((a) => ({ ...a, mutationBias: { ...a.mutationBias } }));
+  } else {
+    const savedArenas = s['arenas'] as Arena[];
+    const migratedArenas: Arena[] = [];
+
+    for (const defaultArena of DEFAULT_ARENAS) {
+      const savedArena = savedArenas.find((arena) => arena?.id === defaultArena.id);
+      migratedArenas.push({
+        ...defaultArena,
+        ...savedArena,
+        mutationBias: {
+          ...defaultArena.mutationBias,
+          ...(savedArena?.mutationBias ?? {}),
+        },
+      });
+    }
+
+    s['arenas'] = migratedArenas;
   }
-  if (typeof s['activeArenaId'] !== 'string') {
+  if (typeof s['activeArenaId'] !== 'string' || !defaultArenaMap.has(s['activeArenaId'] as ArenaId)) {
     s['activeArenaId'] = 'grassland';
+  }
+  if (!state.arenas.some((arena) => arena.id === state.activeArenaId && arena.owned)) {
+    const fallbackArena = state.arenas.find((arena) => arena.owned) ?? state.arenas[0];
+    if (fallbackArena) {
+      state.activeArenaId = fallbackArena.id;
+    }
   }
   if (!Array.isArray(s['accessories'])) s['accessories'] = [];
   if (!s['onboarding'] || typeof s['onboarding'] !== 'object') {
@@ -577,7 +601,10 @@ arenaUI.bind({
   onBuy: (arenaId) => {
     const ok = ArenaSystem.buyArena(state, arenaId);
     if (!ok) {
-      showToast('\u2716 \u8d27\u5e01\u4e0d\u8db3');
+      showToast('✖ 货币不足');
+      arenaUI.render(state);
+      ui.render(state, FacilitySystem.getMaxCapacity(state));
+      return;
     }
     arenaUI.render(state);
     ui.render(state, FacilitySystem.getMaxCapacity(state));

@@ -24,6 +24,7 @@ export class ArenaSystem {
     }
 
     arena.owned = true;
+    state.activeArenaId = arenaId;
     return true;
   }
 

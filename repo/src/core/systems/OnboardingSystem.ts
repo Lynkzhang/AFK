@@ -72,7 +72,6 @@ const STEPS: StepDef[] = [
     id: 'step-teach-sell',
     text: '💰 出售史莱姆可以获得金币！\n\n稀有度越高、属性越强，卖价越高。\n\n试着出售一只不需要的史莱姆吧。',
     checkComplete: (_s, events) => events.has('sell'),
-    onShow: (s) => { s.onboarding.unlocks.sell = true; },
   },
   {
     id: 'step-wait-recover-2',

@@ -342,7 +342,7 @@ export function initGM(
     buyArena(arenaId: string): boolean {
       const s = getState();
       const result = ArenaSystem.buyArena(s, arenaId as ArenaId);
-      setState({ ...s, arenas: [...s.arenas], currency: s.currency, crystal: s.crystal });
+      setState({ ...s, arenas: [...s.arenas], activeArenaId: s.activeArenaId, currency: s.currency, crystal: s.crystal });
       return result;
     },
     switchArena(arenaId: string): boolean {

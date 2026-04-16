@@ -1208,14 +1208,14 @@ test.describe('Codex System', () => {
 // Test 12: Arena System
 // =========================================================
 test.describe('Arena System', () => {
-  test('getArenas returns 4 arenas with only grassland owned initially', async ({ page }) => {
+  test('getArenas returns 6 arenas with only grassland owned initially', async ({ page }) => {
     await page.goto('/');
     await waitForGameReady(page);
     await clearSave(page);
     await startFreshGame(page);
 
     const arenas = await page.evaluate(() => window.__GM!.getArenas());
-    expect(arenas.length).toBe(4);
+    expect(arenas.length).toBe(6);
 
     interface ArenaInfo { id: string; owned: boolean }
     const grassland = (arenas as ArenaInfo[]).find((a) => a.id === 'grassland');
@@ -1234,9 +1234,42 @@ test.describe('Arena System', () => {
     expect(mysticForest).toBeDefined();
     expect(mysticForest!.owned).toBe(false);
 
+    const stormPeaks = (arenas as ArenaInfo[]).find((a) => a.id === 'storm-peaks');
+    expect(stormPeaks).toBeDefined();
+    expect(stormPeaks!.owned).toBe(false);
+
+    const shadowSwamp = (arenas as ArenaInfo[]).find((a) => a.id === 'shadow-swamp');
+    expect(shadowSwamp).toBeDefined();
+    expect(shadowSwamp!.owned).toBe(false);
+
     // Active arena should be grassland
     const state = await page.evaluate(() => window.__GM!.getState());
     expect(state.activeArenaId).toBe('grassland');
+  });
+
+  test('buyArena purchases arena and auto-switches activeArenaId', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await startFreshGame(page);
+
+    await page.evaluate(() => window.__GM!.setCurrency(1000));
+    const buyResult = await page.evaluate(() => {
+      const result = window.__GM!.buyArena('fire-land');
+      return {
+        result,
+        activeArenaId: window.__GM!.getState().activeArenaId,
+        arenas: window.__GM!.getArenas(),
+      };
+    });
+    expect(buyResult.result).toBe(true);
+    expect(buyResult.activeArenaId).toBe('fire-land');
+    expect(buyResult.arenas.find((a: { id: string; owned: boolean }) => a.id === 'fire-land')?.owned).toBe(true);
+
+    const state = await page.evaluate(() => window.__GM!.getState());
+    expect(state.activeArenaId).toBe('fire-land');
+    expect(state.currency).toBe(500);
+    expect(state.arenas.find((a: { id: string; owned: boolean }) => a.id === 'fire-land')?.owned).toBe(true);
   });
 
   test('buyArena successfully purchases and deducts currency', async ({ page }) => {
@@ -1318,9 +1351,9 @@ test.describe('Arena System', () => {
     await page.locator('.ui-actions button', { hasText: '\u573a\u5730' }).click();
     await expect(page.locator('.arena-panel')).toBeVisible();
 
-    // Verify 4 arena cards
+    // Verify 6 arena cards
     const cards = page.locator('.arena-card');
-    await expect(cards).toHaveCount(4);
+    await expect(cards).toHaveCount(6);
 
     // First card should be active (grassland)
     await expect(cards.first()).toHaveClass(/active/);
