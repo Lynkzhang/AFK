@@ -7,6 +7,46 @@ import { calcEffectiveSplitTime } from '../systems/SplitFormula';
 // Renders a pixel-art style scene with 8x8 pixel-block slimes.
 // ---------------------------------------------------------------------------
 
+/** 场地背景配色主题 */
+interface ArenaTheme {
+  skyColors: string[];       // 天空渐变色带（从上到下）
+  groundColors: string[];    // 地面像素块颜色
+  groundEdge: string;        // 地面顶部边缘色
+  cloudLight: string;        // 云朵亮色
+  cloudShadow: string;       // 云朵阴影色
+}
+
+const ARENA_THEMES: Record<string, ArenaTheme> = {
+  grassland: {
+    skyColors: ['#3a6fa0', '#4a88c0', '#5a9ed8', '#6ab4e8', '#7ac8f0', '#8ad8f5', '#9ae4fa', '#aaeeff'],
+    groundColors: ['#d4c8a0', '#c9bc96', '#e0d5b5', '#bfb48a'],
+    groundEdge: '#b8a882',
+    cloudLight: '#e8f4ff',
+    cloudShadow: '#c8dff0',
+  },
+  'fire-land': {
+    skyColors: ['#1a0a00', '#3a1400', '#5a2000', '#7a3000', '#8a4010', '#9a5020', '#aa6030', '#c07040'],
+    groundColors: ['#5a2a1a', '#6a3020', '#4a2010', '#3a1a0a'],
+    groundEdge: '#8a4020',
+    cloudLight: '#ff9060',
+    cloudShadow: '#cc5030',
+  },
+  'ice-cave': {
+    skyColors: ['#0a1a2a', '#1a3050', '#2a4a70', '#3a6090', '#4a78aa', '#5a8abb', '#6a9acc', '#8ab0dd'],
+    groundColors: ['#8aaacc', '#9abcdd', '#7a9abb', '#6a8aaa'],
+    groundEdge: '#aaccee',
+    cloudLight: '#e0f0ff',
+    cloudShadow: '#a0c8e8',
+  },
+  'mystic-forest': {
+    skyColors: ['#0a0a1a', '#0f1228', '#151a38', '#1a2248', '#202a50', '#263258', '#2c3a60', '#324268'],
+    groundColors: ['#1a3a2a', '#1e4030', '#163020', '#122818'],
+    groundEdge: '#2a5a3a',
+    cloudLight: '#8080ff',
+    cloudShadow: '#503080',
+  },
+};
+
 /** 10x10 slime IDLE frames — 4-frame breathing cycle */
 const IDLE_FRAMES: number[][][] = [
   // IDLE_0 — standard posture
@@ -271,23 +311,21 @@ export class Canvas2DRenderer {
   // Background — pixel art bands for sky, pixel grid for ground, decorations
   // ---------------------------------------------------------------------------
 
+  /** 获取当前场地的背景主题配色 */
+  private getTheme(): ArenaTheme {
+    const arenaId = this.state?.activeArenaId ?? 'grassland';
+    return ARENA_THEMES[arenaId] ?? ARENA_THEMES['grassland']!;
+  }
+
   private drawBackground(): void {
     const { ctx } = this;
     const w = this.canvas.clientWidth;
     const h = this.canvas.clientHeight;
     const groundTop = Math.floor(h * 0.68);
+    const theme = this.getTheme();
 
     // --- Sky: horizontal color-band stripes (each 4-6px tall) ---
-    const skyColors = [
-      '#3a6fa0', // top dark blue — deeper
-      '#4a88c0',
-      '#5a9ed8',
-      '#6ab4e8',
-      '#7ac8f0',
-      '#8ad8f5',
-      '#9ae4fa',
-      '#aaeeff',
-    ];
+    const skyColors = theme.skyColors;
     const bandH = Math.max(4, Math.floor(groundTop / skyColors.length));
     for (let i = 0; i < skyColors.length; i++) {
       const by = i * bandH;
@@ -299,8 +337,8 @@ export class Canvas2DRenderer {
     // --- Pixel clouds ---
     this.drawPixelClouds(w, h, groundTop);
 
-    // --- Ground: warm sand/stone colors in pixel-block grid pattern ---
-    const groundColors = ['#d4c8a0', '#c9bc96', '#e0d5b5', '#bfb48a']; // warm sand/stone ground
+    // --- Ground: pixel-block grid pattern ---
+    const groundColors = theme.groundColors;
     const blockSize = 4; // pixel block size
     for (let gy = groundTop; gy < h; gy += blockSize) {
       for (let gx = 0; gx < w; gx += blockSize) {
@@ -312,7 +350,7 @@ export class Canvas2DRenderer {
     }
 
     // --- Ground top edge: 2px strip for contrast ---
-    ctx.fillStyle = '#b8a882';
+    ctx.fillStyle = theme.groundEdge;
     ctx.fillRect(0, groundTop, w, 2);
 
     // --- Pixel decorations ---
@@ -346,7 +384,7 @@ export class Canvas2DRenderer {
       const cloudW = cloudTemplate[0].length * cd.scale;
       const cx = Math.floor(((cd.baseX * w + t * cd.speed) % (w + cloudW * 2)) - cloudW);
       const cy = Math.floor(cd.y * groundTop);
-      this.drawPixelSprite(cloudTemplate, cx, cy, cd.scale, { 1: '#e8f4ff', 2: '#c8dff0' });
+      this.drawPixelSprite(cloudTemplate, cx, cy, cd.scale, { 1: this.getTheme().cloudLight, 2: this.getTheme().cloudShadow });
     }
   }
 
