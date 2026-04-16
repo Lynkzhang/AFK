@@ -352,7 +352,6 @@ const loop = new GameLoop({
     };
     const isOnboarding = state.onboarding?.currentStep !== null && state.onboarding?.currentStep !== undefined;
     const isWaitingSplit = state.onboarding?.currentStep === 'step-wait-split'
-      
       || state.onboarding?.currentStep === 'step-wait-recover-2';
     const effectiveDelta = (isOnboarding && !isWaitingSplit) ? 0 : deltaTime;
     const breedResult = breedingSystem.update(state, effectiveDelta, dynamicConfig);
