@@ -317,7 +317,7 @@ const loop = new GameLoop({
     state.timestamp = Date.now();
     const baseSplitInterval = FacilitySystem.getSplitInterval(state);
     const isWaitingForSplit = state.onboarding?.currentStep === 'step-wait-split'
-      || state.onboarding?.currentStep === 'step-wait-recover-1'
+      
       || state.onboarding?.currentStep === 'step-wait-recover-2';
     const effectiveSplitInterval = isWaitingForSplit
       ? Math.min(baseSplitInterval, 5000)
@@ -328,7 +328,7 @@ const loop = new GameLoop({
     };
     const isOnboarding = state.onboarding?.currentStep !== null && state.onboarding?.currentStep !== undefined;
     const isWaitingSplit = state.onboarding?.currentStep === 'step-wait-split'
-      || state.onboarding?.currentStep === 'step-wait-recover-1'
+      
       || state.onboarding?.currentStep === 'step-wait-recover-2';
     const effectiveDelta = (isOnboarding && !isWaitingSplit) ? 0 : deltaTime;
     const breedResult = breedingSystem.update(state, effectiveDelta, dynamicConfig);
@@ -485,15 +485,6 @@ ui.bindQuickActions({
       QuestSystem.incrementCounter(state, 'daily_archives');
       onboardingSystem.notifyEvent('archive');
     }
-    ui.render(state, FacilitySystem.getMaxCapacity(state));
-  },
-  onQuickCull: function(id) {
-    var slime = state.slimes.find(function(s) { return s.id === id; });
-    if (!slime) return;
-    if (!confirm('确定要剔除 ' + slime.name + ' 吗？此操作不可撤销。')) return;
-    state.slimes = state.slimes.filter(function(s) { return s.id !== id; });
-    QuestSystem.incrementCounter(state, 'daily_culls');
-    onboardingSystem.notifyEvent('cull');
     ui.render(state, FacilitySystem.getMaxCapacity(state));
   },
 });
@@ -729,14 +720,6 @@ backpackUI.bind({
     backpackUI.render(state);
     ui.render(state, FacilitySystem.getMaxCapacity(state));
   },
-  onCull: (id: string) => {
-    soundManager.playCull();
-    state.slimes = state.slimes.filter((s) => s.id !== id);
-    showToast('\u5254\u9664\u6210\u529f \ud83d\uddd1\ufe0f');
-    onboardingSystem.notifyEvent('cull');
-    backpackUI.render(state);
-    ui.render(state, FacilitySystem.getMaxCapacity(state));
-  },
   onArchive: (id: string) => {
     const result = archiveSlime(state, id);
     if (result.success) {
@@ -783,13 +766,6 @@ backpackUI.bind({
     state.slimes = state.slimes.filter((s) => !ids.includes(s.id));
     for (const id of ids) { removeArchivedSlime(state, id); }
     showToast(`\u6279\u91cf\u51fa\u552e ${ids.length} \u53ea\uff0c\u83b7\u5f97 \ud83d\udcb0${total} \u91d1\u5e01`);
-    backpackUI.render(state);
-    ui.render(state, FacilitySystem.getMaxCapacity(state));
-  },
-  onBatchCull: (ids: string[]) => {
-    soundManager.playCull();
-    state.slimes = state.slimes.filter((s) => !ids.includes(s.id));
-    showToast(`\u6279\u91cf\u5254\u9664 ${ids.length} \u53ea\u53f2\u83b1\u59c6 \ud83d\uddd1\ufe0f`);
     backpackUI.render(state);
     ui.render(state, FacilitySystem.getMaxCapacity(state));
   },

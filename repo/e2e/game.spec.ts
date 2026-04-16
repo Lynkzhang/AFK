@@ -1698,37 +1698,7 @@ test.describe('Onboarding Full Flow', () => {
     await page.locator('.onboarding-btn').click();
     await page.waitForTimeout(300);
     state = await page.evaluate(() => window.__GM!.getState());
-    expect(state.onboarding.currentStep).toBe('step-teach-cull');
-    await page.waitForSelector('.onboarding-bubble', { timeout: 3000 });
-    await page.waitForTimeout(200);
-    state = await page.evaluate(() => window.__GM!.getState());
-
-    // Step 4: step-teach-cull — KEY CHECK: cull button should be VISIBLE (not deadlocked)
-    expect(state.onboarding.unlocks.cull).toBe(true);
-
-    // Verify cull text does NOT contain '场地已满'
-    const bubbleText = await page.locator('.onboarding-bubble').textContent();
-    expect(bubbleText).not.toContain('场地已满');
-    expect(bubbleText).toContain('剔除');
-
-    // Verify backpack button is visible (cull is accessed via backpack)
-    const cullBtnVisible = await page.locator('.ui-actions button', { hasText: '\u80cc\u5305' }).isVisible();
-    expect(cullBtnVisible).toBe(true);
-
-    // Perform cull via backpack
-    await page.evaluate(() => window.__GM!.openBackpack());
-    await page.waitForSelector('.backpack-card', { timeout: 3000 });
-    await page.locator('.backpack-card').first().click();
-    await page.waitForTimeout(100);
-    await page.evaluate(() => {
-      const btn = document.querySelector('.backpack-detail-cull-btn') as HTMLButtonElement | null;
-      btn?.click();
-    });
-    await page.evaluate(() => window.__GM!.closeBackpack());
-    await page.waitForTimeout(500);
-
-    // Step 5: step-teach-sell — sell button should be visible
-    state = await page.evaluate(() => window.__GM!.getState());
+    // step-first-split onComplete 直接解锁 sell，进入 step-teach-sell
     expect(state.onboarding.currentStep).toBe('step-teach-sell');
     expect(state.onboarding.unlocks.sell).toBe(true);
 
@@ -1757,7 +1727,7 @@ test.describe('Onboarding Full Flow', () => {
       await page.waitForTimeout(300);
     }
 
-    // Step 6: step-teach-archive — archive button should be visible
+    // Step 5: step-teach-archive — archive button should be visible
     state = await page.evaluate(() => window.__GM!.getState());
     expect(state.onboarding.currentStep).toBe('step-teach-archive');
     expect(state.onboarding.unlocks.archive).toBe(true);
@@ -1780,7 +1750,7 @@ test.describe('Onboarding Full Flow', () => {
     await page.evaluate(() => window.__GM!.closeBackpack());
     await page.waitForTimeout(500);
 
-    // Step 7: step-teach-battle — battle button should be visible
+    // Step 6: step-teach-battle — battle button should be visible
     state = await page.evaluate(() => window.__GM!.getState());
     expect(state.onboarding.currentStep).toBe('step-teach-battle');
     expect(state.onboarding.unlocks.battle).toBe(true);
@@ -2193,41 +2163,6 @@ test.describe('M28 UX Polish', () => {
 // M30 Bug Fix Tests
 // =========================================================
 test.describe('M30 Bug Fixes', () => {
-  test('cull button shows toast and updates UI', async ({ page }) => {
-    await page.goto('/');
-    await waitForGameReady(page);
-    await clearSave(page);
-    await page.evaluate(() => window.__GM!.skipOnboarding());
-    await page.waitForTimeout(200);
-    await setupClassicState(page);
-
-    // Get slime count before cull
-    const countBefore = await page.evaluate(() => window.__GM!.getState().slimes.length);
-    expect(countBefore).toBeGreaterThan(1);
-
-    // Open backpack and cull via detail
-    await page.evaluate(() => window.__GM!.openBackpack());
-    await page.waitForSelector('.backpack-card', { timeout: 5000 });
-    await page.locator('.backpack-card').first().click();
-    await page.waitForTimeout(100);
-
-    const toastPromise = page.waitForSelector('.toast-message', { state: 'attached', timeout: 5000 });
-    await page.evaluate(() => {
-      const btn = document.querySelector('.backpack-detail-cull-btn') as HTMLButtonElement | null;
-      btn?.click();
-    });
-    await page.evaluate(() => window.__GM!.closeBackpack());
-
-    // Wait for toast element to be attached to DOM
-    const toastEl = await toastPromise;
-    const toastText = await toastEl.textContent();
-    expect(toastText).toContain('剔除');
-
-    // Slime count should have decreased
-    const countAfter = await page.evaluate(() => window.__GM!.getState().slimes.length);
-    expect(countAfter).toBeLessThan(countBefore);
-  });
-
   test('breeding paused during onboarding', async ({ page }) => {
     await page.goto('/');
     await waitForGameReady(page);
@@ -2335,40 +2270,9 @@ test.describe('M31 UI Upgrades', () => {
     await page.waitForTimeout(100);
 
     await expect(batchBar).toBeVisible();
-    await expect(page.locator('.backpack-batch-cull-btn')).toBeVisible();
     await expect(page.locator('.backpack-batch-sell-btn')).toBeVisible();
 
     await page.evaluate(() => window.__GM!.closeBackpack());
-  });
-
-  test('#143 batch cull removes selected slimes', async ({ page }) => {
-    await page.goto('/');
-    await waitForGameReady(page);
-    await clearSave(page);
-    await page.evaluate(() => window.__GM!.skipOnboarding());
-    await page.waitForTimeout(200);
-    await setupClassicState(page);
-    // Batch cull via BackpackUI
-    await page.evaluate(() => window.__GM!.openBackpack());
-    await page.waitForSelector('.backpack-card', { timeout: 5000 });
-
-    const countBefore = await page.evaluate(() => window.__GM!.getState().slimes.length);
-
-    await page.evaluate(() => {
-      const cb = document.querySelector('.backpack-card-checkbox') as HTMLInputElement | null;
-      if (cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
-    });
-    await page.waitForTimeout(100);
-
-    const toastPromise = page.waitForSelector('.toast-message', { state: 'attached', timeout: 5000 });
-    await page.locator('.backpack-batch-cull-btn').click();
-    const toastEl = await toastPromise;
-    const toastText = await toastEl.textContent();
-    expect(toastText).toMatch(/批量剔除/);
-
-    await page.evaluate(() => window.__GM!.closeBackpack());
-    const countAfter = await page.evaluate(() => window.__GM!.getState().slimes.length);
-    expect(countAfter).toBeLessThan(countBefore);
   });
 
   test('#143 batch sell removes selected slimes and adds currency', async ({ page }) => {
@@ -2776,7 +2680,6 @@ test.describe('M38 BackpackUI', () => {
 
     // Detail pane should show action buttons
     await expect(page.locator('.backpack-detail-sell-btn')).toBeVisible();
-    await expect(page.locator('.backpack-detail-cull-btn')).toBeVisible();
 
     await page.evaluate(() => window.__GM!.closeBackpack());
   });
@@ -2912,16 +2815,19 @@ test.describe('M38 BackpackUI', () => {
 
     // Batch bar should appear
     await expect(page.locator('.backpack-batch-bar')).toBeVisible();
-    await expect(page.locator('.backpack-batch-cull-btn')).toBeVisible();
+    await expect(page.locator('.backpack-batch-sell-btn')).toBeVisible();
 
-    // Click batch cull
+    // Click batch sell
+    const currencyBefore = await page.evaluate(() => window.__GM!.getState().currency) as number;
     const toastP = page.waitForSelector('.toast-message', { state: 'attached', timeout: 5000 });
-    await page.locator('.backpack-batch-cull-btn').click();
+    await page.locator('.backpack-batch-sell-btn').click();
     await toastP;
     await page.evaluate(() => window.__GM!.closeBackpack());
 
     const afterCount = await page.evaluate(() => window.__GM!.getState().slimes.length) as number;
     expect(afterCount).toBeLessThan(initialCount);
+    const currencyAfter = await page.evaluate(() => window.__GM!.getState().currency) as number;
+    expect(currencyAfter).toBeGreaterThan(currencyBefore);
   });
 
   test('backpack archive and unarchive flow', async ({ page }) => {

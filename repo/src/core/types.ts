@@ -186,7 +186,6 @@ export interface MutationModifiers {
 
 export interface FeatureUnlocks {
   breeding: boolean;
-  cull: boolean;
   sell: boolean;
   archive: boolean;
   battle: boolean;

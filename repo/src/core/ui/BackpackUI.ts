@@ -5,13 +5,11 @@ import { AccessorySystem } from '../systems/AccessorySystem';
 
 export interface BackpackCallbacks {
   onSell: (id: string) => void;
-  onCull: (id: string) => void;
   onArchive: (id: string) => void;
   onUnarchive: (id: string) => void;
   onEquipAccessory: (slimeId: string, accessoryId: string) => void;
   onUnequipAccessory: (slimeId: string) => void;
   onBatchSell: (ids: string[]) => void;
-  onBatchCull: (ids: string[]) => void;
   onRename: (id: string, newName: string) => void;
   onBack: () => void;
 }
@@ -40,7 +38,6 @@ export class BackpackUI {
   private detailEl: HTMLDivElement;
   private batchBar: HTMLDivElement;
   private batchSellBtn: HTMLButtonElement;
-  private batchCullBtn: HTMLButtonElement;
   private mobileDetailModal: HTMLDivElement;
   private filterBtns: Map<string, HTMLButtonElement> = new Map();
   private sortRarityBtn: HTMLButtonElement;
@@ -190,17 +187,6 @@ const backpackTitleIcon = document.createElement('img');
       this.callbacks?.onBatchSell(ids);
     };
 
-    this.batchCullBtn = document.createElement('button');
-    this.batchCullBtn.className = 'backpack-batch-cull-btn pixel-btn pixel-btn-danger';
-    this.batchCullBtn.textContent = '批量剔除 (0)';
-    this.batchCullBtn.onclick = () => {
-      const ids = [...this.selectedIds];
-      if (ids.length === 0) return;
-      this.selectedIds.clear();
-      this.updateBatchBar();
-      this.callbacks?.onBatchCull(ids);
-    };
-
     const batchCancelBtn = document.createElement('button');
     batchCancelBtn.className = 'backpack-batch-cancel-btn pixel-btn';
     batchCancelBtn.textContent = '取消选择';
@@ -210,7 +196,7 @@ const backpackTitleIcon = document.createElement('img');
       this.renderList();
     };
 
-    this.batchBar.append(this.selectAllCheckbox, this.batchSellBtn, this.batchCullBtn, batchCancelBtn);
+    this.batchBar.append(this.selectAllCheckbox, this.batchSellBtn, batchCancelBtn);
 
     // --- Content (dual column) ---
     const content = document.createElement('div');
@@ -631,10 +617,6 @@ const backpackTitleIcon = document.createElement('img');
       sellBtn.textContent = `出售 (💰${price})`;
       sellBtn.onclick = () => this.callbacks?.onSell(slime.id);
 
-      const cullBtn = document.createElement('button');
-      cullBtn.className = 'backpack-detail-cull-btn pixel-btn pixel-btn-danger';
-      cullBtn.textContent = '剔除';
-      cullBtn.onclick = () => this.callbacks?.onCull(slime.id);
 
       const archiveBtn = document.createElement('button');
       archiveBtn.className = 'backpack-detail-archive-btn pixel-btn';
@@ -645,7 +627,7 @@ const backpackTitleIcon = document.createElement('img');
       }
       archiveBtn.onclick = () => this.callbacks?.onArchive(slime.id);
 
-      actionsSection.append(sellBtn, cullBtn, archiveBtn);
+      actionsSection.append(sellBtn, archiveBtn);
     } else {
       const unarchiveBtn = document.createElement('button');
       unarchiveBtn.className = 'backpack-detail-unarchive-btn pixel-btn';
@@ -674,8 +656,6 @@ const backpackTitleIcon = document.createElement('img');
     // Re-bind buttons in mobile modal
     const sellBtn = content.querySelector<HTMLButtonElement>('.backpack-detail-sell-btn');
     if (sellBtn) sellBtn.onclick = () => { this.callbacks?.onSell(slime.id); this.mobileDetailModal.style.display = 'none'; };
-    const cullBtn = content.querySelector<HTMLButtonElement>('.backpack-detail-cull-btn');
-    if (cullBtn) cullBtn.onclick = () => { this.callbacks?.onCull(slime.id); this.mobileDetailModal.style.display = 'none'; };
     const archiveBtn = content.querySelector<HTMLButtonElement>('.backpack-detail-archive-btn');
     if (archiveBtn) archiveBtn.onclick = () => { this.callbacks?.onArchive(slime.id); this.mobileDetailModal.style.display = 'none'; };
     const unarchiveBtn = content.querySelector<HTMLButtonElement>('.backpack-detail-unarchive-btn');
@@ -688,7 +668,6 @@ const backpackTitleIcon = document.createElement('img');
     if (count > 0) {
       this.batchBar.style.display = 'flex';
       this.batchSellBtn.textContent = `批量出售 (${count})`;
-      this.batchCullBtn.textContent = `批量剔除 (${count})`;
       // Update select-all state
       const total = this.getFilteredSortedSlimes().length;
       this.selectAllCheckbox.checked = count === total && total > 0;

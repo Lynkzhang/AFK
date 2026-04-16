@@ -1026,7 +1026,7 @@ button:disabled {
 .backpack-filter-btn.backpack-filter-active, .backpack-sort-btn.backpack-sort-active { opacity: 1; border-color: #58a6ff; color: #58a6ff; }
 .backpack-batch-bar { display: none; align-items: center; gap: 8px; padding: 6px 16px; background: #1c2128; border-bottom: 1px solid #30363d; flex-shrink: 0; }
 .backpack-select-all { cursor: pointer; width: 16px; height: 16px; }
-.backpack-batch-sell-btn, .backpack-batch-cull-btn { font-size: 12px; }
+.backpack-batch-sell-btn { font-size: 12px; }
 .backpack-batch-cancel-btn { font-size: 12px; opacity: 0.7; }
 .backpack-content { display: grid; grid-template-columns: 340px 1fr; flex: 1; overflow: hidden; min-height: 0; }
 .backpack-list { overflow-y: auto; border-right: 1px solid #30363d; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
@@ -1059,7 +1059,7 @@ button:disabled {
 .backpack-detail-acc-label { font-size: 12px; color: #8b949e; margin-bottom: 6px; }
 .backpack-accessory-select { background: #161b22; color: #e8e8e8; border: 1px solid #30363d; border-radius: 3px; padding: 4px 8px; font-size: 12px; font-family: inherit; margin-right: 6px; margin-bottom: 6px; }
 .backpack-detail-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #30363d; }
-.backpack-detail-sell-btn, .backpack-detail-cull-btn, .backpack-detail-archive-btn, .backpack-detail-unarchive-btn, .backpack-detail-equip-btn, .backpack-detail-unequip-btn { font-size: 12px; }
+.backpack-detail-sell-btn, .backpack-detail-archive-btn, .backpack-detail-unarchive-btn, .backpack-detail-equip-btn, .backpack-detail-unequip-btn { font-size: 12px; }
 .backpack-mobile-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 200; flex-direction: column; overflow-y: auto; padding: 16px; }
 .backpack-mobile-modal-close { align-self: flex-end; margin-bottom: 8px; }
 .backpack-mobile-modal-content { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 16px; }
@@ -1185,11 +1185,6 @@ button:disabled {
 .ui-slime-quick-archive:hover {
   background: rgba(155, 89, 255, 0.2);
   color: #b388ff;
-}
-.ui-slime-quick-cull:hover {
-  background: rgba(255, 80, 80, 0.25);
-  color: #ff6b6b;
-  border-color: #ff6b6b;
 }
 .btn-icon {
   width: 16px;

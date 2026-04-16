@@ -21,7 +21,6 @@ interface QuickActionHandlers {
   onQuickView: (id: string) => void;
   onQuickSell: (id: string) => void;
   onQuickArchive: (id: string) => void;
-  onQuickCull: (id: string) => void;
 }
 
 export type PriceEvaluatorFn = (slime: Slime) => number;
@@ -151,8 +150,6 @@ export class UIManager {
         this.quickHandlers?.onQuickSell(id);
       } else if (target.classList.contains('ui-slime-quick-archive')) {
         this.quickHandlers?.onQuickArchive(id);
-      } else if (target.classList.contains('ui-slime-quick-cull')) {
-        this.quickHandlers?.onQuickCull(id);
       }
     });
   }
@@ -277,13 +274,6 @@ export class UIManager {
       archiveBtn.title = '封存该史莱姆';
       quickActions.appendChild(archiveBtn);
     }
-    if (!u || u.cull) {
-      const cullBtn = document.createElement('button');
-      cullBtn.className = 'ui-slime-quick-btn ui-slime-quick-cull';
-      cullBtn.textContent = '剔除';
-      cullBtn.title = '永久删除该史莱姆（不可撤销）';
-      quickActions.appendChild(cullBtn);
-    }
     card.append(swatch, info, rarityTag, hpOuter, totalEl, quickActions);
     return card;
   }
@@ -346,7 +336,7 @@ export class UIManager {
 
     // Update bottom slime list — dirty-check to avoid per-frame DOM rebuild
     const unlockSuffix = this.currentUnlocks
-      ? `|u:${this.currentUnlocks.sell}:${this.currentUnlocks.archive}:${this.currentUnlocks.cull}`
+      ? `|u:${this.currentUnlocks.sell}:${this.currentUnlocks.archive}`
       : '|u:all';
     const newSig = this.computeSlimeSignature(state.slimes) + unlockSuffix;
     if (newSig !== this.lastSlimeListSignature) {
@@ -361,7 +351,7 @@ export class UIManager {
     const unlocks = state.onboarding?.unlocks;
     if (unlocks && state.onboarding?.currentStep !== null) {
       this.buttons.battleBtn.style.display = unlocks.battle ? '' : 'none';
-      this.buttons.backpackBtn.style.display = unlocks.cull || unlocks.sell || unlocks.archive ? '' : 'none';
+      this.buttons.backpackBtn.style.display = unlocks.sell || unlocks.archive ? '' : 'none';
       this.buttons.archiveBtn.style.display = unlocks.archive ? '' : 'none';
       this.buttons.facilityBtn.style.display = unlocks.facility ? '' : 'none';
       this.buttons.shopBtn.style.display = unlocks.shop ? '' : 'none';

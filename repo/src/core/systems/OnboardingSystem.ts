@@ -7,7 +7,6 @@ export function createDefaultOnboarding(): OnboardingState {
     completedSteps: [],
     unlocks: {
       breeding: true,
-      cull: false,
       sell: false,
       archive: false,
       battle: false,
@@ -27,7 +26,6 @@ export function createAllUnlockedOnboarding(): OnboardingState {
     completedSteps: [],
     unlocks: {
       breeding: true,
-      cull: true,
       sell: true,
       archive: true,
       battle: true,
@@ -68,21 +66,11 @@ const STEPS: StepDef[] = [
     text: '🎉 恭喜！史莱姆成功分裂了！\n\n史莱姆会不断分裂，每次都可能产生变异。\n留下强的，淘汰弱的——这就是培养的核心！',
     buttonText: '明白了！',
     checkComplete: (_s, events) => events.has('dialog-ok'),
-  },
-  {
-    id: 'step-teach-cull',
-    text: '✂️ 随着史莱姆不断分裂，场地会越来越拥挤。\n\n你需要学会"剔除"不需要的史莱姆来保持精英阵容。\n找到属性最低的那只，然后按 [剔除]。\n\n💡 提示：留下属性高、特性好的史莱姆！',
-    checkComplete: (_s, events) => events.has('cull'),
-    onShow: (s) => { s.onboarding.unlocks.cull = true; },
-  },
-  {
-    id: 'step-wait-recover-1',
-    text: '⏰ 场地里只剩一只史莱姆了...\n\n等待它分裂出新的伙伴，你才能继续学习其他操作。',
-    checkComplete: (s) => s.slimes.length >= 2,
+    onComplete: (s) => { s.onboarding.unlocks.sell = true; },
   },
   {
     id: 'step-teach-sell',
-    text: '💰 剔除可以清理空间，但出售更划算！\n\n出售史莱姆可以获得金币。\n稀有度越高、属性越强，卖价越高。\n\n试着出售一只不需要的史莱姆吧。',
+    text: '💰 出售史莱姆可以获得金币！\n\n稀有度越高、属性越强，卖价越高。\n\n试着出售一只不需要的史莱姆吧。',
     checkComplete: (_s, events) => events.has('sell'),
     onShow: (s) => { s.onboarding.unlocks.sell = true; },
   },
