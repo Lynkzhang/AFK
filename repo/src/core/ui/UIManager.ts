@@ -234,8 +234,9 @@ export class UIManager {
     hpOuter.className = 'ui-slime-hp-outer';
     const hpInner = document.createElement('div');
     hpInner.className = 'ui-slime-hp-inner';
+    const currentHealth = (slime as Slime & { currentHealth?: number }).currentHealth ?? slime.stats.health;
     const hpPct = slime.stats.health > 0
-      ? Math.max(0, Math.min(100, (slime.stats.health / slime.stats.health) * 100))
+      ? Math.max(0, Math.min(100, (currentHealth / slime.stats.health) * 100))
       : 100;
     hpInner.style.width = `${hpPct}%`;
     hpOuter.appendChild(hpInner);
@@ -290,7 +291,12 @@ export class UIManager {
   }
 
   private computeSlimeSignature(slimes: Slime[]): string {
-    return slimes.map(s => `${s.id}:${s.name}:${s.rarity}:${s.color}:${s.stats.health + s.stats.attack + s.stats.defense + s.stats.speed}`).join('|');
+    return slimes
+      .map(s => {
+        const currentHealth = (s as Slime & { currentHealth?: number }).currentHealth ?? s.stats.health;
+        return `${s.id}:${s.name}:${s.rarity}:${s.color}:${currentHealth}:${s.stats.health + s.stats.attack + s.stats.defense + s.stats.speed}`;
+      })
+      .join('|');
   }
 
   render(state: GameState, maxCapacity: number): void {
