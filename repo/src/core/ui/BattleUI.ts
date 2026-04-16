@@ -127,6 +127,10 @@ export class BattleUI {
         // Play attack sound roughly per turn change
         soundManager.playAttack();
       },
+      onAction: () => {
+        // 每个战斗动作后实时同步HP条
+        this.syncHpBars();
+      },
       onComplete: () => {
         this.showResult();
       },

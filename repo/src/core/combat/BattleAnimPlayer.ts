@@ -25,6 +25,7 @@ interface AnimClip {
 
 export interface AnimPlayerCallbacks {
   onTurnChange: (turn: number) => void;
+  onAction?: () => void;   // 每次动作执行后回调，用于同步HP条
   onComplete: () => void;
 }
 
@@ -121,6 +122,7 @@ export class BattleAnimPlayer {
     }
     this.currentIndex = this.clips.length;
 
+    if (this.callbacks?.onAction) this.callbacks.onAction();
     if (this.clips.length > 0) {
       const lastClip = this.clips[this.clips.length - 1]!;
       if (this.callbacks) this.callbacks.onTurnChange(lastClip.entry.turn);
@@ -209,6 +211,7 @@ export class BattleAnimPlayer {
     }
 
     this.executeClip(clip);
+    if (this.callbacks?.onAction) this.callbacks.onAction();
 
     this.animTimer = setTimeout(() => {
       this.playNextClip();
