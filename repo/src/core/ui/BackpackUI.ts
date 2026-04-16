@@ -48,6 +48,8 @@ export class BackpackUI {
   private selectAllCheckbox: HTMLInputElement;
 
   private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
+  private hideCleanupTimer: number | null = null;
+  private hideToken = 0;
 
   constructor() {
     this.root = document.createElement('div');
@@ -269,7 +271,13 @@ const backpackTitleIcon = document.createElement('img');
   }
 
   show(): void {
+    this.hideToken += 1;
+    if (this.hideCleanupTimer !== null) {
+      window.clearTimeout(this.hideCleanupTimer);
+      this.hideCleanupTimer = null;
+    }
     this.root.style.display = 'flex';
+    this.root.style.animation = '';
     this.keydownHandler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         this.callbacks?.onBack();
@@ -279,18 +287,29 @@ const backpackTitleIcon = document.createElement('img');
   }
 
   hide(): void {
+    if (this.root.style.display === 'none') {
+      this.root.style.animation = '';
+      return;
+    }
+
+    const hideToken = ++this.hideToken;
+
     // #273: panel close animation
     this.root.style.animation = 'panelClose 0.2s ease-in forwards';
     const cleanup = () => {
+      if (hideToken !== this.hideToken) return;
       this.root.style.display = 'none';
       this.root.style.animation = '';
+      this.hideCleanupTimer = null;
       if (this.keydownHandler) {
         document.removeEventListener('keydown', this.keydownHandler);
         this.keydownHandler = null;
       }
     };
     this.root.addEventListener('animationend', cleanup, { once: true });
-    setTimeout(() => { if (this.root.style.display !== 'none') cleanup(); }, 300);
+    this.hideCleanupTimer = window.setTimeout(() => {
+      if (this.root.style.display !== 'none') cleanup();
+    }, 300);
   }
 
   // GM helpers

@@ -506,15 +506,17 @@ export class Canvas2DRenderer {
   /** #271: Draw day/night lerped sky */
   private drawDayNightSky(w: number, groundTop: number): void {
     const CYCLE = 600; // 600 second cycle
-    const t = (this.elapsedTime / 1000) % CYCLE;
+    const elapsed = (isFinite(this.elapsedTime) && this.elapsedTime >= 0) ? this.elapsedTime : 0;
+    const t = elapsed % CYCLE; // elapsedTime already in seconds
     const phaseDuration = CYCLE / 4; // 150s per phase
 
-    const phaseIndex = Math.floor(t / phaseDuration);
+    const phaseIndex = Math.max(0, Math.min(3, Math.floor(t / phaseDuration)));
     const nextPhaseIndex = (phaseIndex + 1) % 4;
-    const lerpT = (t % phaseDuration) / phaseDuration;
+    const lerpT = Math.max(0, Math.min(1, (t % phaseDuration) / phaseDuration));
 
     const currentColors = SKY_PHASES[phaseIndex];
     const nextColors = SKY_PHASES[nextPhaseIndex];
+    if (!currentColors || !nextColors) return; // safety guard
 
     const numBands = 8;
     const bandH = Math.max(4, Math.floor(groundTop / numBands));
@@ -606,7 +608,7 @@ export class Canvas2DRenderer {
 
   /** #271: Grass tufts with wind sway */
   private drawGrassTufts(w: number, _h: number, groundTop: number): void {
-    const t = this.elapsedTime / 1000;
+    const t = this.elapsedTime; // seconds
     const grassPositions = [0.05, 0.16, 0.27, 0.38, 0.50, 0.61, 0.72, 0.83, 0.92, 0.96, 0.33, 0.66];
     const grassCount = Math.min(12, grassPositions.length);
     for (let i = 0; i < grassCount; i++) {
@@ -634,7 +636,7 @@ export class Canvas2DRenderer {
 
   /** Draw pixel-art block clouds — 6 clouds, 3 templates */
   private drawPixelClouds(w: number, _h: number, groundTop: number): void {
-    const t = this.elapsedTime / 1000;
+    const t = this.elapsedTime;
 
     // Template 1: original fluffy cloud
     const cloudTemplate: number[][] = [
@@ -667,10 +669,10 @@ export class Canvas2DRenderer {
 
     // Get sky phase for cloud color tint
     const CYCLE = 600;
-    const tSky = (this.elapsedTime / 1000) % CYCLE;
+    const tSky = this.elapsedTime % CYCLE;
     const phaseDuration = CYCLE / 4;
-    const phaseIndex = Math.floor(tSky / phaseDuration);
-    const lerpT = (tSky % phaseDuration) / phaseDuration;
+    const phaseIndex = Math.max(0, Math.min(3, Math.floor(tSky / phaseDuration)));
+    const lerpT = Math.max(0, Math.min(1, (tSky % phaseDuration) / phaseDuration));
 
     // Cloud colors by phase
     const cloudColorPairs: Array<[string, string]> = [
@@ -705,7 +707,7 @@ export class Canvas2DRenderer {
 
   /** Draw pixel art decorations: flowers, mushrooms, stones */
   private drawPixelDecorations(w: number, h: number, groundTop: number): void {
-    const t = this.elapsedTime / 1000;
+    const t = this.elapsedTime; // seconds
 
     // Pixel flower template (5x8)
     const flowerTemplate: number[][] = [
@@ -779,7 +781,7 @@ export class Canvas2DRenderer {
 
   /** #271: Draw animated ground particles (20 seeds, 3 types) */
   private drawGroundParticles(w: number, h: number, groundTop: number): void {
-    const t = this.elapsedTime / 1000;
+    const t = this.elapsedTime; // seconds
     // 20 seeds with type: 0=light dot, 1=dust, 2=firefly
     const PARTICLE_SEEDS = [
       { s: 0.12, type: 0 }, { s: 0.28, type: 1 }, { s: 0.45, type: 0 },
@@ -839,7 +841,7 @@ export class Canvas2DRenderer {
 
   private drawSlime(slime: Slime): void {
     const mapped = this.mapTo2D(slime.position.x, slime.position.z);
-    const t = this.elapsedTime / 1000;
+    const t = this.elapsedTime; // seconds
     const phase = this.hashPhase(slime.id);
 
     const x = mapped.x;
@@ -989,7 +991,7 @@ export class Canvas2DRenderer {
 
   /** Issue #272: Draw 2-4 ambient glow dots around Rare+ slimes */
   private drawSlimeGlowParticles(slime: Slime, cx: number, cy: number, ps: number): void {
-    const t = this.elapsedTime / 1000;
+    const t = this.elapsedTime; // seconds
     const phase = this.hashPhase(slime.id);
     const glowColor = this.getRarityGlow(slime.rarity) ?? '#ffffff';
     // 2 for Rare, 3 for Epic, 4 for Legendary
