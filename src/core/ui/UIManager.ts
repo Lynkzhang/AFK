@@ -329,7 +329,7 @@ export class UIManager {
     const unlocks = state.onboarding?.unlocks;
     if (unlocks && state.onboarding?.currentStep !== null) {
       this.buttons.battleBtn.style.display = unlocks.battle ? '' : 'none';
-      this.buttons.backpackBtn.style.display = unlocks.cull || unlocks.sell || unlocks.archive ? '' : 'none';
+      this.buttons.backpackBtn.style.display = unlocks.sell || unlocks.archive ? '' : 'none';
       this.buttons.archiveBtn.style.display = unlocks.archive ? '' : 'none';
       this.buttons.facilityBtn.style.display = unlocks.facility ? '' : 'none';
       this.buttons.shopBtn.style.display = unlocks.shop ? '' : 'none';
