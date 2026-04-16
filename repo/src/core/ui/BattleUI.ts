@@ -183,6 +183,11 @@ export class BattleUI {
       if (hpInner) {
         const pct = sprite.maxHp > 0 ? Math.max(0, sprite.currentHp / sprite.maxHp) * 100 : 0;
         hpInner.style.width = `${pct}%`;
+        // #273: HP bar color based on percentage
+        hpInner.classList.remove('hp-high', 'hp-medium', 'hp-low');
+        if (pct > 60) hpInner.classList.add('hp-high');
+        else if (pct > 30) hpInner.classList.add('hp-medium');
+        else hpInner.classList.add('hp-low');
       }
       if (hpText) {
         hpText.textContent = `${Math.max(0, sprite.currentHp)}/${sprite.maxHp}`;
@@ -251,12 +256,26 @@ export class BattleUI {
   }
 
   hide(): void {
-    this.root.style.display = 'none';
-    if (this.arena) {
-      this.arena.stop();
-      this.arena.destroy();
-      this.arena = null;
-    }
-    this.animPlayer = null;
+    // #273: panel close animation
+    this.root.style.animation = 'panelClose 0.2s ease-in forwards';
+    this.root.addEventListener('animationend', () => {
+      this.root.style.display = 'none';
+      this.root.style.animation = '';
+      if (this.arena) {
+        this.arena.stop();
+        this.arena.destroy();
+        this.arena = null;
+      }
+      this.animPlayer = null;
+    }, { once: true });
+    // Fallback: ensure hide even if animationend doesn't fire
+    setTimeout(() => {
+      if (this.root.style.display !== 'none') {
+        this.root.style.display = 'none';
+        this.root.style.animation = '';
+        if (this.arena) { this.arena.stop(); this.arena.destroy(); this.arena = null; }
+        this.animPlayer = null;
+      }
+    }, 300);
   }
 }

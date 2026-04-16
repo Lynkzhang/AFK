@@ -344,6 +344,12 @@ const loop = new GameLoop({
       if (breedResult.buffApplied?.rareEssence) {
         showBuffToast('💎 稀有精华加持！稀有特性概率×3！');
       }
+      // Issue #272: spawn split particles for the new slime
+      const newSlime = state.slimes[state.slimes.length - 1];
+      if (newSlime) {
+        const canvasPos = scene.worldToCanvas(newSlime.position.x, newSlime.position.z);
+        scene.spawnSplitParticles(canvasPos.x, canvasPos.y, newSlime.rarity);
+      }
     }
     scene.update(state, elapsedTime, FacilitySystem.getSplitInterval(state) / 10000, !!(state.activeBuffs.splitFieldAcceleratorUntil && state.activeBuffs.splitFieldAcceleratorUntil > Date.now()));
     ui.render(state, FacilitySystem.getMaxCapacity(state));
