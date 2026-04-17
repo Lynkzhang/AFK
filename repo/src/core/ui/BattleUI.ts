@@ -18,6 +18,10 @@ export class BattleUI {
   private enemyUnitsEl: HTMLDivElement;
   private turnLabel: HTMLDivElement;
   private canvasContainer: HTMLDivElement;
+  private enemyFocusBar: HTMLDivElement;
+  private enemyFocusName: HTMLDivElement;
+  private enemyFocusInner: HTMLDivElement;
+  private enemyFocusText: HTMLDivElement;
   private callbacks: BattleUICallbacks | null = null;
 
   private battleResult: BattleResult | null = null;
@@ -36,6 +40,19 @@ export class BattleUI {
     // Canvas container
     this.canvasContainer = document.createElement('div');
     this.canvasContainer.className = 'battle-canvas-container';
+
+    this.enemyFocusBar = document.createElement('div');
+    this.enemyFocusBar.className = 'battle-enemy-focus';
+    this.enemyFocusName = document.createElement('div');
+    this.enemyFocusName.className = 'battle-enemy-focus-name';
+    this.enemyFocusInner = document.createElement('div');
+    this.enemyFocusInner.className = 'battle-enemy-focus-inner';
+    const enemyFocusOuter = document.createElement('div');
+    enemyFocusOuter.className = 'battle-enemy-focus-outer';
+    enemyFocusOuter.appendChild(this.enemyFocusInner);
+    this.enemyFocusText = document.createElement('div');
+    this.enemyFocusText.className = 'battle-enemy-focus-text';
+    this.enemyFocusBar.append(this.enemyFocusName, enemyFocusOuter, this.enemyFocusText);
 
     const unitsRow = document.createElement('div');
     unitsRow.className = 'battle-units-row';
@@ -67,6 +84,7 @@ export class BattleUI {
 
     this.root.append(
       this.turnLabel,
+      this.enemyFocusBar,
       this.canvasContainer,
       unitsRow,
       controls,
@@ -88,6 +106,7 @@ export class BattleUI {
     this.resultContainer.classList.add('hidden');
     this.resultContainer.replaceChildren();
     this.turnLabel.textContent = '回合 0';
+    this.updateEnemyFocusBar();
 
     // Destroy previous arena
     if (this.arena) {
@@ -123,6 +142,7 @@ export class BattleUI {
     this.animPlayer.bind({
       onTurnChange: (turn) => {
         this.turnLabel.textContent = `回合 ${turn}`;
+        this.syncHpBars();
         soundManager.playAttack();
       },
       onAction: () => {
@@ -190,6 +210,32 @@ export class BattleUI {
         hpText.textContent = `${Math.max(0, sprite.currentHp)}/${sprite.maxHp}`;
       }
     }
+    this.updateEnemyFocusBar();
+  }
+
+  private updateEnemyFocusBar(): void {
+    if (!this.arena) {
+      this.enemyFocusName.textContent = '敌方目标';
+      this.enemyFocusInner.style.width = '0%';
+      this.enemyFocusText.textContent = '0/0';
+      return;
+    }
+
+    const currentEnemy = this.arena.getAllSprites()
+      .filter((sprite) => sprite.side === 1 && sprite.currentHp > 0)
+      .sort((a, b) => a.slotIndex - b.slotIndex)[0];
+
+    if (!currentEnemy) {
+      this.enemyFocusName.textContent = '敌方已全部倒下';
+      this.enemyFocusInner.style.width = '0%';
+      this.enemyFocusText.textContent = '0/0';
+      return;
+    }
+
+    const pct = currentEnemy.maxHp > 0 ? Math.max(0, currentEnemy.currentHp / currentEnemy.maxHp) * 100 : 0;
+    this.enemyFocusName.textContent = currentEnemy.name;
+    this.enemyFocusInner.style.width = `${pct}%`;
+    this.enemyFocusText.textContent = `${Math.max(0, currentEnemy.currentHp)}/${currentEnemy.maxHp}`;
   }
 
   private skipToEnd(): void {
