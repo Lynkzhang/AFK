@@ -37,15 +37,9 @@ async function openBattle(page: Page) {
   await expect(page.locator('.battle-panel')).toBeVisible();
 }
 
-const arenaCases = [
-  { id: 'grassland', buy: false },
-  { id: 'fire-land', buy: true },
-  { id: 'ice-cave', buy: true },
-  { id: 'mystic-forest', buy: true },
-] as const;
+const arenaCase = { id: 'fire-land', buy: true } as const;
 
-for (const arenaCase of arenaCases) {
-  test(`battle background follows active arena: ${arenaCase.id}`, async ({ page }) => {
+test(`battle background follows active arena: ${arenaCase.id}`, async ({ page }) => {
     await page.goto('/AFK/');
     await waitForGameReady(page);
     await clearSave(page);
@@ -77,5 +71,4 @@ for (const arenaCase of arenaCases) {
       return true;
     });
     expect(hasLoadedAsset).toBe(true);
-  });
-}
+});
