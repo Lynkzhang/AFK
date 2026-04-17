@@ -201,6 +201,7 @@ class SoundManager {
     ]);
   }
 
+  /** @deprecated 剔除功能已移除，保留空实现避免旧调用报错 */
   playCull(): void {
     this.playFreqSweep(200, 100, 0.2, 'sine', 0.25);
   }
