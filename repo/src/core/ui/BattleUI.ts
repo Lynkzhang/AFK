@@ -123,8 +123,6 @@ export class BattleUI {
     this.animPlayer.bind({
       onTurnChange: (turn) => {
         this.turnLabel.textContent = `回合 ${turn}`;
-        // 回合同步会早于本回合首个动作，不能在这里刷新 HP，避免显示提前扣血
-        // Play attack sound roughly per turn change
         soundManager.playAttack();
       },
       onAction: () => {
