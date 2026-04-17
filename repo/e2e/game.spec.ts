@@ -2989,37 +2989,30 @@ test.describe('M40: Battle Canvas Animation', () => {
     expect(hasContent).toBe(true);
   });
 
-  test('battle enemy HP bars stay visible and sync with current enemy HP on skip', async ({ page }) => {
-    await page.goto('/');
-    await waitForGameReady(page);
-    await clearSave(page);
-    acceptDialogs(page);
-    await page.evaluate(() => {
-      const gm = window.__GM!;
-      gm.skipOnboarding();
-      const state = gm.getState();
-      for (const s of [...state.slimes]) {
-        gm.archiveSlime(s.id);
-      }
-    });
-    await page.waitForTimeout(200);
-    await page.locator('.ui-actions button', { hasText: '战斗' }).click();
-    await page.locator('.stage-card').first().click();
-    const slimeCards = page.locator('.team-slime-card');
-    const count = await slimeCards.count();
-    for (let i = 0; i < Math.min(count, 4); i++) {
-      await slimeCards.nth(i).click();
-    }
-    await page.locator('.confirm-btn', { hasText: '开始战斗' }).click();
+  test('battle enemy focus bar refreshes on first hit and target switch', async ({ page }) => {
+    await startBattleViaUI(page);
     await expect(page.locator('.battle-side.enemy-side .unit-bar')).toHaveCount(1, { timeout: 5000 });
-    const initialEnemyHp = await page.locator('.battle-side.enemy-side .hp-text').first().textContent();
-    expect(initialEnemyHp).not.toBeNull();
-    await page.locator('.battle-controls button', { hasText: '跳过' }).click();
-    await expect(page.locator('.battle-result')).toBeVisible({ timeout: 5000 });
-    const finalEnemyHp = await page.locator('.battle-side.enemy-side .hp-text').first().textContent();
-    expect(finalEnemyHp).not.toBe(initialEnemyHp);
-    const finalEnemyWidth = await page.locator('.battle-side.enemy-side .hp-bar-inner').first().evaluate((el: HTMLElement) => el.style.width);
-    expect(finalEnemyWidth).not.toBe('100%');
+
+    const focusName = page.locator('.battle-enemy-focus-name');
+    const focusText = page.locator('.battle-enemy-focus-text');
+    const focusWidth = page.locator('.battle-enemy-focus-inner');
+
+    const initialName = await focusName.textContent();
+    const initialText = await focusText.textContent();
+    expect(initialName).not.toBe('敌方已全部倒下');
+    expect(initialText).toMatch(/\d+\/\d+/);
+
+    await expect(focusText).not.toHaveText(initialText ?? '', { timeout: 5000 });
+    const firstHitWidth = await focusWidth.evaluate((el: HTMLElement) => el.style.width);
+    expect(firstHitWidth).not.toBe('100%');
+
+    await page.waitForFunction((previousName) => {
+      const name = document.querySelector<HTMLElement>('.battle-enemy-focus-name')?.textContent;
+      return !!name && name !== previousName;
+    }, initialName, { timeout: 10000 });
+    const switchedName = await focusName.textContent();
+    expect(switchedName).not.toBe(initialName);
+    await expect(focusText).not.toHaveText(initialText ?? '');
   });
 
   test('battle HP bars update after skip', async ({ page }) => {
