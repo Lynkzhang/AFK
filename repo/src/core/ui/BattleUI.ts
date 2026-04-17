@@ -1,5 +1,5 @@
 import type { BattleResult, BattleReward } from '../combat/CombatTypes';
-import type { Slime } from '../types';
+import type { ArenaId, Slime } from '../types';
 import { runBattle } from '../combat/CombatEngine';
 import { getStage } from '../combat/StageData';
 import { soundManager } from '../audio/SoundManager';
@@ -97,7 +97,7 @@ export class BattleUI {
     this.callbacks = callbacks;
   }
 
-  startBattle(playerSlimes: Slime[], stageId: string): void {
+  startBattle(playerSlimes: Slime[], stageId: string, arenaId: ArenaId = 'grassland'): void {
     const stage = getStage(stageId);
     if (!stage) throw new Error(`Stage not found: ${stageId}`);
 
@@ -117,6 +117,7 @@ export class BattleUI {
 
     // Build canvas arena
     this.arena = new BattleArena();
+    this.arena.setArenaBackground(arenaId);
     this.canvasContainer.replaceChildren();
     this.canvasContainer.appendChild(this.arena.getCanvas());
 

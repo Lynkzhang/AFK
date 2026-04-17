@@ -3,6 +3,16 @@
 
 import { BattleUnitSprite } from './BattleUnitSprite';
 import { BattleEffects } from './BattleEffects';
+import type { ArenaId } from '../types';
+
+const BASE = import.meta.env.BASE_URL;
+
+const ARENA_BACKGROUND_ASSETS: Partial<Record<ArenaId, string>> = {
+  grassland: `${BASE}assets/arenas/grassland-bg.png`,
+  'fire-land': `${BASE}assets/arenas/fire-land-bg.png`,
+  'ice-cave': `${BASE}assets/arenas/ice-cave-bg.png`,
+  'mystic-forest': `${BASE}assets/arenas/mystic-forest-bg.png`,
+};
 
 // Slot coordinates for 4v4 layout
 const PLAYER_SLOTS: [number, number][] = [
@@ -27,6 +37,9 @@ export class BattleArena {
   private running = false;
   private startTime = 0;
   private effects: BattleEffects;
+  private activeArenaId: ArenaId = 'grassland';
+  private backgroundImage: HTMLImageElement | null = null;
+  private backgroundLoadToken = 0;
 
   static readonly WIDTH = 640;
   static readonly HEIGHT = 360;
@@ -53,6 +66,28 @@ export class BattleArena {
 
   getEffects(): BattleEffects {
     return this.effects;
+  }
+
+  setArenaBackground(arenaId: ArenaId): void {
+    this.activeArenaId = arenaId;
+    this.backgroundLoadToken += 1;
+    const assetPath = ARENA_BACKGROUND_ASSETS[arenaId];
+    if (!assetPath) {
+      this.backgroundImage = null;
+      return;
+    }
+
+    const currentToken = this.backgroundLoadToken;
+    const image = new Image();
+    image.onload = () => {
+      if (currentToken !== this.backgroundLoadToken) return;
+      this.backgroundImage = image;
+    };
+    image.onerror = () => {
+      if (currentToken !== this.backgroundLoadToken) return;
+      this.backgroundImage = null;
+    };
+    image.src = assetPath;
   }
 
   initUnits(
@@ -120,25 +155,13 @@ export class BattleArena {
     const W = BattleArena.WIDTH;
     const H = BattleArena.HEIGHT;
 
-    // Sky gradient
-    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.6);
-    sky.addColorStop(0, '#1a1a3e');
-    sky.addColorStop(1, '#3a2a5e');
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, W, H * 0.6);
-
-    // Ground (pixel sandy)
-    ctx.fillStyle = '#4a3a2a';
-    ctx.fillRect(0, H * 0.6, W, H * 0.4);
-
-    // Ground texture — alternating darker rows
-    ctx.fillStyle = '#3a2a1a';
-    for (let y = Math.floor(H * 0.6); y < H; y += 8) {
-      ctx.fillRect(0, y, W, 4);
+    if (this.backgroundImage && this.backgroundImage.complete && this.backgroundImage.naturalWidth > 0) {
+      ctx.drawImage(this.backgroundImage, 0, 0, W, H);
+    } else {
+      this.drawFallbackBackground();
     }
 
-    // Divider line
-    ctx.strokeStyle = '#ff4444';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
     ctx.lineWidth = 1;
     ctx.setLineDash([6, 4]);
     ctx.beginPath();
@@ -146,15 +169,73 @@ export class BattleArena {
     ctx.lineTo(W / 2, H);
     ctx.stroke();
     ctx.setLineDash([]);
+  }
 
-    // Stars
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    const starPositions = [
+  private drawFallbackBackground(): void {
+    const ctx = this.ctx;
+    const W = BattleArena.WIDTH;
+    const H = BattleArena.HEIGHT;
+
+    const palette = this.getFallbackPalette(this.activeArenaId);
+    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.6);
+    sky.addColorStop(0, palette.skyTop);
+    sky.addColorStop(1, palette.skyBottom);
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H * 0.6);
+
+    ctx.fillStyle = palette.groundBase;
+    ctx.fillRect(0, H * 0.6, W, H * 0.4);
+
+    ctx.fillStyle = palette.groundStripe;
+    for (let y = Math.floor(H * 0.6); y < H; y += 8) {
+      ctx.fillRect(0, y, W, 4);
+    }
+
+    ctx.fillStyle = palette.accent;
+    const accents = [
       [50, 30], [120, 50], [200, 20], [320, 40], [450, 25], [580, 45],
       [80, 70], [260, 60], [400, 70], [530, 80],
     ];
-    for (const [sx, sy] of starPositions) {
-      ctx.fillRect(sx!, sy!, 1, 1);
+    for (const [sx, sy] of accents) {
+      ctx.fillRect(sx!, sy!, 2, 2);
+    }
+  }
+
+  private getFallbackPalette(arenaId: ArenaId): { skyTop: string; skyBottom: string; groundBase: string; groundStripe: string; accent: string } {
+    switch (arenaId) {
+      case 'fire-land':
+        return {
+          skyTop: '#3a1212',
+          skyBottom: '#a63c18',
+          groundBase: '#4d180f',
+          groundStripe: '#6e2616',
+          accent: 'rgba(255, 180, 90, 0.7)',
+        };
+      case 'ice-cave':
+        return {
+          skyTop: '#a8dbff',
+          skyBottom: '#5f8fbc',
+          groundBase: '#d8efff',
+          groundStripe: '#b6d8f3',
+          accent: 'rgba(255, 255, 255, 0.7)',
+        };
+      case 'mystic-forest':
+        return {
+          skyTop: '#27403a',
+          skyBottom: '#4f2f6f',
+          groundBase: '#1f4d34',
+          groundStripe: '#2e6a47',
+          accent: 'rgba(170, 120, 255, 0.65)',
+        };
+      case 'grassland':
+      default:
+        return {
+          skyTop: '#6dc6ff',
+          skyBottom: '#bceeff',
+          groundBase: '#6aaa4f',
+          groundStripe: '#56893f',
+          accent: 'rgba(255, 255, 255, 0.55)',
+        };
     }
   }
 

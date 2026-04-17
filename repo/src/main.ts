@@ -640,7 +640,7 @@ teamSelectUI.bind({
     teamSelectUI.hide();
     const team = state.archivedSlimes.filter((s) => selectedIds.includes(s.id));
     battleUI.show();
-    battleUI.startBattle(team, currentStageId);
+    battleUI.startBattle(team, currentStageId, state.activeArenaId);
   },
   onBack: () => {
     soundManager.playPanelClose();
