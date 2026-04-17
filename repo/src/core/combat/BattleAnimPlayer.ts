@@ -23,7 +23,7 @@ interface AnimClip {
   duration: number;
 }
 
-export interface AnimPlayerCallbacks {
+export interface BattleAnimCallbacks {
   onTurnChange: (turn: number) => void;
   onAction?: () => void;   // 每次动作执行后回调，用于同步HP条
   onComplete: () => void;
@@ -34,7 +34,7 @@ export class BattleAnimPlayer {
   private clips: AnimClip[] = [];
   private currentIndex = 0;
   private playing = false;
-  private callbacks: AnimPlayerCallbacks | null = null;
+  private callbacks: BattleAnimCallbacks | null = null;
   private lastTurn = 0;
   private animTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -42,7 +42,7 @@ export class BattleAnimPlayer {
     this.arena = arena;
   }
 
-  bind(callbacks: AnimPlayerCallbacks): void {
+  bind(callbacks: BattleAnimCallbacks): void {
     this.callbacks = callbacks;
   }
 
