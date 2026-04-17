@@ -1215,7 +1215,7 @@ test.describe('Arena System', () => {
     await startFreshGame(page);
 
     const arenas = await page.evaluate(() => window.__GM!.getArenas());
-    expect(arenas.length).toBe(4);
+    expect(arenas.length).toBe(6);
 
     interface ArenaInfo { id: string; owned: boolean }
     const grassland = (arenas as ArenaInfo[]).find((a) => a.id === 'grassland');
@@ -1342,9 +1342,9 @@ test.describe('Arena System', () => {
     await page.locator('.ui-actions button', { hasText: '\u573a\u5730' }).click();
     await expect(page.locator('.arena-panel')).toBeVisible();
 
-    // Verify 4 arena cards
+    // Verify 6 arena cards
     const cards = page.locator('.arena-card');
-    await expect(cards).toHaveCount(4);
+    await expect(cards).toHaveCount(6);
 
     // First card should be active (grassland)
     await expect(cards.first()).toHaveClass(/active/);
