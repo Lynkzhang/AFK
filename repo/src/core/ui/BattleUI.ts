@@ -221,10 +221,7 @@ export class BattleUI {
       return;
     }
 
-    const currentEnemy = this.arena.getAllSprites()
-      .filter((sprite) => sprite.side === 1 && sprite.currentHp > 0)
-      .sort((a, b) => a.slotIndex - b.slotIndex)[0];
-
+    const currentEnemy = this.getCurrentLivingEnemy();
     if (!currentEnemy) {
       this.enemyFocusName.textContent = '敌方已全部倒下';
       this.enemyFocusInner.style.width = '0%';
@@ -236,6 +233,13 @@ export class BattleUI {
     this.enemyFocusName.textContent = currentEnemy.name;
     this.enemyFocusInner.style.width = `${pct}%`;
     this.enemyFocusText.textContent = `${Math.max(0, currentEnemy.currentHp)}/${currentEnemy.maxHp}`;
+  }
+
+  private getCurrentLivingEnemy() {
+    if (!this.arena) return null;
+    return this.arena.getAllSprites()
+      .filter((sprite) => sprite.side === 1 && sprite.currentHp > 0 && sprite.alive)
+      .sort((a, b) => a.slotIndex - b.slotIndex)[0] ?? null;
   }
 
   private skipToEnd(): void {
