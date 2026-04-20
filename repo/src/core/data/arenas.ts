@@ -12,16 +12,16 @@ export const DEFAULT_ARENAS: Arena[] = [
     mutationBias: {},
   },
   {
-    id: 'fire-land',
-    name: '火焰之地',
-    description: '炙热的熔岩地带，激发史莱姆的攻击本能。',
+    id: 'ice-cave',
+    name: '冰霜洞窟',
+    description: '寒气缭绕的冰洞，让史莱姆在冷静中强化防御与韧性。',
     price: 500,
     currencyType: 'gold',
     owned: false,
-    statBonus: { attack: 0.15 },
+    statBonus: { defense: 0.15, health: 0.1 },
     mutationBias: {
-      preferTraitIds: ['feral-rush', 'toxin-blood'],
-      preferSkillTypes: ['attack'],
+      preferTraitIds: ['hard-shell', 'adaptive-membrane'],
+      preferSkillTypes: ['defense', 'heal'],
     },
   },
 ];

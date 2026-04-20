@@ -37,7 +37,7 @@ async function openBattle(page: Page) {
   await expect(page.locator('.battle-panel')).toBeVisible();
 }
 
-const arenaCase = { id: 'fire-land', buy: true } as const;
+const arenaCase = { id: 'ice-cave', buy: true } as const;
 
 test(`battle background follows active arena: ${arenaCase.id}`, async ({ page }) => {
     await page.goto('/AFK/');

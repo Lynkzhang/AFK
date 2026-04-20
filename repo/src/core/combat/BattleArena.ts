@@ -9,7 +9,7 @@ const BASE = import.meta.env.BASE_URL;
 
 const ARENA_BACKGROUND_ASSETS: Partial<Record<ArenaId, string>> = {
   grassland: `${BASE}assets/arenas/grassland-bg.png`,
-  'fire-land': `${BASE}assets/arenas/fire-land-bg.png`,
+  'ice-cave': `${BASE}assets/arenas/ice-cave-bg.png`,
 };
 
 // Slot coordinates for 4v4 layout
@@ -201,13 +201,13 @@ export class BattleArena {
 
   private getFallbackPalette(arenaId: ArenaId): { skyTop: string; skyBottom: string; groundBase: string; groundStripe: string; accent: string } {
     switch (arenaId) {
-      case 'fire-land':
+      case 'ice-cave':
         return {
-          skyTop: '#3a1212',
-          skyBottom: '#a63c18',
-          groundBase: '#4d180f',
-          groundStripe: '#6e2616',
-          accent: 'rgba(255, 180, 90, 0.7)',
+          skyTop: '#12263f',
+          skyBottom: '#8fd4ff',
+          groundBase: '#b8d7f0',
+          groundStripe: '#93b8d8',
+          accent: 'rgba(255, 255, 255, 0.72)',
         };
       case 'grassland':
       default:
