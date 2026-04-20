@@ -24,12 +24,26 @@ const ARENA_THEMES: Record<string, ArenaTheme> = {
     cloudLight: '#e8f4ff',
     cloudShadow: '#c8dff0',
   },
+  'fire-land': {
+    skyColors: ['#1a0a00', '#341200', '#4a1a00', '#662400', '#8a3a00', '#b04a0a', '#d86a1a', '#f29b45'],
+    groundColors: ['#5a2a1a', '#4a2214', '#6a3320', '#3a1a0a'],
+    groundEdge: '#8a4a28',
+    cloudLight: '#ffd7b0',
+    cloudShadow: '#c97a40',
+  },
   'ice-cave': {
     skyColors: ['#0a1a2a', '#1a3050', '#2a4a70', '#3a6090', '#4a78aa', '#5a8abb', '#6a9acc', '#8ab0dd'],
     groundColors: ['#8aaacc', '#9abcdd', '#7a9abb', '#6a8aaa'],
     groundEdge: '#aaccee',
     cloudLight: '#e0f0ff',
     cloudShadow: '#a0c8e8',
+  },
+  'mystic-forest': {
+    skyColors: ['#0a0a1a', '#101428', '#1a2a3a', '#223548', '#2d4051', '#3a4a5a', '#4a5a63', '#5f726f'],
+    groundColors: ['#1a3a2a', '#143021', '#0a2a1a', '#224530'],
+    groundEdge: '#3f6b4d',
+    cloudLight: '#d8d6ff',
+    cloudShadow: '#8f88b7',
   },
 };
 
@@ -196,6 +210,7 @@ export class Canvas2DRenderer {
     this.ctx.imageSmoothingEnabled = false;
 
     this.container = container;
+    // 强制首帧前完成尺寸初始化，避免进入场景时出现空白帧
     this.resize();
     window.addEventListener('resize', () => this.resize());
   }
