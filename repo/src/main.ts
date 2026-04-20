@@ -651,6 +651,12 @@ teamSelectUI.bind({
 });
 
 battleUI.bind({
+  onBack: () => {
+    soundManager.playPanelClose();
+    battleUI.hide();
+    teamSelectUI.render(state, currentStageId);
+    teamSelectUI.show();
+  },
   onFinish: (result: BattleResult) => {
     battleUI.hide();
     ui.setActionsDisabled(false);

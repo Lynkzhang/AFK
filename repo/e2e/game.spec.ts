@@ -175,6 +175,37 @@ test.describe('GM API', () => {
 // Test 3: Full Battle Flow (Stage Select → Team Select → Battle → Result)
 // =========================================================
 test.describe('Full Battle Flow', () => {
+  test('battle in-progress top-left back returns to team select', async ({ page }) => {
+    await page.goto('/');
+    await waitForGameReady(page);
+    await clearSave(page);
+    await startFreshGame(page);
+
+    await page.evaluate(() => {
+      const gm = window.__GM!;
+      const state = gm.getState();
+      for (const s of [...state.slimes]) {
+        gm.archiveSlime(s.id);
+      }
+    });
+
+    await page.locator('.ui-actions button', { hasText: '战斗' }).click();
+    await expect(page.locator('.stage-select-panel')).toBeVisible();
+    await page.locator('.stage-card').first().click();
+    await expect(page.locator('.team-select-panel')).toBeVisible();
+    await page.locator('.team-slime-card').first().click();
+    await page.locator('.confirm-btn', { hasText: '开始战斗' }).click();
+
+    const battleBackBtn = page.locator('.battle-panel .back-btn');
+    await expect(battleBackBtn).toBeVisible();
+    await expect(battleBackBtn).toHaveAccessibleName('返回到队伍选择');
+    await battleBackBtn.click();
+
+    await expect(page.locator('.battle-panel')).toBeHidden();
+    await expect(page.locator('.team-select-panel')).toBeVisible();
+    await expect(page.locator('.stage-label')).toHaveText('关卡: 1-1');
+  });
+
   test('complete battle from stage select to result', async ({ page }) => {
     await page.goto('/');
     await waitForGameReady(page);
@@ -225,6 +256,7 @@ test.describe('Full Battle Flow', () => {
 
     // Step 5: Battle panel should appear
     await expect(page.locator('.battle-panel')).toBeVisible();
+    await expect(page.locator('.battle-panel .back-btn')).toHaveAccessibleName('返回到队伍选择');
 
     // Step 6: Click "跳过动画"
     await page.locator('button', { hasText: '跳过动画' }).click();

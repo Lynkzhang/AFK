@@ -8,6 +8,7 @@ import { BattleAnimPlayer } from '../combat/BattleAnimPlayer';
 
 export interface BattleUICallbacks {
   onFinish: (result: BattleResult) => void;
+  onBack?: () => void;
 }
 
 export class BattleUI {
@@ -54,6 +55,12 @@ export class BattleUI {
     this.enemyFocusText.className = 'battle-enemy-focus-text';
     this.enemyFocusBar.append(this.enemyFocusName, enemyFocusOuter, this.enemyFocusText);
 
+    const backBtn = document.createElement('button');
+    backBtn.textContent = '← 返回到队伍选择';
+    backBtn.className = 'back-btn';
+    backBtn.setAttribute('aria-label', '返回到队伍选择');
+    backBtn.onclick = () => this.callbacks?.onBack?.();
+
     const unitsRow = document.createElement('div');
     unitsRow.className = 'battle-units-row';
 
@@ -83,6 +90,7 @@ export class BattleUI {
     this.resultContainer.className = 'battle-result hidden';
 
     this.root.append(
+      backBtn,
       this.turnLabel,
       this.enemyFocusBar,
       this.canvasContainer,
